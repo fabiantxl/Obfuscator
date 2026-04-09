@@ -1,0 +1,760 @@
+--[[ 
+    ╔══════════════════════════════════════════════════════════╗
+    ║                                                          ║
+    ║   ██╗     ██╗   ██╗ █████╗ ███████╗██╗  ██╗██╗██████╗   ║
+    ║   ██║     ██║   ██║██╔══██╗██╔════╝██║  ██║██║██╔═══╝   ║
+    ║   ██║     ██║   ██║███████║███████╗███████║██║██████╗    ║
+    ║   ██║     ██║   ██║██╔══██║╚════██║██╔══██║██║██╔═══╝   ║
+    ║   ███████╗╚██████╔╝██║  ██║███████║██║  ██║██║██████╗   ║
+    ║   ╚══════╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═╝╚═════╝   ║
+    ║                                                          ║
+    ║      ╔═╗╦ ╦╦╔═╗╦  ╔╦╗  Protection Engine v13.0.39      ║
+    ║      ╚═╗╠═╣║║╣ ║   ║║  Powered by LuaShield            ║
+    ║      ╚═╝╩ ╩╩╚═╝╩═╝╚═╝  github.com/fabiantxl            ║
+    ║                                                          ║
+    ║   ┌──────────────────────────────────────────┐           ║
+    ║   │  Build: A294FA81B5F85E0A-315D76B0          │           ║
+    ║   │  Time:  2026-04-09T20:43:50Z          │           ║
+    ║   │  Mode:  Enterprise Protection          │           ║
+    ║   └──────────────────────────────────────────┘           ║
+    ║                                                          ║
+    ║   ⚠  This script is protected by LuaShield.             ║
+    ║   ⚠  Unauthorized modification or redistribution        ║
+    ║      is strictly prohibited.                             ║
+    ║                                                          ║
+    ╚══════════════════════════════════════════════════════════╝
+]]
+local _YlfOuI_SalI={_bc={82,121,234,237,245,56,113,169,69,200,219,246,104,148,185,214,255,180,186,24,13,86,126,58,161,106,139,121,56,111,23,56,173,144,69,198,217,44,133,46},_v="13.0.39",_id="6a9f31077a7cdda0c9070f5a0313ae1f",_ts=1775767430261,_wm="163bd5b35dcd9184",_ck="c75f82dd5839272a1ff98fe0"}
+local lfr0I_JoSl=string.char(bit32.bxor(0x42,6))
+local OsOlboVlDP=bit32.bxor(31241,68)
+local I_bilCIvo_kmiiqO=bit32.bxor(19940,118)
+local lOJoiWbISoi0OL=bit32.bxor(65374,75)
+local _c0__ld_iO0o0OIol=bit32.bxor(0x41,0x00)
+if string.char(_c0__ld_iO0o0OIol)~="A" then error("",0) end
+local ilJdoO_IeIOoi=string.char(72)
+if ilJdoO_IeIOoi~="H" then error("",0) end
+local o_OaEIJwIwloQeO=pcall(function() if debug~=nil and debug.getinfo~=nil then error("",0) end end)
+local ilOjOIYobeoIioivo=(function() local _ok,_r=pcall(function() return type(_ENV) end) return _ok and _r or "nil" end)()
+local OloEFQIIlG_=pcall(function() assert(ilOjOIYobeoIioivo=="table" or ilOjOIYobeoIioivo=="nil" or ilOjOIYobeoIioivo=="userdata","") end)
+if not OloEFQIIlG_ then error("",0) end
+if OsOlboVlDP~=31309 then error("",0) end
+local iiIl0OOlIo0J=setmetatable({},{__index=function() return nil end})
+local iF0_iiXiOoO0OiO=iiIl0OOlIo0J["e87d76ea"]
+if iF0_iiXiOoO0OiO~=nil then error("",0) end
+local i0Ii0iI0hOOSIxo=pcall(function() local _=collectgarbage("count") end)
+local lOgii0OUv0lIl_FIOO=string.rep("\0",8)
+if #lOgii0OUv0lIl_FIOO~=8 then error("",0) end
+local ILo_IOzCoxOlloO=0
+local _0tUi0I0_g_O=pcall(function() ILo_IOzCoxOlloO=ILo_IOzCoxOlloO+1 pcall(function() ILo_IOzCoxOlloO=ILo_IOzCoxOlloO+1 pcall(function() ILo_IOzCoxOlloO=ILo_IOzCoxOlloO+1 end) end) end)
+if ILo_IOzCoxOlloO<1 then error("",0) end
+local I_toiOI_lD_WAoIpl=(function() local _secret=95444 return function() return _secret end end)()
+local ol_O__Iool0nDlS=pcall(function() if debug and debug.getupvalue then local _n,_v=debug.getupvalue(I_toiOI_lD_WAoIpl,1) if _n then error("",0) end end end)
+local ioI0lolO0do0_On_=function() return true end
+local _I0iO0I__0SckllOEo=pcall(function() if type(ioI0lolO0do0_On_)~="function" then error("",0) end end)
+local _OoigiiOlIC=0
+local O0lt_O_oODjli=pcall(function() local function _c(n) if n>0 then return _c(n-1) end return true end _c(5) _OoigiiOlIC=1 end)
+if _OoigiiOlIC~=1 then error("",0) end
+local OOI0gOlFHjoOiGo0=pcall(function() if getfenv then local _e=getfenv(0) if type(_e)~="table" then error("",0) end end end)
+local IfIon0jleiOIg=setmetatable({},{__newindex=function(t,k,v) rawset(t,k,v) end,__index=function(t,k) return rawget(t,k) end})
+IfIon0jleiOIg["f165ec2d"]=true
+local Oi0WiimiVo0=IfIon0jleiOIg["abad3415"]
+local oI00xOoaOo=setmetatable({_k=45151},{__index=function(self,k) if k=="_d" then error("",0) end return rawget(self,k) end,__newindex=function(self,k,v) if k=="_d" then error("",0) end rawset(self,k,v) end})
+local function _0oi_plA0Hoii()
+local ioI_Oi0_fl={}
+ioI_Oi0_fl[1]=type(game)=="userdata" and 1 or 0
+ioI_Oi0_fl[2]=type(workspace)=="userdata" and 1 or 0
+ioI_Oi0_fl[3]=type(Instance)=="table" and 1 or 0
+ioI_Oi0_fl[4]=type(script)=="userdata" and 1 or 0
+local Ooi_ijalOINiibivOl=0
+for _,v in ipairs(ioI_Oi0_fl) do Ooi_ijalOINiibivOl=Ooi_ijalOINiibivOl+v end
+local i0KuoII_kooOC0l_0o=9341
+do local _wOpTiiIXoT_ZO0_=setmetatable({},{}) local _YObiIBQJbo_=_wOpTiiIXoT_ZO0_ end
+local liol0__xixMiZb_UO=true
+while liol0__xixMiZb_UO do
+if i0KuoII_kooOC0l_0o==8611 then
+    end
+})
+i0KuoII_kooOC0l_0o=1019
+elseif i0KuoII_kooOC0l_0o==2872 then
+        end
+    end
+end
+if type({}) == "number" then local ONll_i_ooyvsa=0/ONll_i_ooyvsa end
+i0KuoII_kooOC0l_0o=3323
+elseif i0KuoII_kooOC0l_0o==5893 then
+        task.wait(0.3)
+        if lluNHL_i_Oi and lluNHL_i_Oi.AutoCarry and lluNHL_i_Oi.AutoCarry.Value then
+i0KuoII_kooOC0l_0o=970
+elseif i0KuoII_kooOC0l_0o==2445 then
+        Ol_H0LogvO.BackgroundTransparency = (math.floor(6/6))
+        Ol_H0LogvO.TextColor3 = Color3.fromRGB((0+24*73-24*73), (939-36*19), (464-464))
+        Ol_H0LogvO.TextStrokeTransparency = (math.floor(0/4))
+        Ol_H0LogvO.Font = Enum.Font.Arcade 
+i0KuoII_kooOC0l_0o=5195
+elseif i0KuoII_kooOC0l_0o==8606 then
+                    end
+                end
+            end
+        end
+i0KuoII_kooOC0l_0o=5709
+elseif i0KuoII_kooOC0l_0o==8954 then
+    Main = Oo0KGGioIowLOo:AddTab(I__lolio_i[(bit32.bxor(48569,48561))], I__lolio_i[(bit32.bxor(bit32.bnot(bit32.bxor(bit32.bnot(9),247)),247))]),
+    Esp = Oo0KGGioIowLOo:AddTab(I__lolio_i[(1000-55*18)], I__lolio_i[(bit32.bxor(bit32.bnot(bit32.bxor(bit32.bnot(11),95)),95))]),
+i0KuoII_kooOC0l_0o=8319
+elseif i0KuoII_kooOC0l_0o==8427 then
+    end
+if string.len("") > 49 then local ll_O0__R0Xm_I=error end
+end
+if math.huge < 28 then local I_oki0nOoilw0_E=nil end
+local function oIiBiiIllG__a_0rDo(Ojql0oIRg)
+i0KuoII_kooOC0l_0o=5818
+elseif i0KuoII_kooOC0l_0o==5855 then
+            task.spawn(function()
+                while O_O0iOdoIOlOO.Parent do
+                    iDOQlBSE_T0Y0()
+i0KuoII_kooOC0l_0o=8614
+elseif i0KuoII_kooOC0l_0o==7390 then
+        l_IUbwlt0l.Size = UDim2.new((7-4-3), (600/3), (768-767-1), (562-511-1))
+        l_IUbwlt0l.StudsOffset = Vector3.new((bit32.band(bit32.bor(bit32.bxor(30,30),0),bit32.bxor(bit32.bxor(0xFFFFFFFF,8),8))), (35-4*8), (bit32.bnot(bit32.bnot(0))))
+        l_IUbwlt0l.AlwaysOnTop = true
+i0KuoII_kooOC0l_0o=5650
+elseif i0KuoII_kooOC0l_0o==4331 then
+    end
+if (5*5) < 5 then local lilCCi_qD___B=nil error(lilCCi_qD___B,0) end
+end)
+I_cobl0lOT_:AddToggle(I__lolio_i[(4617/9/9)], { Text = I__lolio_i[(bit32.bor(bit32.lshift(bit32.rshift(58,1),1),bit32.band(58,1)))], Default = false }):OnChanged(function()
+    if lluNHL_i_Oi.Noclip.Value then
+i0KuoII_kooOC0l_0o=3115
+elseif i0KuoII_kooOC0l_0o==1881 then
+end
+local function oOuIiLioRi0l()
+    for _, esp in _ENV["pa".."irs"](workspace:GetDescendants()) do
+        if esp.Name == I__lolio_i[(457-409)] then
+            esp:Destroy()
+i0KuoII_kooOC0l_0o=2872
+elseif i0KuoII_kooOC0l_0o==8651 then
+local I_cobl0lOT_ = oO0_TOq0i_xV0.Main:AddLeftGroupbox(I__lolio_i[(58-5)])
+local OoNOiZoOOO_INw = oO0_TOq0i_xV0.Main:AddRightGroupbox(I__lolio_i[(bit32.bxor(bit32.band(bit32.bxor(54,36622),0xFFFFFFFF),36622))])
+I_cobl0lOT_:AddToggle(I__lolio_i[(bit32.bnot(bit32.bnot(55)))], { Text = I__lolio_i[(math.floor(3584/64))], Default = false }):OnChanged(function()
+    if lluNHL_i_Oi.SpeedBoost.Value then
+i0KuoII_kooOC0l_0o=9886
+elseif i0KuoII_kooOC0l_0o==2929 then
+    if not lluNHL_i_Oi.PlayerESP.Value then
+        oOuIiLioRi0l()
+        if _G.playerESPUpdate then _G.playerESPUpdate:Disconnect(); _G.playerESPUpdate = nil end
+    else
+i0KuoII_kooOC0l_0o=9630
+elseif i0KuoII_kooOC0l_0o==7263 then
+                    if O_O0iOdoIOlOO then
+                        local Ol_H0LogvO = O_O0iOdoIOlOO:FindFirstChild(I__lolio_i[(86+84*98-84*98)]) and O_O0iOdoIOlOO.NameESP:FindFirstChild(I__lolio_i[(math.floor(87+0.5-3*(1/3-1)))])
+i0KuoII_kooOC0l_0o=985
+elseif i0KuoII_kooOC0l_0o==9178 then
+        for _, item in _ENV["pair".."s"](workspace:GetChildren()) do oIiBiiIllG__a_0rDo(item) end
+    else
+        IE00tl0ilM0_oo()
+i0KuoII_kooOC0l_0o=509
+elseif i0KuoII_kooOC0l_0o==3862 then
+        end
+do local O_lodO00OIV0_L0umo=tick and tick() or os.time() end
+    end
+i0KuoII_kooOC0l_0o=7510
+elseif i0KuoII_kooOC0l_0o==9135 then
+getgenv().zone = false
+OoNOiZoOOO_INw:AddButton({
+    Text = I__lolio_i[(bit32.bor(0,bit32.band(72,0x7FFFFFFF)))],
+i0KuoII_kooOC0l_0o=3290
+elseif i0KuoII_kooOC0l_0o==4840 then
+            if oIiqIAIoClI0_IO then oI_lyoI_i0i_OI_.CFrame = oIiqIAIoClI0_IO end
+do local l0iDmOcOIoGoIO0o=string.lower(string.upper("u")) end
+            getgenv().zone = false
+        end
+do local _lHoOPIR_gQMo_MO0=math.exp(0) end
+i0KuoII_kooOC0l_0o=8611
+elseif i0KuoII_kooOC0l_0o==5936 then
+    for _, item in _ENV["p".."ai".."rs"](workspace:GetChildren()) do
+        if item:GetAttribute(I__lolio_i[(50+65*97-65*97)]) then
+            for _, trigger in _ENV["pa".."irs"](item:GetDescendants()) do
+i0KuoII_kooOC0l_0o=4403
+elseif i0KuoII_kooOC0l_0o==575 then
+})
+local oO0_TOq0i_xV0 = {
+i0KuoII_kooOC0l_0o=8954
+elseif i0KuoII_kooOC0l_0o==8372 then
+            local IfoEbiLloV0i0iC = game.Players.LocalPlayer
+do local l0i0_IOl0O=string.gsub("","","",0) end
+            local IuwPO_fliOix0lgio = I0loI_OJavKoIOxIoI and I0loI_OJavKoIOxIoI:FindFirstChildWhichIsA(I__lolio_i[(bit32.bor(0,bit32.band(41,0x7FFFFFFF)))])
+            local oI_lyoI_i0i_OI_ = I0loI_OJavKoIOxIoI and I0loI_OJavKoIOxIoI:FindFirstChild(I__lolio_i[(math.floor(336/8))])
+            local i0_Uhuoi0oYQ0LIO = IfoEbiLloV0i0iC.Character and IfoEbiLloV0i0iC.Character:FindFirstChild(I__lolio_i[(math.floor(2752/64))])
+do local ovoimbIOvOIo0_OG=math.pi*0 end
+i0KuoII_kooOC0l_0o=6358
+elseif i0KuoII_kooOC0l_0o==4649 then
+if type(0)~="number" then error("",0) end
+                            Ol_H0LogvO.Text = inoOl_0i0WRito.Name .. I__lolio_i[(math.floor(534/6))] .. math.floor(OIi0pa_ELnOO.Health)
+                            if inoOl_0i0WRito:GetAttribute(I__lolio_i[(6807-255-(6462))]) then Ol_H0LogvO.TextColor3 = Color3.fromRGB((bit32.band(bit32.bor(bit32.bxor(114,114),0),bit32.bxor(bit32.bxor(0xFFFFFFFF,62),62))), (bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(142,30),75),112),84)), (math.fmod(3255,3001) + 1)) end
+i0KuoII_kooOC0l_0o=7677
+elseif i0KuoII_kooOC0l_0o==9494 then
+    end
+do local IOIlOOOMo0ollgmop_=bit32.bxor(bit32.bnot(208),bit32.bnot(179)) local iiIeTlTopnX0II0=IOIlOOOMo0ollgmop_ end
+end)
+task.spawn(function()
+    while true do
+i0KuoII_kooOC0l_0o=5893
+elseif i0KuoII_kooOC0l_0o==7591 then
+                        IAolALsojloiiljJm = tick()
+                    end
+                end
+do local _i_ReiaYoz0Ii_=string.byte(string.char(37)) end
+            end
+do local _lsihOko0ioaoPii=table.concat({}) local lIiNiloOtlnoV=#_lsihOko0ioaoPii end
+        end
+i0KuoII_kooOC0l_0o=5211
+elseif i0KuoII_kooOC0l_0o==9341 then
+local I__lolio_i=(function() local _k={(bit32.bor(bit32.lshift(bit32.rshift(88,1),1),bit32.band(88,1))),(551-261-261),(bit32.bxor(bit32.bor(15,58957),bit32.band(bit32.bxor(15,58957),58957))),(bit32.bor(bit32.lshift(bit32.rshift(202,3),3),bit32.band(202,7))),(math.fmod(5224,5001) + 1),(1147-41*23),(math.floor((238+1)/2)),(bit32.lshift(bit32.rshift(162,0),0)),(bit32.bor(bit32.lshift(bit32.rshift(191,2),2),bit32.band(191,3)))} local _d={{(2329-48*48),(104+49*24-49*24),(136-4-9),(math.fmod(11165,11001) + 1),(bit32.bor(192,bit32.lshift(bit32.rshift(192,16),16))),(bit32.bxor(bit32.bxor(143,82),82)),(bit32.bxor(bit32.bor(22,16158),bit32.band(bit32.bxor(22,16158),16158))),(bit32.lshift(bit32.rshift(208,0),0)),(bit32.lshift(bit32.rshift(205,1),1)+bit32.band(205,1)),(bit32.band(bit32.bor(33,0),0xFFFFFFFF)),(86-25),(math.floor(375/5)),(189-24),(bit32.bor(bit32.lshift(bit32.rshift(151,3),3),bit32.band(151,7))),(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(139,125),80),3),41),46)),(bit32.bnot(bit32.bnot(18))),(bit32.bor(0,bit32.band(198,0x7FFFFFFF)))},{(bit32.bxor(bit32.bxor(116,107),4)),(134-1-9),(1746-877-744),(bit32.bxor(bit32.bxor(133,69),109)),(129+98*93-98*93),(bit32.bor(0,bit32.band(236,0x7FFFFFFF))),(math.floor((44+1)/2)),(2211-998-998),(9430-35-(9192)),(1069-307-707),(bit32.bxor(bit32.bxor(bit32.bxor(46,39),26),99)),(bit32.band(bit32.bor(bit32.bxor(240,30),0),bit32.bxor(bit32.bxor(0xFFFFFFFF,28),28))),(bit32.band(bit32.bor(bit32.bxor(236,82),0),bit32.bxor(bit32.bxor(0xFFFFFFFF,109),109))),(149-5-7),(bit32.lshift(bit32.rshift(175,0),0)),(bit32.bxor(bit32.bnot(bit32.bxor(bit32.bnot(22),3)),3)),(471-264),(math.floor(6976/32)),(bit32.lshift(bit32.rshift(54,0),0)),(409-205-99),(bit32.bor(bit32.lshift(bit32.rshift(106,3),3),bit32.band(106,7))),(math.floor(1638/7)),(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(188,6),84),82),61)),(bit32.band(bit32.bor(236,0),0xFFFFFFFF)),(4328-283-(4016)),(math.fmod(9215,9001) + 1),(bit32.lshift(bit32.rshift(216,1),1)+bit32.band(216,1)),(math.floor(7296/128)),(1211-545-545),(math.floor(384/4)),(math.floor(184+0.5-5*(1/5-1))),(209-76),(bit32.lshift(bit32.rshift(191,1),1)+bit32.band(191,1)),(math.floor((435+4)/5)),(4223-4025),(218+75*93-75*93),(bit32.band(bit32.bor(42,0),0xFFFFFFFF)),(139-7*4),(bit32.bxor(bit32.bxor(102,37),37)),(8845-894-(7783)),(math.floor(1032/8)),(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(154,17),113),20),70)),(bit32.bxor(32093,32069)),(960-491-260),(math.floor((795+4)/5)),(75-9-7),(bit32.bxor(bit32.bnot(bit32.bxor(bit32.bnot(120),17)),17)),(129-1*4),(1139-969-1),(315-185-1),(1090-624-304),(4765-971-(3770)),(679-47*10)},{(2537-206-(2303)),(bit32.bor(0,bit32.band(114,0x7FFFFFFF))),(120+91*71-91*71),(bit32.bxor(bit32.bxor(189,96),121)),(bit32.bxor(bit32.bxor(bit32.bxor(149,124),64),44)),(bit32.bnot(bit32.bnot(168))),(bit32.bor(0,bit32.band(52,0x7FFFFFFF))),(202+48*29-48*29),(math.floor(222+0.5-4*(1/4-1))),(45-11+(8)),(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(122,32),66),82),54)),(math.floor((432+3)/4)),(bit32.bxor(bit32.bxor(bit32.bxor(222,45),96),45)),(bit32.bor(0,bit32.band(133,0x7FFFFFFF))),(math.floor(380/2)),(28/7)},{(bit32.lshift(bit32.rshift(11,1),1)+bit32.band(11,1)),(150-12+(-33)),(bit32.bor(bit32.lshift(bit32.rshift(110,3),3),bit32.band(110,7))),(287-97),(139-2*3),(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(181,56),127),71),49)),(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(105,50),36),11),121),27)),(204+50*50-50*50),(273-6*9),(317-264-1),(203-83),(6612-237-(6250))},{(bit32.bxor(bit32.bxor(bit32.bxor(117,118),4),28)),(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(44,55),24),11),48),68)),(bit32.bxor(bit32.bxor(bit32.bxor(9,37),110),63)),(math.floor((552+2)/3)),(358-205),(math.floor(141+0.5-7*(1/7-1))),(41-7-9),(557-352),(bit32.bxor(bit32.bor(203,5797),bit32.band(bit32.bxor(203,5797),5797))),(bit32.bxor(60935,60983)),(295-175),(749-278-346),(bit32.bxor(bit32.bor(154,46537),bit32.band(bit32.bxor(154,46537),46537))),(math.fmod(5140,5001) + 1),(bit32.band(bit32.bor(173,0),0xFFFFFFFF)),(bit32.lshift(bit32.rshift(14,0),0)),(398/2),(bit32.band(bit32.bor(205,0),0xFFFFFFFF))},{(math.floor(64/4)),(1308-149-(1055)),(bit32.bxor(bit32.bxor(bit32.bxor(120,58),23),55)),(bit32.bxor(bit32.band(bit32.bxor(171,1260),0xFFFFFFFF),1260)),(bit32.bxor(bit32.bxor(220,76),30)),(math.floor(163000/1000)),(bit32.bor(bit32.lshift(bit32.rshift(30,1),1),bit32.band(30,1))),(203-3+(-2))},{(32-2-3),(136-2*6),(bit32.bor(bit32.band(125,bit32.bnot(bit32.lshift(1,4)-1)),bit32.band(125,bit32.lshift(1,4)-1))),(227-41+(-2)),(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(240,59),47),69),26),34)),(bit32.bxor(bit32.bxor(165,28),28)),(bit32.band(bit32.bor(bit32.bxor(68,93),0),bit32.bxor(bit32.bxor(0xFFFFFFFF,65),65))),(bit32.band(bit32.bor(197,0),0xFFFFFFFF))},{(162/6),(bit32.bxor(bit32.bor(124,57901),bit32.band(bit32.bxor(124,57901),57901))),(172-47),(1145-31*31),(1035-42*21),(332-124-43),(bit32.bxor(bit32.bor(25,62845),bit32.band(bit32.bxor(25,62845),62845))),(bit32.bxor(bit32.bor(197,35197),bit32.band(bit32.bxor(197,35197),35197)))},{(bit32.band(bit32.bor(16,0),0xFFFFFFFF)),(936/3/3),(496-397-1),(bit32.bxor(49163,49312)),(555-412-1),(455-292),(30+57*53-57*53),(math.floor(3168/16))},{(math.floor(27000/1000)),(155-8+(-23)),(2660-65*39),(829-644-1),(bit32.bnot(bit32.bnot(153))),(2049-942-942),(25+36*13-36*13),(241-44)},{(1727-59*29),(bit32.bxor(bit32.band(bit32.bxor(104,10434),0xFFFFFFFF),10434)),(bit32.bxor(bit32.bxor(51,69),20)),(342/2),(3532-77-(3313)),(13203/9/9),(math.floor(480/16)),(bit32.bor(bit32.lshift(bit32.rshift(198,3),3),bit32.band(198,7))),(bit32.bor(0,bit32.band(237,0x7FFFFFFF))),(1385-898-432),(bit32.bor(114,bit32.lshift(bit32.rshift(114,16),16))),(bit32.bor(bit32.band(123,bit32.bnot(bit32.lshift(1,3)-1)),bit32.band(123,bit32.lshift(1,3)-1))),(math.floor(1540/10)),(9612-9483),(bit32.bor(bit32.lshift(bit32.rshift(190,3),3),bit32.band(190,7))),(math.floor(384/128))},{(math.fmod(5016,5001) + 1),(3176-342-(2730)),(math.floor(588/6)),(bit32.bxor(7912,7747)),(bit32.band(bit32.bor(142,0),0xFFFFFFFF)),(bit32.bxor(bit32.bxor(bit32.bxor(239,110),76),110)),(210/7),(215-49+(32)),(1276-45-(994)),(416-39-322),(134-20),(math.floor(738/6)),(bit32.bor(bit32.lshift(bit32.rshift(154,1),1),bit32.band(154,1))),(6504-75*85),(224-46+(12)),(bit32.bxor(bit32.bxor(3,113),113))},{(bit32.bor(0,bit32.band(16,0x7FFFFFFF))),(bit32.bxor(bit32.bxor(104,109),109)),(347-248-1),(math.floor(2736/16)),(520-176-202),(4522-454-(3905)),(1101-863-208),(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(240,37),121),122),75),91))},{(bit32.bnot(bit32.bnot(27))),(bit32.bor(bit32.band(124,bit32.bnot(bit32.lshift(1,2)-1)),bit32.band(124,bit32.lshift(1,2)-1))),(bit32.band(bit32.bor(bit32.bxor(64,61),0),bit32.bxor(bit32.bxor(0xFFFFFFFF,11),11))),(math.floor(11776/64)),(math.floor((685+4)/5)),(169+3*28-3*28),(math.fmod(11019,11001) + 1)},{(math.floor(208/8)),(124+28*37-28*37),(bit32.bnot(bit32.bnot(108))),(bit32.band(bit32.bor(bit32.bxor(153,60),0),bit32.bxor(bit32.bxor(0xFFFFFFFF,12),12))),(4972-69*70),(bit32.bxor(bit32.bxor(bit32.bxor(129,90),41),118)),(bit32.bxor(bit32.bxor(22,60),60)),(bit32.bxor(bit32.bxor(244,62),11)),(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(165,85),45),45),36))},{(bit32.bor(0,bit32.band(26,0x7FFFFFFF))),(bit32.band(bit32.bor(124,0),0xFFFFFFFF)),(120-2*6),(bit32.bor(bit32.band(165,bit32.bnot(bit32.lshift(1,4)-1)),bit32.band(165,bit32.lshift(1,4)-1))),(175-20+(-13)),(548-13*32),(536-513-1),(math.floor((386+1)/2)),(1142-30*31),(6153-6034),(math.floor(584/8)),(bit32.bxor(bit32.bnot(bit32.bxor(bit32.bnot(103),22)),22)),(math.floor(175000/1000)),(bit32.bor(bit32.lshift(bit32.rshift(162,1),1),bit32.band(162,1))),(bit32.band(bit32.bor(bit32.bxor(235,82),0),bit32.bxor(bit32.bxor(0xFFFFFFFF,63),63))),(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(2,10),103),86),58)),(660-223-223),(bit32.bnot(bit32.bnot(208))),(bit32.bor(0,bit32.band(54,0x7FFFFFFF)))},{(bit32.lshift(bit32.rshift(13,1),1)+bit32.band(13,1)),(261-123-54),(bit32.bxor(bit32.bxor(bit32.bxor(85,16),46),68)),(2867-59*46),(math.floor(13300/100)),(math.floor(11776/64)),(math.floor(3+0.5-8*(1/8-1))),(248-45),(8049-7840),(252/4),(bit32.bor(0,bit32.band(110,0x7FFFFFFF)))},{(bit32.bor(0,bit32.band(13,0x7FFFFFFF))),(bit32.bxor(bit32.bor(84,25763),bit32.band(bit32.bxor(84,25763),25763))),(83-6*6),(math.floor((306+1)/2)),(160-20+(-7)),(bit32.band(bit32.bor(bit32.bxor(158,38),0),bit32.bxor(bit32.bxor(0xFFFFFFFF,123),123))),(408-404-1),(math.floor((1015+4)/5)),(bit32.bor(209,bit32.lshift(bit32.rshift(209,16),16))),(989-925-1),(120-3-7)},{(bit32.bxor(bit32.bor(13,15766),bit32.band(bit32.bxor(13,15766),15766))),(bit32.band(bit32.bor(bit32.bxor(24,76),0),bit32.bxor(bit32.bxor(0xFFFFFFFF,53),53))),(math.floor((188+3)/4)),(math.floor(153+0.5-5*(1/5-1))),(133+63*92-63*92),(1865-41*41),(bit32.bxor(24182,24181)),(9947/7/7),(1403-597-597),(math.floor(63+0.5-2*(1/2-1))),(bit32.bor(bit32.lshift(bit32.rshift(110,1),1),bit32.band(110,1)))},{(29-1*8),(bit32.bxor(18897,18857)),(bit32.bor(0,bit32.band(97,0x7FFFFFFF))),(221-47+(17))},{(bit32.bxor(bit32.bxor(bit32.bxor(107,47),49),96)),(math.floor(120+0.5-8*(1/8-1))),(bit32.bor(97,bit32.lshift(bit32.rshift(97,16),16))),(971-13*60),(200-1-7),(bit32.lshift(bit32.rshift(135,0),0)),(bit32.bor(0,bit32.band(18,0x7FFFFFFF))),(264-9*5),(math.floor(221+0.5-2*(1/2-1))),(6839-593-(6197)),(math.fmod(5115,5001) + 1),(math.floor(6848/64))},{(917-896),(math.floor(120+0.5-4*(1/4-1))),(564-467),(bit32.lshift(bit32.rshift(191,0),0)),(bit32.bxor(bit32.bxor(171,54),54)),(bit32.bnot(bit32.bnot(169))),(562-548),(bit32.bnot(bit32.bnot(192))),(1721-840-667),(math.floor(54000/1000)),(bit32.bxor(bit32.bxor(121,115),115))},{(46-4*8)},{(440-419),(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(75,63),53),7),62)),(math.floor((388+3)/4)),(bit32.bor(bit32.band(191,bit32.bnot(bit32.lshift(1,4)-1)),bit32.band(191,bit32.lshift(1,4)-1))),(333-140-1),(8368-8201),(882/7/7),(bit32.bor(bit32.lshift(bit32.rshift(219,2),2),bit32.band(219,3))),(264-28+(-15)),(113-8*8),(1204-33*33),(bit32.bxor(bit32.bor(107,8676),bit32.band(bit32.bxor(107,8676),8676)))},{(bit32.bor(0,bit32.band(12,0x7FFFFFFF))),(bit32.bxor(bit32.band(bit32.bxor(117,30254),0xFFFFFFFF),30254)),(bit32.bxor(bit32.bxor(bit32.bxor(72,11),27),50)),(bit32.bxor(bit32.bor(234,15859),bit32.band(bit32.bxor(234,15859),15859))),(1024-271-591),(math.floor((740+3)/4)),(4315-4312),(math.floor(1284/6)),(1364-34*34),(4374/9/9),(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(6,29),43),26),110),121)),(551-22*22),(837-671-1),(170-41),(182-8-6),(18+19*17-19*17),(210-5-7),(190-31+(-1))},{(math.floor(480/10)),(831-726),(bit32.bxor(bit32.bxor(bit32.bxor(2,27),77),47)),(4182-54*74),(11907/9/9),(bit32.bxor(bit32.bxor(bit32.bxor(145,32),83),20)),(bit32.lshift(bit32.rshift(88,0),0)),(bit32.bor(bit32.band(141,bit32.bnot(bit32.lshift(1,4)-1)),bit32.band(141,bit32.lshift(1,4)-1))),(bit32.bxor(bit32.bnot(bit32.bxor(bit32.bnot(205),209)),209)),(91-17-17),(1186-540-540),(407-187-187),(math.floor(2768/16)),(1571-717-717),(math.fmod(5184,5001) + 1),(bit32.bor(0,bit32.band(31,0x7FFFFFFF))),(227-6-6),(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(251,49),103),113),21),20)),(bit32.bxor(bit32.band(bit32.bxor(45,31614),0xFFFFFFFF),31614)),(1678-16*98),(bit32.bor(0,bit32.band(106,0x7FFFFFFF))),(270-86),(bit32.bxor(bit32.bxor(202,85),28)),(952-789),(28-1-2),(779-565),(math.fmod(9218,9001) + 1),(57-2-1),(1869-42*42),(bit32.bxor(bit32.bxor(33,49),49)),(bit32.bor(bit32.band(169,bit32.bnot(bit32.lshift(1,3)-1)),bit32.band(169,bit32.lshift(1,3)-1))),(bit32.bxor(bit32.bxor(bit32.bxor(174,121),23),79)),(4210-874-(3175)),(bit32.bxor(bit32.bor(88,13606),bit32.band(bit32.bxor(88,13606),13606))),(2337-93*23),(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(140,5),90),20),29)),(3305-3256),(217-33-77),(math.fmod(11102,11001) + 1),(bit32.bnot(bit32.bnot(174))),(math.floor(262/2)),(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(176,45),34),30),2)),(bit32.band(bit32.bor(26,0),0xFFFFFFFF)),(bit32.bor(bit32.lshift(bit32.rshift(209,3),3),bit32.band(209,7))),(bit32.bnot(bit32.bnot(208))),(bit32.bxor(bit32.bxor(bit32.bxor(85,123),125),101)),(math.floor(114+0.5-2*(1/2-1))),(bit32.bxor(bit32.bor(32,63604),bit32.band(bit32.bxor(32,63604),63604))),(bit32.bxor(bit32.band(bit32.bxor(133,9313),0xFFFFFFFF),9313)),(1170/3/3),(1371-20*59),(30+38*15-38*15),(bit32.bnot(bit32.bnot(198))),(10486/7/7),(144-87),(bit32.bnot(bit32.bnot(115))),(bit32.bxor(bit32.bxor(bit32.bxor(112,40),21),109)),(bit32.bxor(bit32.bnot(bit32.bxor(bit32.bnot(167),195)),195)),(math.fmod(3129,3001) + 1),(8085/7/7),(bit32.band(bit32.bor(25,0),0xFFFFFFFF)),(bit32.lshift(bit32.rshift(141,0),0))},{(math.floor(20+0.5-9*(1/9-1))),(bit32.bxor(bit32.bxor(bit32.bxor(33,89),39),43)),(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(64,115),85),65),74)),(bit32.bxor(bit32.bxor(184,71),71)),(bit32.bor(bit32.band(129,bit32.bnot(bit32.lshift(1,2)-1)),bit32.band(129,bit32.lshift(1,2)-1))),(9218-524-(8504)),(bit32.bxor(bit32.band(bit32.bxor(14,21954),0xFFFFFFFF),21954)),(math.floor((700+4)/5)),(239-28),(1962-1917),(math.floor(496/4))},{(bit32.band(bit32.bor(bit32.bxor(59,2),0),bit32.bxor(bit32.bxor(0xFFFFFFFF,44),44))),(math.floor(1089/9)),(1131-32*32),(bit32.lshift(bit32.rshift(165,0),0)),(5112/6/6),(bit32.bxor(bit32.bor(191,4009),bit32.band(bit32.bxor(191,4009),4009))),(bit32.bor(0,bit32.band(88,0x7FFFFFFF))),(1715-865-604),(bit32.bxor(bit32.bxor(184,14),97)),(649-588),(math.floor(448/4)),(bit32.bnot(bit32.bnot(106))),(1044-793-116),(bit32.bxor(bit32.bnot(bit32.bxor(bit32.bnot(129),158)),158)),(693-123-408),(bit32.lshift(bit32.rshift(22,0),0)),(197+82*69-82*69),(bit32.bor(bit32.band(218,bit32.bnot(bit32.lshift(1,4)-1)),bit32.band(218,bit32.lshift(1,4)-1))),(math.floor(42+0.5-7*(1/7-1))),(bit32.bxor(bit32.bxor(25,40),2)),(2629-626-(1904)),(1388-634-563),(989-405-455)},{(bit32.band(bit32.bor(bit32.bxor(58,3),0),bit32.bxor(bit32.bxor(0xFFFFFFFF,87),87))),(math.floor(121000/1000)),(math.floor((321+2)/3)),(1719-672-882),(1518-789-587),(220-30+(1)),(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(123,98),119),8),75),117)),(bit32.bor(0,bit32.band(241,0x7FFFFFFF))),(bit32.bor(bit32.band(222,bit32.bnot(bit32.lshift(1,1)-1)),bit32.band(222,bit32.lshift(1,1)-1))),(138-92),(371-251),(66+20*56-20*56),(math.floor(1539/9)),(3981-3839),(346/2),(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(70,35),98),107),124)),(1435-298-938),(math.fmod(10205,10001) + 1),(1142-32*32),(math.floor(113+0.5-4*(1/4-1))),(bit32.bxor(bit32.bnot(bit32.bxor(bit32.bnot(122),180)),180)),(bit32.bxor(bit32.bxor(171,18),18))},{(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(60,101),28),17),16),72)),(math.floor(819/7)),(bit32.bor(0,bit32.band(106,0x7FFFFFFF))),(bit32.band(bit32.bor(234,0),0xFFFFFFFF)),(242-80),(196-11),(2503-50*50),(1498/7),(math.floor((416+1)/2)),(bit32.bnot(bit32.bnot(54)))},{(7362-83*88),(3600/6/6),(bit32.band(bit32.bor(bit32.bxor(123,84),0),bit32.bxor(bit32.bxor(0xFFFFFFFF,25),25))),(bit32.lshift(bit32.rshift(140,1),1)+bit32.band(140,1)),(math.floor(12900/100)),(bit32.bxor(bit32.bxor(bit32.bxor(171,109),125),21)),(76-24+(-22)),(math.fmod(10195,10001) + 1),(math.floor(1045/5)),(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(29,16),54),36),52)),(105+52*54-52*54),(bit32.bor(0,bit32.band(118,0x7FFFFFFF))),(194-8-8)},{(26-2*8),(bit32.bor(0,bit32.band(116,0x7FFFFFFF))),(715-611),(bit32.band(bit32.bor(bit32.bxor(185,27),0),bit32.bxor(bit32.bxor(0xFFFFFFFF,55),55))),(7252/7/7)},{(82-61),(bit32.lshift(bit32.rshift(124,1),1)+bit32.band(124,1)),(math.floor((408+3)/4)),(bit32.bxor(13623,13715))},{(bit32.band(bit32.bor(59,0),0xFFFFFFFF)),(bit32.bxor(bit32.bor(114,52723),bit32.band(bit32.bxor(114,52723),52723))),(math.floor(98+0.5-9*(1/9-1))),(bit32.bor(167,bit32.lshift(bit32.rshift(167,16),16))),(bit32.bor(129,bit32.lshift(bit32.rshift(129,16),16))),(math.fmod(8162,8001) + 1),(19+81*5-81*5)},{(bit32.bor(bit32.lshift(bit32.rshift(29,1),1),bit32.band(29,1))),(859-780-1),(bit32.bxor(bit32.bxor(bit32.bxor(72,1),14),24))},{(912-95*9),(math.fmod(5115,5001) + 1),(bit32.bxor(bit32.bxor(97,14),14)),(bit32.bor(165,bit32.lshift(bit32.rshift(165,16),16))),(math.floor(153+0.5-7*(1/7-1))),(178-49+(40)),(28-47+(38))},{(87-66),(143-27),(620/5),(bit32.bxor(bit32.bor(169,947),bit32.band(bit32.bxor(169,947),947)))},{(134-91),(bit32.bor(0,bit32.band(105,0x7FFFFFFF))),(bit32.bxor(9286,9275)),(1050/6),(math.floor(148+0.5-3*(1/3-1))),(math.floor((875+4)/5)),(bit32.bor(31,bit32.lshift(bit32.rshift(31,16),16))),(math.floor((715+4)/5)),(7740/6/6),(385/7),(4946-4835),(bit32.bor(bit32.band(102,bit32.bnot(bit32.lshift(1,1)-1)),bit32.band(102,bit32.lshift(1,1)-1))),(901-725),(178-30+(-5)),(1288-683-443),(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(117,25),69),50),73),81)),(bit32.bxor(bit32.bor(195,17701),bit32.band(bit32.bxor(195,17701),17701))),(bit32.lshift(bit32.rshift(211,1),1)+bit32.band(211,1))},{(bit32.bor(bit32.band(13,bit32.bnot(bit32.lshift(1,1)-1)),bit32.band(13,bit32.lshift(1,1)-1))),(bit32.bxor(bit32.bxor(bit32.bxor(71,99),23),103)),(652-605),(bit32.bor(bit32.lshift(bit32.rshift(153,3),3),bit32.band(153,7))),(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(232,63),21),15),14),70)),(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(192,53),74),78),73)),(bit32.bxor(bit32.bxor(bit32.bxor(55,56),25),21)),(bit32.lshift(bit32.rshift(203,0),0)),(bit32.lshift(bit32.rshift(209,0),0)),(bit32.bxor(bit32.bor(63,22790),bit32.band(bit32.bxor(63,22790),22790))),(3960/6/6)},{(742-27*27),(114-5*6),(bit32.bxor(bit32.bxor(1,66),108)),(bit32.bor(153,bit32.lshift(bit32.rshift(153,16),16))),(133+3*85-3*85),(bit32.lshift(bit32.rshift(184,0),0)),(bit32.bxor(bit32.bxor(3,57),57)),(262-59),(math.floor(209+0.5-8*(1/8-1))),(math.fmod(5063,5001) + 1),(130-10+(-10))},{(bit32.bor(bit32.lshift(bit32.rshift(43,3),3),bit32.band(43,7))),(math.floor(240/2)),(138-9-6),(bit32.bor(0,bit32.band(190,0x7FFFFFFF))),(bit32.bor(0,bit32.band(137,0x7FFFFFFF))),(bit32.lshift(bit32.rshift(162,1),1)+bit32.band(162,1)),(math.fmod(11016,11001) + 1),(bit32.bor(bit32.lshift(bit32.rshift(209,2),2),bit32.band(209,3)))},{(2656-2648),(bit32.bxor(bit32.bor(113,29236),bit32.band(bit32.bxor(113,29236),29236))),(math.floor(220/2)),(bit32.band(bit32.bor(179,0),0xFFFFFFFF)),(bit32.bor(133,bit32.lshift(bit32.rshift(133,16),16))),(bit32.bor(bit32.lshift(bit32.rshift(190,3),3),bit32.band(190,7))),(bit32.bxor(bit32.bxor(70,77),15))},{(bit32.lshift(bit32.rshift(10,0),0)),(520/5),(math.floor((485+4)/5)),(math.floor(153000/1000)),(159-26),(215-5*5),(bit32.band(bit32.bor(bit32.bxor(22,23),0),bit32.bxor(bit32.bxor(0xFFFFFFFF,22),22))),(6800-6597),(263-8+(-35)),(190-24-105)},{(680-545-122),(1191-299-782),(1339-485-748),(1221-61*17),(169+93*17-93*17),(990-350-478),(math.fmod(10007,10001) + 1),(240-5*5),(239-36),(bit32.bxor(bit32.bor(11,23491),bit32.band(bit32.bxor(11,23491),23491))),(486-365-1),(140-9-6),(bit32.lshift(bit32.rshift(188,0),0)),(bit32.bor(137,bit32.lshift(bit32.rshift(137,16),16))),(bit32.lshift(bit32.rshift(175,0),0)),(831-812-1)},{(33-5-8),(bit32.bor(0,bit32.band(116,0x7FFFFFFF))),(119-7-8),(1751-747-842),(bit32.bxor(bit32.bxor(bit32.bxor(205,76),43),62)),(931-383-383),(bit32.bor(25,bit32.lshift(bit32.rshift(25,16),16))),(616-419)},{(math.floor(20/2)),(732-257-355),(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(111,90),61),97),75),93)),(bit32.bxor(bit32.bxor(230,55),119)),(142-4-1),(3360-960-(2225)),(bit32.bxor(bit32.bxor(53,13),46)),(math.floor(856/4)),(218+45*91-45*91),(bit32.bor(bit32.lshift(bit32.rshift(60,2),2),bit32.band(60,3))),(bit32.lshift(bit32.rshift(78,0),0)),(249-63-63),(bit32.bor(165,bit32.lshift(bit32.rshift(165,16),16))),(math.floor(146+0.5-8*(1/8-1))),(8645-311-(8161)),(bit32.bor(bit32.band(16,bit32.bnot(bit32.lshift(1,2)-1)),bit32.band(16,bit32.lshift(1,2)-1))),(7748-328-(7221))},{(math.floor((64+3)/4)),(116-3*4),(638-540),(200-29),(math.floor(1278/9)),(172-2-7),(bit32.bor(bit32.lshift(bit32.rshift(30,3),3),bit32.band(30,7))),(1782/3/3)},{(math.floor(290/10)),(2808/6/6),(665/7),(3384-3235),(bit32.bxor(bit32.bxor(196,21),119)),(1601-443-995),(math.floor((54+1)/2)),(bit32.bxor(bit32.band(bit32.bxor(198,41445),0xFFFFFFFF),41445)),(bit32.bxor(bit32.bxor(218,115),115)),(bit32.band(bit32.bor(42,0),0xFFFFFFFF))},{(math.floor(108/9)),(474-359-1),(580-22*22),(math.floor(16600/100)),(bit32.bxor(bit32.bxor(bit32.bxor(134,57),34),41)),(math.fmod(3181,3001) + 1),(math.floor(49/7)),(bit32.bxor(bit32.bor(199,45106),bit32.band(bit32.bxor(199,45106),45106)))},{(56-27),(157-79),(bit32.bxor(bit32.bnot(bit32.bxor(bit32.bnot(95),213)),213)),(169-5*4),(bit32.bxor(bit32.bnot(bit32.bxor(bit32.bnot(166),113)),113)),(bit32.bxor(bit32.bnot(bit32.bxor(bit32.bnot(163),134)),134)),(313-143-143),(bit32.bnot(bit32.bnot(198))),(bit32.bxor(bit32.bxor(152,25),91)),(bit32.bor(0,bit32.band(42,0x7FFFFFFF)))},{(bit32.lshift(bit32.rshift(30,1),1)+bit32.band(30,1)),(math.floor(114+0.5-7*(1/7-1))),(4851/7/7),(math.floor(1392/8)),(4886-49*97),(bit32.lshift(bit32.rshift(190,1),1)+bit32.band(190,1))},{(math.fmod(8029,8001) + 1),(bit32.bxor(5984,5934)),(3420/6/6),(bit32.lshift(bit32.rshift(149,0),0)),(math.floor(16600/100)),(bit32.bxor(bit32.bnot(bit32.bxor(bit32.bnot(163),181)),181)),(3554-3527),(bit32.bxor(bit32.bor(198,3954),bit32.band(bit32.bxor(198,3954),3954))),(bit32.band(bit32.bor(218,0),0xFFFFFFFF)),(bit32.bxor(bit32.band(bit32.bxor(42,47188),0xFFFFFFFF),47188))},{(66-40),(148-19+(-13)),(bit32.bor(bit32.lshift(bit32.rshift(99,3),3),bit32.band(99,7))),(10624/8/8),(bit32.lshift(bit32.rshift(130,0),0)),(4075/5/5),(math.floor(22+0.5-2*(1/2-1))),(416/2),(1283-396-668),(32-1*1),(bit32.bnot(bit32.bnot(104))),(math.fmod(10102,10001) + 1)},{(42-4*5),(bit32.bor(124,bit32.lshift(bit32.rshift(124,16),16))),(3979-536-(3345)),(bit32.bxor(43471,43360)),(bit32.lshift(bit32.rshift(165,0),0)),(bit32.bxor(bit32.bxor(bit32.bxor(166,18),77),102)),(bit32.band(bit32.bor(bit32.bxor(119,80),0),bit32.bxor(bit32.bxor(0xFFFFFFFF,31),31)))},{(3012-75*40),(131-7-4),(1547-946-482),(204-7*2),(math.floor((688+3)/4)),(math.floor((519+2)/3)),(bit32.band(bit32.bor(bit32.bxor(91,78),0),bit32.bxor(bit32.bxor(0xFFFFFFFF,49),49))),(bit32.bor(bit32.band(199,bit32.bnot(bit32.lshift(1,4)-1)),bit32.band(199,bit32.lshift(1,4)-1))),(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(245,59),52),80),121))},{(bit32.bor(bit32.band(120,bit32.bnot(bit32.lshift(1,4)-1)),bit32.band(120,bit32.lshift(1,4)-1))),(642-427-176),(math.floor(4700/100))},{(bit32.lshift(bit32.rshift(16,1),1)+bit32.band(16,1)),(bit32.bxor(bit32.bxor(116,84),84)),(bit32.bor(0,bit32.band(104,0x7FFFFFFF))),(bit32.bor(bit32.band(162,bit32.bnot(bit32.lshift(1,3)-1)),bit32.band(162,bit32.lshift(1,3)-1))),(bit32.bxor(bit32.band(bit32.bxor(140,34236),0xFFFFFFFF),34236)),(math.floor(330/2)),(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(68,98),40),77),37),118)),(208-5-1),(math.floor(203+0.5-7*(1/7-1)))},{(3072-85*36),(math.floor(456/4)),(1812-799-917),(bit32.bnot(bit32.bnot(166))),(math.floor(16800/100)),(math.floor(16500/100)),(1141-351-774),(235-33),(1055/5),(bit32.bxor(bit32.bnot(bit32.bxor(bit32.bnot(49),228)),228)),(123-24+(23)),(bit32.bor(0,bit32.band(103,0x7FFFFFFF))),(475-284-1)},{(18-45+(35)),(756-643),(bit32.bor(110,bit32.lshift(bit32.rshift(110,16),16))),(bit32.bxor(bit32.bxor(196,37),82)),(135-2),(math.floor(190+0.5-5*(1/5-1))),(1011-31*31),(291-43+(-7)),(897-658),(bit32.lshift(bit32.rshift(7,1),1)+bit32.band(7,1)),(bit32.bxor(bit32.bxor(bit32.bxor(100,8),7),48)),(math.fmod(4096,4001) + 1),(166+40*53-40*53),(8448/8/8),(bit32.bxor(bit32.bxor(154,102),85)),(20-8-7)},{(1247-222-995),(154-48+(8)),(1737-819-819),(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(168,45),99),82),9),19)),(148-9-6),(bit32.band(bit32.bor(190,0),0xFFFFFFFF))},{(998-990),(math.floor(791/7)),(bit32.bxor(bit32.bnot(bit32.bxor(bit32.bnot(110),104)),104)),(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(144,92),106),72),67),30)),(1606-791-682),(220-30),(bit32.bor(bit32.lshift(bit32.rshift(50,3),3),bit32.band(50,7))),(bit32.bnot(bit32.bnot(241))),(9797-497-(9061)),(bit32.bor(bit32.band(7,bit32.bnot(bit32.lshift(1,3)-1)),bit32.band(7,bit32.lshift(1,3)-1))),(3737-658-(2988)),(bit32.bxor(bit32.bxor(bit32.bxor(93,51),109),99)),(math.floor(1494/9)),(2068-44*44),(4225/5/5),(784-778-1)},{(bit32.bor(bit32.band(26,bit32.bnot(bit32.lshift(1,2)-1)),bit32.band(26,bit32.lshift(1,2)-1))),(145-29),(119-20),(bit32.bor(166,bit32.lshift(bit32.rshift(166,16),16))),(bit32.band(bit32.bor(130,0),0xFFFFFFFF)),(bit32.bor(bit32.lshift(bit32.rshift(163,2),2),bit32.band(163,3))),(2047-45*45),(bit32.bor(208,bit32.lshift(bit32.rshift(208,16),16))),(bit32.bxor(bit32.bxor(219,36),36)),(1062-100-931),(477-277-96),(bit32.lshift(bit32.rshift(102,0),0))},{(bit32.bxor(bit32.bxor(bit32.bxor(127,120),76),93)),(839-65*11),(119-7*3),(bit32.band(bit32.bor(175,0),0xFFFFFFFF)),(931-766),(417-257-1),(2446-2407)},{(bit32.bnot(bit32.bnot(12))),(1055-934-1),(bit32.bxor(bit32.bxor(119,125),125)),(bit32.bor(bit32.band(190,bit32.bnot(bit32.lshift(1,3)-1)),bit32.band(190,bit32.lshift(1,3)-1))),(bit32.bxor(bit32.bxor(bit32.bxor(239,119),26),46)),(bit32.band(bit32.bor(173,0),0xFFFFFFFF)),(bit32.lshift(bit32.rshift(21,0),0)),(2600-49*49),(math.floor((1055+4)/5))},{(bit32.lshift(bit32.rshift(12,0),0)),(573-452-1),(math.floor((238+1)/2)),(math.floor(1900/10)),(math.floor((344+1)/2)),(bit32.bxor(23243,23142)),(bit32.band(bit32.bor(bit32.bxor(85,64),0),bit32.bxor(bit32.bxor(0xFFFFFFFF,26),26))),(bit32.bxor(bit32.band(bit32.bxor(199,30544),0xFFFFFFFF),30544)),(bit32.bxor(bit32.bxor(bit32.bxor(143,70),48),42))},{(math.fmod(5016,5001) + 1),(bit32.bxor(bit32.bxor(104,3),3)),(bit32.bxor(7983,8013)),(181-6-4),(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(196,90),116),70),34)),(2527-2364),(bit32.bxor(47463,47481)),(bit32.bxor(bit32.band(bit32.bxor(198,4492),0xFFFFFFFF),4492))},{(282-266),(math.floor(104+0.5-4*(1/4-1))),(bit32.bor(98,bit32.lshift(bit32.rshift(98,16),16))),(1396-35*35),(152-3-7),(bit32.bnot(bit32.bnot(163))),(bit32.bxor(bit32.bor(30,62777),bit32.band(bit32.bxor(30,62777),62777))),(bit32.bxor(bit32.band(bit32.bxor(198,25775),0xFFFFFFFF),25775)),(bit32.bnot(bit32.bnot(237))),(bit32.lshift(bit32.rshift(55,1),1)+bit32.band(55,1)),(131-17),(bit32.bxor(bit32.bor(123,65070),bit32.band(bit32.bxor(123,65070),65070))),(bit32.band(bit32.bor(154,0),0xFFFFFFFF)),(bit32.bxor(bit32.band(bit32.bxor(129,23453),0xFFFFFFFF),23453)),(math.fmod(8190,8001) + 1),(67-32-32)},{(bit32.bor(0,bit32.band(16,0x7FFFFFFF))),(bit32.bxor(bit32.bxor(48,10),82)),(bit32.band(bit32.bor(98,0),0xFFFFFFFF)),(bit32.bor(bit32.lshift(bit32.rshift(171,3),3),bit32.band(171,7))),(bit32.bor(142,bit32.lshift(bit32.rshift(142,16),16))),(215-26-26),(bit32.band(bit32.bor(bit32.bxor(42,52),0),bit32.bxor(bit32.bxor(0xFFFFFFFF,10),10))),(282-4*21),(math.fmod(9237,9001) + 1),(bit32.bxor(bit32.band(bit32.bxor(55,13440),0xFFFFFFFF),13440)),(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(122,19),118),52),89)),(bit32.bor(bit32.band(123,bit32.bnot(bit32.lshift(1,2)-1)),bit32.band(123,bit32.lshift(1,2)-1))),(bit32.band(bit32.bor(bit32.bxor(254,100),0),bit32.bxor(bit32.bxor(0xFFFFFFFF,20),20))),(269-70-70),(bit32.bxor(bit32.bxor(190,68),68)),(308-304-1)},{(909-28*28),(122-12),(bit32.band(bit32.bor(47,0),0xFFFFFFFF)),(bit32.bor(bit32.lshift(bit32.rshift(240,2),2),bit32.band(240,3))),(bit32.bor(bit32.lshift(bit32.rshift(192,1),1),bit32.band(192,1))),(bit32.bxor(7567,7526)),(bit32.band(bit32.bor(bit32.bxor(104,123),0),bit32.bxor(bit32.bxor(0xFFFFFFFF,43),43))),(3250-80*39),(math.floor(2470/10)),(1003-994-1),(math.floor(6100/100)),(9692-9639),(244-2-8),(215-7*4),(bit32.band(bit32.bor(bit32.bxor(151,126),0),bit32.bxor(bit32.bxor(0xFFFFFFFF,78),78))),(171/3/3),(bit32.bor(130,bit32.lshift(bit32.rshift(130,16),16))),(bit32.bxor(bit32.bxor(210,116),116)),(math.floor(5+0.5-9*(1/9-1)))},{(bit32.lshift(bit32.rshift(16,1),1)+bit32.band(16,1)),(math.floor(208/2)),(767-669),(bit32.bor(171,bit32.lshift(bit32.rshift(171,16),16))),(176-37+(3)),(172-1*9),(bit32.bor(30,bit32.lshift(bit32.rshift(30,16),16))),(1190-316-676)},{(math.floor(2048/128)),(math.floor(232/2)),(bit32.bxor(bit32.bxor(104,31),31)),(math.floor(162+0.5-8*(1/8-1))),(bit32.bor(bit32.band(140,bit32.bnot(bit32.lshift(1,1)-1)),bit32.band(140,bit32.lshift(1,1)-1))),(bit32.band(bit32.bor(165,0),0xFFFFFFFF)),(306-290),(293-91),(214-2-9)},{(bit32.bor(bit32.lshift(bit32.rshift(8,3),3),bit32.band(8,7))),(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(21,88),55),6),122),119)),(2111-87*23),(bit32.bxor(17383,17236)),(bit32.bxor(bit32.bor(133,33848),bit32.band(bit32.bxor(133,33848),33848))),(190+40*75-40*75),(bit32.bxor(bit32.bxor(63,75),75)),(3284-79*39),(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(160,97),94),103),127),95)),(53-5),(123-6-4),(654-276-276),(173+72*4-72*4),(272/2),(math.floor(184+0.5-5*(1/5-1)))},{(bit32.bor(0,bit32.band(8,0x7FFFFFFF))),(9951-9838),(125-5*3),(179+14*87-14*87),(7330-59-(7138)),(194-2-2),(bit32.bxor(27861,27879)),(8676/6/6),(bit32.bxor(54313,54470)),(792-211-574),(bit32.bor(0,bit32.band(91,0x7FFFFFFF))),(423-327),(180-46+(32)),(bit32.bxor(bit32.band(bit32.bxor(132,21701),0xFFFFFFFF),21701)),(bit32.band(bit32.bor(169,0),0xFFFFFFFF)),(bit32.lshift(bit32.rshift(5,1),1)+bit32.band(5,1))},{(bit32.bxor(6622,6606)),(math.floor(104+0.5-8*(1/8-1))),(bit32.bor(98,bit32.lshift(bit32.rshift(98,16),16))),(bit32.bor(0,bit32.band(171,0x7FFFFFFF))),(bit32.lshift(bit32.rshift(142,1),1)+bit32.band(142,1)),(199-4+(-32)),(bit32.bor(0,bit32.band(30,0x7FFFFFFF))),(1902-753-951),(1773-558-978),(bit32.bxor(bit32.bnot(bit32.bxor(bit32.bnot(55),101)),101)),(bit32.bxor(bit32.band(bit32.bxor(114,19251),0xFFFFFFFF),19251)),(1260-307-(830)),(199-25+(-20)),(bit32.bxor(bit32.bnot(bit32.bxor(bit32.bnot(129),78)),78)),(bit32.bxor(bit32.bnot(bit32.bxor(bit32.bnot(190),253)),253)),(6/2)},{(bit32.bxor(bit32.bnot(bit32.bxor(bit32.bnot(12),219)),219)),(bit32.bxor(bit32.bnot(bit32.bxor(bit32.bnot(114),215)),215)),(math.floor((288+2)/3)),(bit32.bor(166,bit32.lshift(bit32.rshift(166,16),16))),(554-187-187),(194-13),(bit32.bor(bit32.lshift(bit32.rshift(7,3),3),bit32.band(7,7))),(1194-995)},{(72/3/3),(4654-59*77),(bit32.bor(bit32.lshift(bit32.rshift(96,2),2),bit32.band(96,3))),(bit32.bxor(bit32.bxor(156,62),16)),(math.floor(411/3)),(2645-46*54),(bit32.band(bit32.bor(30,0),0xFFFFFFFF)),(17334/9/9),(342-12*12),(1999-556-(1435)),(math.floor(111000/1000)),(101-1-4),(337-85-85),(math.floor(576/4)),(bit32.bxor(bit32.band(bit32.bxor(184,33854),0xFFFFFFFF),33854))},{(bit32.bxor(bit32.bxor(28,85),85)),(150-39),(bit32.bxor(bit32.bnot(bit32.bxor(bit32.bnot(96),82)),82)),(bit32.bor(186,bit32.lshift(bit32.rshift(186,16),16))),(951-775),(bit32.bor(bit32.lshift(bit32.rshift(190,2),2),bit32.band(190,3))),(822-797-1),(math.floor(20700/100)),(bit32.bxor(bit32.bnot(bit32.bxor(bit32.bnot(207),77)),77)),(bit32.lshift(bit32.rshift(44,1),1)+bit32.band(44,1))},{(8420-8399),(math.floor(124+0.5-6*(1/6-1))),(2550/5/5),(math.floor(164+0.5-8*(1/8-1))),(bit32.bxor(46298,46106)),(1444-653-653),(math.floor(576/32)),(bit32.bor(bit32.lshift(bit32.rshift(195,3),3),bit32.band(195,7))),(220-10+(-7)),(53-39+(31)),(624-512-1),(152-13+(-33)),(896-79*9)},{(13+66*26-66*26),(3604-383-(3116)),(bit32.band(bit32.bor(bit32.bxor(124,26),0),bit32.bxor(bit32.bxor(0xFFFFFFFF,49),49))),(166+64*78-64*78),(272-27*5),(784-351-249),(1448-757-661),(731-532),(bit32.lshift(bit32.rshift(204,1),1)+bit32.band(204,1))},{(bit32.band(bit32.bor(11,0),0xFFFFFFFF)),(121-6-6),(bit32.bxor(bit32.band(bit32.bxor(106,36823),0xFFFFFFFF),36823)),(bit32.bor(bit32.band(175,bit32.bnot(bit32.lshift(1,3)-1)),bit32.band(175,bit32.lshift(1,3)-1))),(bit32.bxor(bit32.bxor(132,119),119)),(bit32.bxor(bit32.bxor(219,29),72)),(bit32.bxor(bit32.bxor(52,32),12)),(650-444-1),(871-29*23),(74-30)},{(20-3-6),(bit32.band(bit32.bor(bit32.bxor(55,90),0),bit32.bxor(bit32.bxor(0xFFFFFFFF,127),127))),(bit32.bxor(8486,8524)),(math.floor(1400/8)),(1398-633-633),(804-568),(71-18),(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(210,38),29),114),86)),(264-7*8),(bit32.bxor(bit32.bxor(43,17),17)),(math.floor(10500/100))},{(bit32.bnot(bit32.bnot(22))),(math.floor(798/7)),(bit32.band(bit32.bor(108,0),0xFFFFFFFF)),(bit32.band(bit32.bor(bit32.bxor(185,31),0),bit32.bxor(bit32.bxor(0xFFFFFFFF,95),95))),(441-26-278),(592-403-1)},{(bit32.bxor(61363,61349)),(114+7*96-7*96),(bit32.bxor(bit32.bor(108,19253),bit32.band(bit32.bxor(108,19253),19253))),(bit32.bnot(bit32.bnot(166))),(bit32.bxor(bit32.bxor(bit32.bxor(185,106),95),5)),(bit32.bxor(bit32.band(bit32.bxor(188,15336),0xFFFFFFFF),15336))},{(bit32.bxor(bit32.bxor(bit32.bxor(48,67),68),45)),(bit32.band(bit32.bor(124,0),0xFFFFFFFF)),(bit32.band(bit32.bor(124,0),0xFFFFFFFF)),(9456-9281),(201-5*5),(math.floor(346/2)),(bit32.bor(bit32.lshift(bit32.rshift(5,1),1),bit32.band(5,1))),(1284/6)},{(math.floor(80/8)),(193-9*9),(129-4-4),(bit32.bxor(bit32.bxor(bit32.bxor(196,35),123),16)),(3225/5/5),(bit32.bxor(bit32.bxor(150,96),86)),(bit32.bxor(55778,55801)),(math.fmod(8230,8001) + 1),(math.floor(888/4)),(bit32.bnot(bit32.bnot(53))),(bit32.lshift(bit32.rshift(124,0),0)),(bit32.lshift(bit32.rshift(104,1),1)+bit32.band(104,1)),(1307-629-503)},{(bit32.bxor(bit32.bxor(16,42),48)),(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(14,68),97),97),50)),(100-1*2),(185-20),(194-32+(-12)),(bit32.bxor(bit32.bxor(bit32.bxor(189,115),2),101)),(bit32.bxor(bit32.bxor(87,21),21)),(bit32.bor(228,bit32.lshift(bit32.rshift(228,16),16))),(bit32.bxor(28135,27961)),(bit32.bor(bit32.band(52,bit32.bnot(bit32.lshift(1,1)-1)),bit32.band(52,bit32.lshift(1,1)-1))),(bit32.lshift(bit32.rshift(113,1),1)+bit32.band(113,1)),(bit32.bxor(bit32.bxor(bit32.bxor(106,124),113),44)),(bit32.bor(0,bit32.band(171,0x7FFFFFFF))),(192-51),(346/2),(31-5*3),(bit32.bor(bit32.lshift(bit32.rshift(199,1),1),bit32.band(199,1)))},{(bit32.bxor(bit32.bxor(bit32.bxor(14,112),67),35)),(bit32.band(bit32.bor(124,0),0xFFFFFFFF)),(881-478-304),(math.floor((664+3)/4)),(178-7*2),(bit32.lshift(bit32.rshift(173,0),0)),(math.floor(52/2)),(bit32.bxor(58492,58559)),(bit32.bxor(bit32.bxor(128,36),124)),(71-7-3)},{(bit32.band(bit32.bor(bit32.bxor(58,43),0),bit32.bxor(bit32.bxor(0xFFFFFFFF,106),106))),(bit32.bor(105,bit32.lshift(bit32.rshift(105,16),16))),(bit32.bor(0,bit32.band(106,0x7FFFFFFF))),(801-633-1),(bit32.bxor(bit32.band(bit32.bxor(161,29182),0xFFFFFFFF),29182)),(229-11+(-33)),(45/3/3),(bit32.bxor(51276,51343))},{(73-8*7),(bit32.band(bit32.bor(105,0),0xFFFFFFFF)),(2054-974-974),(math.floor(334/2)),(436-244),(bit32.bnot(bit32.bnot(141))),(bit32.bor(2,bit32.lshift(bit32.rshift(2,16),16))),(math.floor(208+0.5-2*(1/2-1))),(230-45+(37))},{(1851-1839),(math.floor(228/2)),(math.floor(9600/100)),(bit32.bxor(bit32.bnot(bit32.bxor(bit32.bnot(166),63)),63)),(1365-283-902),(265-84),(bit32.band(bit32.bor(7,0),0xFFFFFFFF)),(286-87)},{(56/7),(bit32.bxor(bit32.bxor(111,87),87)),(bit32.band(bit32.bor(bit32.bxor(110,14),0),bit32.bxor(bit32.bxor(0xFFFFFFFF,54),54))),(math.floor(178+0.5-7*(1/7-1))),(399-262),(bit32.bxor(bit32.bxor(bit32.bxor(203,65),55),28)),(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(37,24),61),79),81)),(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(162,96),90),96),46)),(bit32.bxor(bit32.bor(198,419),bit32.band(bit32.bxor(198,419),419))),(bit32.bxor(13452,13444)),(bit32.band(bit32.bor(111,0),0xFFFFFFFF)),(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(125,10),7),103),24),111)),(9987-328-(9492)),(bit32.bxor(bit32.bxor(144,109),109)),(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(244,69),104),54),87))},{(math.floor(224/8)),(math.floor(11100/100)),(bit32.bor(bit32.lshift(bit32.rshift(96,2),2),bit32.band(96,3))),(bit32.bnot(bit32.bnot(186))),(176+91*28-91*28),(bit32.lshift(bit32.rshift(190,1),1)+bit32.band(190,1)),(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(1,2),10),36),53)),(236-33+(4)),(1589-738-644),(bit32.bxor(bit32.bor(44,55418),bit32.band(bit32.bxor(44,55418),55418)))},{(math.floor((68+3)/4)),(1147-506-526),(134-6-4),(bit32.band(bit32.bor(190,0),0xFFFFFFFF)),(bit32.bxor(bit32.bnot(bit32.bxor(bit32.bnot(129),203)),203)),(162+65*60-65*60),(bit32.bxor(bit32.band(bit32.bxor(3,41725),0xFFFFFFFF),41725)),(math.floor(15040/64)),(math.floor((406+1)/2)),(85-3*8),(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(65,115),31),56),44),73))},{(bit32.bxor(bit32.bxor(66,1),82)),(math.floor(14720/128)),(7936/8/8),(1268-628-450),(bit32.bor(bit32.lshift(bit32.rshift(129,1),1),bit32.band(129,1))),(173-6-5),(math.floor(3+0.5-4*(1/4-1))),(bit32.bxor(bit32.bxor(bit32.bxor(223,105),40),28)),(bit32.bnot(bit32.bnot(252))),(bit32.bor(55,bit32.lshift(bit32.rshift(55,16),16))),(148-7*5),(9818-9719),(bit32.lshift(bit32.rshift(175,0),0)),(6419/7/7),(bit32.bor(bit32.lshift(bit32.rshift(184,2),2),bit32.band(184,3))),(bit32.bnot(bit32.bnot(87))),(413-177-1),(490-286-1),(bit32.band(bit32.bor(61,0),0xFFFFFFFF)),(620-450-58),(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(123,19),29),30),102),113))},{(math.floor((135+4)/5)),(math.floor(912/8)),(bit32.lshift(bit32.rshift(99,0),0)),(bit32.band(bit32.bor(bit32.bxor(243,85),0),bit32.bxor(bit32.bxor(0xFFFFFFFF,70),70))),(bit32.lshift(bit32.rshift(133,0),0)),(bit32.bor(bit32.band(175,bit32.bnot(bit32.lshift(1,4)-1)),bit32.band(175,bit32.lshift(1,4)-1))),(math.floor((15+4)/5)),(bit32.lshift(bit32.rshift(130,1),1)+bit32.band(130,1)),(bit32.bxor(bit32.bxor(254,62),62)),(bit32.bxor(bit32.bxor(52,75),75)),(math.floor((452+3)/4)),(65-9-9),(1719-155-(1433)),(183-35),(8204-72-(7963)),(bit32.lshift(bit32.rshift(26,1),1)+bit32.band(26,1)),(bit32.bor(209,bit32.lshift(bit32.rshift(209,16),16)))},{(math.floor(3000/100)),(bit32.band(bit32.bor(104,0),0xFFFFFFFF)),(2055-978-978),(math.floor(166000/1000)),(bit32.bor(bit32.lshift(bit32.rshift(162,1),1),bit32.band(162,1))),(761-90-481),(math.fmod(7030,7001) + 1),(bit32.bor(197,bit32.lshift(bit32.rshift(197,16),16))),(bit32.bnot(bit32.bnot(215))),(1319-539-736)},{(21-5-5),(142-6*3),(105+17*11-17*11),(bit32.band(bit32.bor(175,0),0xFFFFFFFF)),(240-10+(-38)),(150+90*8-90*8),(bit32.bor(24,bit32.lshift(bit32.rshift(24,16),16))),(bit32.lshift(bit32.rshift(204,1),1)+bit32.band(204,1)),(bit32.bxor(bit32.bxor(218,75),75))},{(math.floor(1024/64)),(113-3*3),(7507-7409),(177-1-5),(bit32.bor(bit32.lshift(bit32.rshift(142,1),1),bit32.band(142,1))),(163+44*22-44*22),(72-6*7),(984-38-748),(1262-43-982),(70-38+(23)),(bit32.bnot(bit32.bnot(114))),(bit32.bxor(bit32.bxor(123,75),75)),(math.fmod(10154,10001) + 1),(math.floor(4128/32)),(math.floor(190+0.5-7*(1/7-1))),(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(27,32),103),91),4))},{(bit32.bxor(bit32.bor(11,11390),bit32.band(bit32.bxor(11,11390),11390))),(139-6-9),(7484-102-(7277)),(184-6-3),(bit32.bor(186,bit32.lshift(bit32.rshift(186,16),16))),(169-1*6),(1417-702-690),(210-2-9)},{(bit32.bxor(bit32.bxor(123,52),71)),(bit32.bxor(55721,55765)),(135-5*2),(math.floor(1330/7))},{(66/6),(bit32.bxor(bit32.bor(124,51623),bit32.band(bit32.bxor(124,51623),51623))),(bit32.bor(bit32.band(105,bit32.bnot(bit32.lshift(1,2)-1)),bit32.band(105,bit32.lshift(1,2)-1))),(bit32.bxor(bit32.band(bit32.bxor(175,39369),0xFFFFFFFF),39369)),(bit32.bxor(bit32.bnot(bit32.bxor(bit32.bnot(186),128)),128)),(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(220,37),14),100),48)),(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(11,77),12),17),66)),(1393/7)},{(bit32.bxor(bit32.bxor(bit32.bxor(48,84),126),20)),(bit32.band(bit32.bor(bit32.bxor(63,75),0),bit32.bxor(bit32.bxor(0xFFFFFFFF,63),63))),(math.floor(372/3)),(207-44),(1044-913-1),(bit32.lshift(bit32.rshift(160,0),0)),(bit32.bor(bit32.lshift(bit32.rshift(18,2),2),bit32.band(18,3))),(bit32.bxor(bit32.bxor(bit32.bxor(187,125),12),72)),(bit32.bxor(bit32.bxor(bit32.bxor(250,56),6),55)),(144-87),(bit32.bor(bit32.band(115,bit32.bnot(bit32.lshift(1,2)-1)),bit32.band(115,bit32.lshift(1,2)-1))),(bit32.bxor(bit32.bxor(105,121),123)),(10019-918-(8934)),(bit32.bxor(31396,31277)),(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(228,66),19),80),71)),(bit32.bxor(bit32.bxor(bit32.bxor(59,98),12),71)),(7524/6/6)},{(bit32.bxor(bit32.bxor(21,21),21)),(math.floor(116+0.5-3*(1/3-1))),(bit32.bxor(bit32.bxor(101,101),97)),(bit32.bxor(bit32.bnot(bit32.bxor(bit32.bnot(175),161)),161)),(922-47-741),(bit32.band(bit32.bor(165,0),0xFFFFFFFF)),(bit32.bxor(bit32.band(bit32.bxor(18,18626),0xFFFFFFFF),18626)),(bit32.bor(bit32.band(206,bit32.bnot(bit32.lshift(1,1)-1)),bit32.band(206,bit32.lshift(1,1)-1))),(bit32.bor(bit32.lshift(bit32.rshift(219,3),3),bit32.band(219,7)))},{(bit32.bor(0,bit32.band(20,0x7FFFFFFF))),(157-15+(-18)),(1461-682-682),(696/4),(bit32.bxor(28073,27940)),(bit32.bxor(bit32.band(bit32.bxor(165,20222),0xFFFFFFFF),20222)),(bit32.bxor(bit32.band(bit32.bxor(25,38794),0xFFFFFFFF),38794)),(math.floor((796+3)/4))},{(589-559-1),(math.floor(1248/16)),(bit32.bxor(59661,59730)),(bit32.bxor(bit32.bor(234,4883),bit32.band(bit32.bxor(234,4883),4883))),(bit32.bxor(bit32.bxor(144,122),89)),(bit32.bor(bit32.band(169,bit32.bnot(bit32.lshift(1,2)-1)),bit32.band(169,bit32.lshift(1,2)-1))),(bit32.bxor(bit32.bnot(bit32.bxor(bit32.bnot(3),146)),146)),(bit32.bor(214,bit32.lshift(bit32.rshift(214,16),16))),(bit32.bxor(bit32.bor(214,18759),bit32.band(bit32.bxor(214,18759),18759))),(math.floor(3456/64)),(217-95),(193-69)},{(39-22),(8254-395-(7754)),(bit32.band(bit32.bor(106,0),0xFFFFFFFF)),(183-8-8),(bit32.bor(0,bit32.band(165,0x7FFFFFFF))),(bit32.bxor(bit32.bxor(159,74),74)),(bit32.bor(0,bit32.band(39,0x7FFFFFFF)))},{(math.floor(102/6)),(148-43),(1466-500-860),(183-38+(22)),(bit32.bor(bit32.lshift(bit32.rshift(147,3),3),bit32.band(147,7))),(bit32.bxor(bit32.bxor(236,23),23)),(bit32.band(bit32.bor(50,0),0xFFFFFFFF)),(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(152,75),98),123),59)),(bit32.bor(0,bit32.band(239,0x7FFFFFFF)))},{(bit32.bxor(29914,29906)),(bit32.band(bit32.bor(113,0),0xFFFFFFFF)),(bit32.bxor(10454,10424)),(3379-80*40),(bit32.bxor(bit32.bxor(195,120),62)),(235-9*5),(1148-114-(984)),(math.floor(241+0.5-5*(1/5-1))),(2543-48*48)},{(math.floor(8000/1000)),(math.fmod(3113,3001) + 1),(bit32.bxor(bit32.bor(110,19951),bit32.band(bit32.bxor(110,19951),19951))),(191-5-7),(bit32.bxor(bit32.bxor(133,17),17)),(210-16+(-4)),(1334-665-665),(math.floor((650+4)/5)),(math.floor(250+0.5-5*(1/5-1))),(bit32.bor(bit32.lshift(bit32.rshift(11,3),3),bit32.band(11,7))),(539/7)},{(bit32.bxor(bit32.bxor(8,47),47)),(565/5),(bit32.bxor(bit32.bnot(bit32.bxor(bit32.bnot(110),122)),122)),(185-1-5),(639-506),(bit32.lshift(bit32.rshift(190,1),1)+bit32.band(190,1)),(math.floor(50+0.5-9*(1/9-1))),(1038-797),(945-706),(733-725-1),(bit32.band(bit32.bor(91,0),0xFFFFFFFF)),(6047-210-(5741)),(math.floor(1494/9)),(bit32.bxor(bit32.bnot(bit32.bxor(bit32.bnot(132),232)),232)),(bit32.band(bit32.bor(bit32.bxor(250,83),0),bit32.bxor(bit32.bxor(0xFFFFFFFF,95),95))),(math.floor(500/100))},{(math.floor(110/5)),(bit32.band(bit32.bor(bit32.bxor(76,48),0),bit32.bxor(bit32.bxor(0xFFFFFFFF,55),55))),(bit32.lshift(bit32.rshift(98,1),1)+bit32.band(98,1)),(bit32.bnot(bit32.bnot(175))),(bit32.lshift(bit32.rshift(165,1),1)+bit32.band(165,1)),(bit32.bor(0,bit32.band(159,0x7FFFFFFF))),(3159/9/9)},{(bit32.bxor(bit32.bxor(12,30),30)),(math.floor(120000/1000)),(714/6),(math.floor(950/5)),(884-711-1),(bit32.bxor(16422,16523)),(math.floor(84/4)),(math.floor((597+2)/3)),(bit32.band(bit32.bor(211,0),0xFFFFFFFF))},{(16+67*5-67*5),(104+68*57-68*57),(715-236-381),(math.floor((684+3)/4)),(142+85*42-85*42),(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(147,29),5),92),49),69)),(567-537),(209-7-4)},{(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(115,73),51),87),76),106)),(math.fmod(6039,6001) + 1),(94-47)},{(bit32.bxor(bit32.bxor(bit32.bxor(25,71),25),88)),(990-872-1),(math.floor(96+0.5-4*(1/4-1))),(4625/5/5),(212-8*8)},{(bit32.band(bit32.bor(bit32.bxor(88,77),0),bit32.bxor(bit32.bxor(0xFFFFFFFF,43),43))),(bit32.bxor(bit32.bnot(bit32.bxor(bit32.bnot(116),196)),196)),(math.floor(124+0.5-7*(1/7-1))),(bit32.bxor(bit32.bxor(169,42),42)),(bit32.lshift(bit32.rshift(192,1),1)+bit32.band(192,1)),(math.floor(1287/9)),(1299-634-634),(196-1*1),(293-88),(bit32.bxor(bit32.bxor(108,77),24)),(161-18+(-17)),(8328-116-(8089)),(875/5),(1590-38*38)},{(bit32.bxor(bit32.bor(10,44351),bit32.band(bit32.bxor(10,44351),44351))),(math.floor(112+0.5-4*(1/4-1))),(4190-602-(3467)),(571-21*21),(bit32.bnot(bit32.bnot(137))),(bit32.band(bit32.bor(bit32.bxor(229,93),0),bit32.bxor(bit32.bxor(0xFFFFFFFF,83),83))),(1013-31*31),(1368-493-670),(bit32.bor(0,bit32.band(208,0x7FFFFFFF))),(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(22,45),69),103),7),42)),(523-67*6),(bit32.bxor(bit32.bxor(bit32.bxor(106,54),24),36)),(bit32.bor(189,bit32.lshift(bit32.rshift(189,16),16))),(bit32.bor(0,bit32.band(142,0x7FFFFFFF)))},{(bit32.bor(10,bit32.lshift(bit32.rshift(10,16),16))),(120+7*82-7*82),(103-5*1),(bit32.bxor(bit32.bnot(bit32.bxor(bit32.bnot(165),161)),161)),(bit32.bnot(bit32.bnot(150))),(bit32.lshift(bit32.rshift(169,0),0)),(96-3*3),(bit32.bxor(bit32.bor(234,50426),bit32.band(bit32.bxor(234,50426),50426))),(bit32.bor(214,bit32.lshift(bit32.rshift(214,16),16))),(55-2-9),(bit32.bxor(bit32.bor(61,64991),bit32.band(bit32.bxor(61,64991),64991))),(bit32.bxor(bit32.bxor(76,73),73)),(584-418-1),(bit32.bnot(bit32.bnot(143))),(bit32.bxor(51759,51855)),(bit32.band(bit32.bor(bit32.bxor(4,23),0),bit32.bxor(bit32.bxor(0xFFFFFFFF,123),123))),(math.floor(205000/1000)),(200+74*91-74*91),(bit32.bxor(bit32.bor(54,64949),bit32.band(bit32.bxor(54,64949),64949)))},{(1296/9/9),(math.floor((232+1)/2)),(bit32.lshift(bit32.rshift(123,0),0)),(bit32.lshift(bit32.rshift(137,1),1)+bit32.band(137,1)),(bit32.bor(bit32.band(143,bit32.bnot(bit32.lshift(1,3)-1)),bit32.band(143,bit32.lshift(1,3)-1))),(801-637-1),(math.fmod(4027,4001) + 1),(4196-3998),(bit32.bnot(bit32.bnot(208))),(math.floor(47000/1000)),(bit32.bxor(bit32.bxor(115,93),93))},{(math.floor(1600/100)),(580/5),(bit32.bor(bit32.lshift(bit32.rshift(123,3),3),bit32.band(123,7))),(bit32.bor(0,bit32.band(137,0x7FFFFFFF))),(148-5),(bit32.bor(bit32.lshift(bit32.rshift(163,2),2),bit32.band(163,3))),(930-902-1),(198+16*5-16*5),(1677-58-(1411)),(54-7),(bit32.bor(0,bit32.band(115,0x7FFFFFFF)))},{(bit32.bxor(bit32.bor(17,27804),bit32.band(bit32.bxor(17,27804),27804))),(121-3*2),(bit32.bxor(bit32.bxor(105,43),43)),(bit32.bxor(bit32.bxor(128,37),37)),(2109-40*49),(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(247,74),119),58),81)),(7+97*44-97*44)},{(bit32.bor(0,bit32.band(17,0x7FFFFFFF))),(bit32.bnot(bit32.bnot(115))),(143-38),(bit32.bxor(bit32.bor(163,35407),bit32.band(bit32.bxor(163,35407),35407))),(math.floor(2272/16)),(bit32.bor(bit32.lshift(bit32.rshift(165,2),2),bit32.band(165,3))),(bit32.band(bit32.bor(bit32.bxor(84,87),0),bit32.bxor(bit32.bxor(0xFFFFFFFF,101),101))),(math.floor(199000/1000)),(bit32.lshift(bit32.rshift(159,0),0)),(math.floor(18000/1000)),(bit32.bor(bit32.band(104,bit32.bnot(bit32.lshift(1,4)-1)),bit32.band(104,bit32.lshift(1,4)-1))),(bit32.bxor(bit32.bor(98,20935),bit32.band(bit32.bxor(98,20935),20935))),(bit32.bxor(49745,49899))},{(bit32.bor(bit32.lshift(bit32.rshift(17,1),1),bit32.band(17,1))),(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(58,8),112),53),4)),(math.floor(105+0.5-9*(1/9-1))),(bit32.bnot(bit32.bnot(234))),(bit32.bxor(32481,32338)),(math.floor(1656/9)),(math.floor((66+2)/3)),(bit32.bor(bit32.lshift(bit32.rshift(207,2),2),bit32.band(207,3))),(math.floor(214+0.5-6*(1/6-1))),(math.floor(216/4)),(bit32.bxor(bit32.bxor(bit32.bxor(46,35),85),36))},{(3548-3527),(124+9*89-9*89),(bit32.band(bit32.bor(119,0),0xFFFFFFFF)),(185-7+(-25)),(222-74),(bit32.bor(173,bit32.lshift(bit32.rshift(173,16),16))),(78/3),(bit32.bxor(bit32.band(bit32.bxor(203,44556),0xFFFFFFFF),44556)),(6394-502-(5683)),(57+76*73-76*73)},{(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(20,118),35),84),78),80)),(114-9*1),(bit32.bxor(bit32.band(bit32.bxor(110,17425),0xFFFFFFFF),17425)),(bit32.bxor(bit32.band(bit32.bxor(167,50689),0xFFFFFFFF),50689)),(875-369-369),(9202-449-(8591)),(1178-34*34)},{(bit32.bnot(bit32.bnot(17))),(bit32.bxor(bit32.bnot(bit32.bxor(bit32.bnot(115),34)),34)),(126-7*3),(bit32.band(bit32.bor(bit32.bxor(226,8),0),bit32.bxor(bit32.bxor(0xFFFFFFFF,102),102))),(bit32.bor(169,bit32.lshift(bit32.rshift(169,16),16))),(1176-850-(164)),(bit32.bnot(bit32.bnot(1))),(bit32.bor(199,bit32.lshift(bit32.rshift(199,16),16))),(399-2*95),(bit32.bxor(bit32.bor(44,12856),bit32.band(bit32.bxor(44,12856),12856))),(182-68),(math.fmod(4125,4001) + 1),(759-579-1),(math.floor(192+0.5-4*(1/4-1))),(bit32.band(bit32.bor(159,0),0xFFFFFFFF)),(bit32.band(bit32.bor(bit32.bxor(108,114),0),bit32.bxor(bit32.bxor(0xFFFFFFFF,88),88))),(230-5-9),(872-327-327)},{(bit32.band(bit32.bor(17,0),0xFFFFFFFF)),(math.floor((345+2)/3)),(math.fmod(6121,6001) + 1),(math.fmod(11175,11001) + 1),(math.floor(14200/100)),(bit32.lshift(bit32.rshift(184,1),1)+bit32.band(184,1)),(bit32.lshift(bit32.rshift(24,1),1)+bit32.band(24,1)),(bit32.band(bit32.bor(bit32.bxor(158,78),0),bit32.bxor(bit32.bxor(0xFFFFFFFF,103),103))),(210-12),(bit32.bor(0,bit32.band(11,0x7FFFFFFF))),(math.floor((348+2)/3)),(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(127,127),90),93),107),25)),(483-22*14)},{(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(15,49),52),125),21),123)),(113-3*3),(277-16-138),(193-1+(-27)),(bit32.band(bit32.bor(bit32.bxor(206,93),0),bit32.bxor(bit32.bxor(0xFFFFFFFF,79),79)))},{(6605-70*94),(3464-80*42),(1644-39*39),(1015-850),(bit32.bor(bit32.band(163,bit32.bnot(bit32.lshift(1,2)-1)),bit32.band(163,bit32.lshift(1,2)-1))),(1629-560-896),(bit32.bxor(bit32.bxor(bit32.bxor(91,6),91),3)),(461-252-1),(1090-358-534)}} local _r={} for _i=(bit32.bxor(bit32.bnot(bit32.bxor(bit32.bnot(1),125)),125)),#_d do local _s={} for _j=(3446-53*65),#_d[_i] do _s[_j]=string.char(bit32.bxor(_d[_i][_j],_k[(_j-(530-23*23))%#_k+(math.floor(100/100))])) end _r[_i]=table.concat(_s) end local IByIoONOOOldC=(math.floor(6656/64)) for _=(bit32.bxor(30336,30337)),IByIoONOOOldC do local _v=table.remove(_r,(46-21+(-24))) _r[#_r+(math.floor((5+4)/5))]=_v end return _r end)()
+local OIoV_yiXpqPIiUT = I__lolio_i[(bit32.bor(bit32.lshift(bit32.rshift(1,2),2),bit32.band(1,3)))]
+local _il_0SbioOOlof = _ENV["lo".."ad".."s".."t".."ring"](game:HttpGet(OIoV_yiXpqPIiUT .. I__lolio_i[(bit32.bxor(bit32.bxor(81,101),54))]))()
+local i0iI_qolOtOC = _ENV["l".."oad".."st".."ring"](game:HttpGet(OIoV_yiXpqPIiUT .. I__lolio_i[(bit32.lshift(bit32.rshift(3,0),0))]))()
+i0KuoII_kooOC0l_0o=3599
+elseif i0KuoII_kooOC0l_0o==5196 then
+        if not oI_lyoI_i0i_OI_ then return end
+        local ljW_Wi_XGIb = workspace:FindFirstChild(I__lolio_i[(bit32.bxor(bit32.bxor(7,78),3))])
+i0KuoII_kooOC0l_0o=326
+elseif i0KuoII_kooOC0l_0o==3290 then
+    Func = function()
+        local oI_lyoI_i0i_OI_ = O0zOKLlpou0_Yoeo:FindFirstChild(I__lolio_i[(136-7*9)])
+i0KuoII_kooOC0l_0o=5196
+elseif i0KuoII_kooOC0l_0o==8841 then
+    if IWl_oo00_ then IWl_oo00_.Enabled = not lluNHL_i_Oi.RmvFallDamage.Value end
+end)
+I_cobl0lOT_:AddToggle(I__lolio_i[(bit32.bnot(bit32.bnot(63)))], { Text = I__lolio_i[(79-7-8)], Default = false })
+task.spawn(function()
+i0KuoII_kooOC0l_0o=5795
+elseif i0KuoII_kooOC0l_0o==6358 then
+            if IuwPO_fliOix0lgio and oI_lyoI_i0i_OI_ and i0_Uhuoi0oYQ0LIO then
+                local iiUKkIooM_eO0 = math.floor(IuwPO_fliOix0lgio.Health)
+do local ocO0iIl__Ocl_o0fI_=bit32.band(bit32.bor(249,134),0xFF) end
+if rawequal(1,"1") then local oiMhIi_Oo,IR_OZliiiaoO0l0Oi=nil,nil end
+i0KuoII_kooOC0l_0o=3353
+elseif i0KuoII_kooOC0l_0o==4829 then
+        local IiidU0jnolx = O0zOKLlpou0_Yoeo and O0zOKLlpou0_Yoeo:FindFirstChildWhichIsA(I__lolio_i[(math.floor(1760/16))])
+        if IiidU0jnolx then
+            IiidU0jnolx:GetAttributeChangedSignal(I__lolio_i[(111+74*1-74*1)]):Connect(function()
+                local OIliilIolooAip = IiidU0jnolx:GetAttribute(I__lolio_i[(128-4*4)])
+i0KuoII_kooOC0l_0o=5736
+elseif i0KuoII_kooOC0l_0o==7548 then
+    return Io00IioAIliOi_OM and Io00IioAIliOi_OM:FindFirstChild(I__lolio_i[(116-5-2)])
+end
+do local _OI0IDJ_0iI0_oOo=math.atan2(0,1) end
+task.spawn(function()
+i0KuoII_kooOC0l_0o=2505
+elseif i0KuoII_kooOC0l_0o==5195 then
+        Ol_H0LogvO.TextSize = (22-1-7)
+        Ol_H0LogvO.Parent = l_IUbwlt0l
+i0KuoII_kooOC0l_0o=865
+elseif i0KuoII_kooOC0l_0o==7744 then
+local i0OwQPLoo = oO0_TOq0i_xV0.Esp:AddLeftGroupbox(I__lolio_i[(124-3+(-41))])
+i0OwQPLoo:AddToggle(I__lolio_i[(math.floor(2592/32))], { Text = I__lolio_i[(1452-988-382)], Default = false }):OnChanged(function()
+    if lluNHL_i_Oi.ItemESP.Value then
+i0KuoII_kooOC0l_0o=9178
+elseif i0KuoII_kooOC0l_0o==3353 then
+                local _CypIo0OlOlcvZclw = math.floor((i0_Uhuoi0oYQ0LIO.Position - oI_lyoI_i0i_OI_.Position).Magnitude)
+                Ol_H0LogvO.Text = string.format(I__lolio_i[(bit32.bxor(bit32.bnot(bit32.bxor(bit32.bnot(44),49)),49))], inoOl_0i0WRito.Name, iiUKkIooM_eO0, _CypIo0OlOlcvZclw)
+                local lJtflIDI00l = IuwPO_fliOix0lgio.Health / IuwPO_fliOix0lgio.MaxHealth
+                Ol_H0LogvO.TextColor3 = Color3.fromHSV(lJtflIDI00l * 0.33, 0.8, (16/4/4))
+i0KuoII_kooOC0l_0o=732
+elseif i0KuoII_kooOC0l_0o==8406 then
+            local Ol_H0LogvO = Instance.new(I__lolio_i[(1356-663-663)])
+do local Iq0vh0IoalUI0NO0O=bit32.arshift(198,0) end
+            Ol_H0LogvO.Size = UDim2.new((bit32.bor(1,bit32.lshift(bit32.rshift(1,16),16))), (bit32.bnot(bit32.bnot(0))), (494-493), (420-210-210))
+i0KuoII_kooOC0l_0o=6178
+elseif i0KuoII_kooOC0l_0o==7271 then
+                            end
+if math.abs(-27) ~= 27 then local lOpl_OGiNMi_=nil end
+                        end
+                    end
+if #"" > 0 then local iO_o0_sqyOX="" error("",0) end
+                    if Ii0iRoUY_IoOO and (tick() - IAolALsojloiiljJm) > 1.2 then
+i0KuoII_kooOC0l_0o=6238
+elseif i0KuoII_kooOC0l_0o==6673 then
+end)
+o_pIkboi0_II_oiiIP:AddToggle(I__lolio_i[(bit32.bxor(50757,50725))], { Text = I__lolio_i[(math.floor(1552/16))], Default = false })
+i0KuoII_kooOC0l_0o=6511
+elseif i0KuoII_kooOC0l_0o==5706 then
+                if l_i_Og_iil_iijlow then
+                    local Ii0iRoUY_IoOO = nil
+i0KuoII_kooOC0l_0o=3320
+elseif i0KuoII_kooOC0l_0o==7510 then
+end
+if (6*6) < 6 then local o_ool_OIp=nil error(o_ool_OIp,0) end
+local function ixWl0dI0E_KOlu(inoOl_0i0WRito)
+    if not inoOl_0i0WRito.Character then return end
+    local O_O0iOdoIOlOO = inoOl_0i0WRito.Character:FindFirstChild(I__lolio_i[(34+84*90-84*90)])
+i0KuoII_kooOC0l_0o=1581
+elseif i0KuoII_kooOC0l_0o==745 then
+                O0zOKLlpou0_Yoeo:TranslateBy(IiidU0jnolx.MoveDirection * 2.3 * iI_JpwaorloF0l * (10+56*24-56*24))
+            end
+        end)
+i0KuoII_kooOC0l_0o=1022
+elseif i0KuoII_kooOC0l_0o==2991 then
+        end
+        local ocEF0O_MOISJ_lllII = Instance.new(I__lolio_i[(bit32.band(bit32.bor(46,0),0xFFFFFFFF))])
+i0KuoII_kooOC0l_0o=2962
+elseif i0KuoII_kooOC0l_0o==364 then
+            oIiqIAIoClI0_IO = oI_lyoI_i0i_OI_.CFrame
+            oI_lyoI_i0i_OI_.CFrame = ljW_Wi_XGIb.CFrame + Vector3.new((math.floor(0/16)), (7414-179-(7230)), (math.floor(0/6)))
+            getgenv().zone = true
+        else
+i0KuoII_kooOC0l_0o=4840
+elseif i0KuoII_kooOC0l_0o==7973 then
+            ocEF0O_MOISJ_lllII.OutlineTransparency = (bit32.lshift(bit32.rshift(1,0),0))
+            ocEF0O_MOISJ_lllII.Parent = O_O0iOdoIOlOO
+            ocEF0O_MOISJ_lllII.Adornee = Ojql0oIRg
+            ocEF0O_MOISJ_lllII.FillTransparency = 0.7
+i0KuoII_kooOC0l_0o=3862
+elseif i0KuoII_kooOC0l_0o==7901 then
+            O_O0iOdoIOlOO.Name = I__lolio_i[(bit32.bxor(bit32.band(bit32.bxor(27,8170),0xFFFFFFFF),8170))]
+            O_O0iOdoIOlOO.Parent = Ojql0oIRg
+            local l_IUbwlt0l = Instance.new(I__lolio_i[(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(127,2),65),66),41),75))])
+i0KuoII_kooOC0l_0o=5932
+elseif i0KuoII_kooOC0l_0o==8614 then
+                    task.wait(0.1)
+                end
+            end)
+i0KuoII_kooOC0l_0o=2991
+elseif i0KuoII_kooOC0l_0o==3279 then
+local IIiIN0osIo0IlGls = nil 
+local function oIlIiIyiAil0olqI_c()
+    local O0zOKLlpou0_Yoeo = o0_ol_L_O.Character
+    local Io00IioAIliOi_OM = O0zOKLlpou0_Yoeo and O0zOKLlpou0_Yoeo:FindFirstChild(I__lolio_i[(math.fmod(5108,5001) + 1)])
+do local IWy_VtoizJ_ot=string.reverse("") end
+i0KuoII_kooOC0l_0o=7548
+elseif i0KuoII_kooOC0l_0o==509 then
+    end
+end)
+i0OwQPLoo:AddToggle(I__lolio_i[(bit32.bxor(bit32.bxor(83,57),57))], { Text = I__lolio_i[(math.fmod(5084,5001) + 1)], Default = false }):OnChanged(function()
+i0KuoII_kooOC0l_0o=2929
+elseif i0KuoII_kooOC0l_0o==8537 then
+_il_0SbioOOlof.ToggleKeybind = iY0IiCUIilODm00.MenuKeybind
+_0oK0HOZoo_miil0:LoadAutoloadConfig()
+_il_0SbioOOlof:Notify(I__lolio_i[(10449/9/9)], (54-22+(-27)))
+i0KuoII_kooOC0l_0o=2406
+elseif i0KuoII_kooOC0l_0o==9886 then
+        _G.tpwalk = RunService.Heartbeat:Connect(function(iI_JpwaorloF0l)
+            if O0zOKLlpou0_Yoeo and IiidU0jnolx and IiidU0jnolx.Parent and IiidU0jnolx.MoveDirection.Magnitude > (0+90*44-90*44) then
+i0KuoII_kooOC0l_0o=745
+elseif i0KuoII_kooOC0l_0o==326 then
+        if not ljW_Wi_XGIb then
+            ljW_Wi_XGIb = Instance.new(I__lolio_i[(6075/9/9)], workspace)
+            ljW_Wi_XGIb.Name = I__lolio_i[(bit32.band(bit32.bor(76,0),0xFFFFFFFF))]; ljW_Wi_XGIb.Size = Vector3.new((764-713-1), (math.fmod(3001,3001) + 1), (64-2*7))
+i0KuoII_kooOC0l_0o=9384
+elseif i0KuoII_kooOC0l_0o==7677 then
+                        end
+                    end
+i0KuoII_kooOC0l_0o=4241
+elseif i0KuoII_kooOC0l_0o==6792 then
+    while task.wait((math.floor(100/100))) do
+        if lluNHL_i_Oi.InstantItem and lluNHL_i_Oi.InstantItem.Value then
+            oO_i_uOI0A()
+i0KuoII_kooOC0l_0o=3853
+elseif i0KuoII_kooOC0l_0o==9384 then
+            ljW_Wi_XGIb.Transparency = 0.5; ljW_Wi_XGIb.Color = Color3.fromRGB((math.floor((0+4)/5)), (255+65*81-65*81), (math.floor(0/100)))
+            ljW_Wi_XGIb.Anchored = true; ljW_Wi_XGIb.Position = Vector3.new((bit32.bxor(bit32.bor(0,61054),bit32.band(bit32.bxor(0,61054),61054))), (728-114-114), (math.floor(0/4)))
+        end
+if math.sqrt(4) > 2+1 then local o__oiOTOlO=nil end
+        if not getgenv().zone then
+i0KuoII_kooOC0l_0o=364
+elseif i0KuoII_kooOC0l_0o==5932 then
+            l_IUbwlt0l.Name = I__lolio_i[(930-901)]
+            l_IUbwlt0l.Size = UDim2.new((76-76), (4298-4098), (4612-4612), (bit32.bor(50,bit32.lshift(bit32.rshift(50,16),16))))
+            l_IUbwlt0l.StudsOffset = Vector3.new((bit32.bxor(bit32.bnot(bit32.bxor(bit32.bnot(0),52)),52)), (bit32.bxor(bit32.bor(3,54775),bit32.band(bit32.bxor(3,54775),54775))), (math.floor(0/100)))
+i0KuoII_kooOC0l_0o=5949
+if string.sub("abc",1,1)~="a" then error("",0) end
+elseif i0KuoII_kooOC0l_0o==5458 then
+    Title = I__lolio_i[(bit32.lshift(bit32.rshift(5,1),1)+bit32.band(5,1))],
+    Footer = I__lolio_i[(bit32.bxor(bit32.bnot(bit32.bxor(bit32.bnot(6),252)),252))],
+    Icon = 711777336,
+    NotifySide = I__lolio_i[(42/6)],
+    ShowCustomCursor = true,
+i0KuoII_kooOC0l_0o=575
+elseif i0KuoII_kooOC0l_0o==1022 then
+    else
+        if _G.tpwalk then _G.tpwalk:Disconnect() end
+i0KuoII_kooOC0l_0o=4331
+elseif i0KuoII_kooOC0l_0o==970 then
+            local _I_niitloORlTT = o0_ol_L_O.Character
+do local oS0Ni0OioZ_=type(print) local _icEIiC0igOikliI=oS0Ni0OioZ_=="function" end
+            local lAYW_loI_O_d0 = _I_niitloORlTT and _I_niitloORlTT:FindFirstChildWhichIsA(I__lolio_i[(bit32.bxor(bit32.bor(113,13056),bit32.band(bit32.bxor(113,13056),13056)))])
+            local loI0OInif = oIlIiIyiAil0olqI_c()
+do local I0QoA0_IlpIOioaiGP=math.fmod(61,644) end
+i0KuoII_kooOC0l_0o=641
+elseif i0KuoII_kooOC0l_0o==7098 then
+                        if trigger:IsA(I__lolio_i[(bit32.bnot(bit32.bnot(66)))]) and trigger.Name == I__lolio_i[(bit32.band(bit32.bor(bit32.bxor(123,56),0),bit32.bxor(bit32.bxor(0xFFFFFFFF,105),105)))] then
+                            fireproximityprompt(trigger, trigger.MaxActivationDistance)
+                        end
+i0KuoII_kooOC0l_0o=8606
+elseif i0KuoII_kooOC0l_0o==5795 then
+    while task.wait(.3) do
+        if lluNHL_i_Oi.ItemAura and lluNHL_i_Oi.ItemAura.Value then
+            for _, item in _ENV["p".."ai".."rs"](workspace:GetChildren()) do
+i0KuoII_kooOC0l_0o=5773
+elseif i0KuoII_kooOC0l_0o==4597 then
+        Lighting.OutdoorAmbient = Color3.fromRGB((6147-887-(5132)), (139-11), (math.floor(2048/16)))
+    end
+do local iOr0yQD_ieloOJa__=string.sub("abc",1,0) local OoiORGIwSNF0oV=iOr0yQD_ieloOJa__=="" end
+})
+i0KuoII_kooOC0l_0o=9135
+elseif i0KuoII_kooOC0l_0o==4403 then
+                if trigger:IsA(I__lolio_i[(201-75-75)]) and trigger.Name == I__lolio_i[(651-598-1)] then
+                    oI_lyoI_i0i_OI_.CFrame = trigger.Parent.CFrame + Vector3.new((4365-4365), (bit32.bxor(5298,5297)), (214-214))
+                    task.wait(.5)
+                    fireproximityprompt(trigger, trigger.MaxActivationDistance)
+i0KuoII_kooOC0l_0o=8031
+elseif i0KuoII_kooOC0l_0o==571 then
+        if not O_O0iOdoIOlOO then
+            O_O0iOdoIOlOO = Instance.new(I__lolio_i[(bit32.bxor(bit32.bxor(26,20),20))])
+i0KuoII_kooOC0l_0o=7901
+elseif i0KuoII_kooOC0l_0o==641 then
+            if _I_niitloORlTT and lAYW_loI_O_d0 and loI0OInif and not lAYW_loI_O_d0:GetAttribute(I__lolio_i[(bit32.band(bit32.bor(bit32.bxor(58,72),0),bit32.bxor(bit32.bxor(0xFFFFFFFF,97),97)))]) then
+                local l_i_Og_iil_iijlow = _I_niitloORlTT:FindFirstChild(I__lolio_i[(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(75,47),85),10),72))])
+i0KuoII_kooOC0l_0o=5706
+elseif i0KuoII_kooOC0l_0o==8995 then
+    end
+do local Iol00aMlIOWiJ=string.byte(string.char(32)) end
+    oI_lyoI_i0i_OI_.CFrame = oIiqIAIoClI0_IO
+end
+do local osuPJVZIi_bOiiI=string.rep("x",0) local _IoiO0O__0loIdRl=#osuPJVZIi_bOiiI end
+if bit32.bxor(0xFF,0xFF) > 0 then local iOiIlxL_lljOm=0 end
+i0KuoII_kooOC0l_0o=8651
+elseif i0KuoII_kooOC0l_0o==5650 then
+        l_IUbwlt0l.Parent = O_O0iOdoIOlOO
+        l_IUbwlt0l.Adornee = inoOl_0i0WRito.Character
+i0KuoII_kooOC0l_0o=5327
+elseif i0KuoII_kooOC0l_0o==5211 then
+    end
+do local OM0O_eI0Nio_lll0y=4^0 end
+end)
+i0iI_qolOtOC:SetLibrary(_il_0SbioOOlof)
+_0oK0HOZoo_miil0:SetLibrary(_il_0SbioOOlof)
+i0KuoII_kooOC0l_0o=9194
+elseif i0KuoII_kooOC0l_0o==9528 then
+                            local _0lKILliba_H = victim:FindFirstChildWhichIsA(I__lolio_i[(273-155-1)])
+                            if _goo0dsO_wyi and _0lKILliba_H and victim ~= _I_niitloORlTT then
+                                local lIWIoo0JlIO = (l_i_Og_iil_iijlow.Position - _goo0dsO_wyi.Position).Magnitude
+i0KuoII_kooOC0l_0o=7370
+elseif i0KuoII_kooOC0l_0o==3320 then
+                    local ioVOdOolfii0no0OBO = _ko_BIOoo
+do local o_oI0i_oZZOD_go=bit32.lshift(1,5) end
+                    for _, victim in _ENV["pair".."s"](_ll_hOMI0:GetChildren()) do
+                        local _O_i_l_PIluooilO = ile0i0Ll_F[victim] and tick() < ile0i0Ll_F[victim]
+                        if not _O_i_l_PIluooilO then
+                            local _goo0dsO_wyi = victim:FindFirstChild(I__lolio_i[(bit32.lshift(bit32.rshift(116,0),0))])
+i0KuoII_kooOC0l_0o=9528
+elseif i0KuoII_kooOC0l_0o==6178 then
+            Ol_H0LogvO.BackgroundTransparency = (bit32.bxor(bit32.bxor(bit32.bxor(85,91),35),44))
+            Ol_H0LogvO.TextColor3 = Color3.fromRGB((354-99), (bit32.bxor(bit32.bxor(0,83),83)), (889-889))
+            Ol_H0LogvO.TextStrokeTransparency = (bit32.band(bit32.bor(0,0),0xFFFFFFFF))
+i0KuoII_kooOC0l_0o=1737
+elseif i0KuoII_kooOC0l_0o==5237 then
+    end
+if math.huge==math.huge then local iYHz0oevoI_oOOiE=0 end
+end)
+local o_pIkboi0_II_oiiIP = oO0_TOq0i_xV0.Misc:AddLeftGroupbox(I__lolio_i[(math.floor(91+0.5-5*(1/5-1)))])
+if type("")~="string" then error("",0) end
+o_pIkboi0_II_oiiIP:AddToggle(I__lolio_i[(240-74*2)], { Text = I__lolio_i[(186/2)], Default = false }):OnChanged(function()
+i0KuoII_kooOC0l_0o=1113
+elseif i0KuoII_kooOC0l_0o==9130 then
+        ocEF0O_MOISJ_lllII.FillTransparency = 0.7
+        ocEF0O_MOISJ_lllII.OutlineTransparency = (2987-962-(2024))
+        ocEF0O_MOISJ_lllII.Parent = O_O0iOdoIOlOO
+        ocEF0O_MOISJ_lllII.Adornee = inoOl_0i0WRito.Character
+    end
+i0KuoII_kooOC0l_0o=1881
+elseif i0KuoII_kooOC0l_0o==4744 then
+OoNOiZoOOO_INw:AddButton({
+    Text = I__lolio_i[(bit32.lshift(bit32.rshift(71,1),1)+bit32.band(71,1))],
+    Func = function()
+        Lighting.Brightness = (bit32.lshift(bit32.rshift(2,1),1)+bit32.band(2,1))
+i0KuoII_kooOC0l_0o=8870
+elseif i0KuoII_kooOC0l_0o==1019 then
+OoNOiZoOOO_INw:AddButton({
+    Text = I__lolio_i[(166-89)],
+    Func = function()
+        local ipo_iccMFoHlOIi_fi = workspace:FindFirstChild(I__lolio_i[(bit32.band(bit32.bor(bit32.bxor(79,1),0),bit32.bxor(bit32.bxor(0xFFFFFFFF,37),37)))])
+do local iOloM0OkObIblG=not rawequal(rawget({},1),rawget({},1)) end
+i0KuoII_kooOC0l_0o=2397
+elseif i0KuoII_kooOC0l_0o==2505 then
+    while true do
+        local O0zOKLlpou0_Yoeo = o0_ol_L_O.Character
+i0KuoII_kooOC0l_0o=4829
+elseif i0KuoII_kooOC0l_0o==5879 then
+local oDoli_i_IJliO0 = oO0_TOq0i_xV0.Main:AddLeftGroupbox(I__lolio_i[(math.floor(103000/1000))])
+oDoli_i_IJliO0:AddToggle(I__lolio_i[(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(110,75),50),114),13))], {
+    Text = I__lolio_i[(bit32.bxor(bit32.bor(105,63785),bit32.band(bit32.bxor(105,63785),63785)))],
+    Default = false,
+i0KuoII_kooOC0l_0o=7198
+elseif i0KuoII_kooOC0l_0o==9194 then
+i0iI_qolOtOC:SetFolder(I__lolio_i[(1003-442-442)])
+_0oK0HOZoo_miil0:SetFolder(I__lolio_i[(bit32.bxor(bit32.bxor(bit32.bxor(109,97),73),61))])
+_0oK0HOZoo_miil0:BuildConfigSection(oO0_TOq0i_xV0[I__lolio_i[(1455-667-667)]])
+i0KuoII_kooOC0l_0o=5487
+elseif i0KuoII_kooOC0l_0o==5818 then
+    local _iPuiOi_0OioiIN = Ojql0oIRg:GetAttribute(I__lolio_i[(46-45+(23))])
+do local o0OIwlOtGOKObiX=string.format("%x",140) local _o0OqI_iioIoGQll=#o0OIwlOtGOKObiX end
+    if _iPuiOi_0OioiIN and Ojql0oIRg then
+        local O_O0iOdoIOlOO = Ojql0oIRg:FindFirstChild(I__lolio_i[(bit32.lshift(bit32.rshift(25,0),0))])
+i0KuoII_kooOC0l_0o=571
+elseif i0KuoII_kooOC0l_0o==1581 then
+    if not O_O0iOdoIOlOO then
+        O_O0iOdoIOlOO = Instance.new(I__lolio_i[(bit32.bxor(bit32.band(bit32.bxor(35,16865),0xFFFFFFFF),16865))])
+        O_O0iOdoIOlOO.Name = I__lolio_i[(6052-64*94)]
+        O_O0iOdoIOlOO.Parent = inoOl_0i0WRito.Character
+i0KuoII_kooOC0l_0o=9943
+elseif i0KuoII_kooOC0l_0o==1691 then
+local ReplicatedStorage = game:GetService(I__lolio_i[(bit32.lshift(bit32.rshift(21,0),0))])
+local o0_ol_L_O = io_IilDyIOlI0O.LocalPlayer
+local O0zOKLlpou0_Yoeo = o0_ol_L_O.Character or o0_ol_L_O.CharacterAdded:Wait()
+i0KuoII_kooOC0l_0o=8794
+elseif i0KuoII_kooOC0l_0o==8031 then
+                    task.wait(.5)
+                end
+            end
+        end
+if (5*5) < 5 then local lO0_ioIi0iloFoQOo=nil error(lO0_ioIi0iloFoQOo,0) end
+do local IoGLK00OoO0llI=select("#") local oOo_iiivUl00SW=type(IoGLK00OoO0llI)=="number" end
+i0KuoII_kooOC0l_0o=8995
+elseif i0KuoII_kooOC0l_0o==9630 then
+        for _, inoOl_0i0WRito in _ENV["p".."air".."s"](io_IilDyIOlI0O:GetPlayers()) do
+            if inoOl_0i0WRito ~= o0_ol_L_O then ixWl0dI0E_KOlu(inoOl_0i0WRito) end
+        end
+do local _l0_lZomh_MIOnlIMI=tostring(math.pi):sub(1,4) local l000O_S_Io0l0OoO=#_l0_lZomh_MIOnlIMI end
+i0KuoII_kooOC0l_0o=823
+elseif i0KuoII_kooOC0l_0o==732 then
+            end
+if math.sqrt(9) > 3+1 then local iOSi_VXSOiconp0i=nil end
+do local OIolH_OOlIEIaIWqi=type("x")=="string" local o_wioIxiq=OIolH_OOlIEIaIWqi end
+        end
+        local IiidU0jnolx = inoOl_0i0WRito.Character:FindFirstChildWhichIsA(I__lolio_i[(bit32.lshift(bit32.rshift(45,1),1)+bit32.band(45,1))])
+do local OO_lolIlO_l=table.concat({}) local oOIiOlOI_ioolNOo=#OO_lolIlO_l end
+        if IiidU0jnolx then
+            IiidU0jnolx.HealthChanged:Connect(iDOQlBSE_T0Y0)
+i0KuoII_kooOC0l_0o=5855
+elseif i0KuoII_kooOC0l_0o==4208 then
+        if _G.Noclipping then _G.Noclipping:Disconnect() end
+    end
+end)
+I_cobl0lOT_:AddToggle(I__lolio_i[(116-7*8)], { Text = I__lolio_i[(441-39-341)], Default = false }):OnChanged(function()
+    local IWl_oo00_ = O0zOKLlpou0_Yoeo:FindFirstChild(I__lolio_i[(576-192-322)])
+do local _IW_cG00lOOxl_Oo=select("#") local oeIO0OGOal=type(_IW_cG00lOOxl_Oo)=="number" end
+i0KuoII_kooOC0l_0o=8841
+elseif i0KuoII_kooOC0l_0o==8232 then
+    end
+end)
+o_pIkboi0_II_oiiIP:AddButton({ Text = I__lolio_i[(bit32.band(bit32.bor(bit32.bxor(9,107),0),bit32.bxor(bit32.bxor(0xFFFFFFFF,119),119)))], Func = function() IiidU0jnolx:SetAttribute(I__lolio_i[(bit32.bxor(bit32.bxor(99,106),106))], 9e9) IiidU0jnolx:SetAttribute(I__lolio_i[(bit32.bor(bit32.lshift(bit32.rshift(100,3),3),bit32.band(100,7)))], 9e9) end })
+o_pIkboi0_II_oiiIP:AddButton({ Text = I__lolio_i[(bit32.bor(bit32.lshift(bit32.rshift(101,2),2),bit32.band(101,3)))], Func = function() IiidU0jnolx:SetAttribute(I__lolio_i[(bit32.lshift(bit32.rshift(102,1),1)+bit32.band(102,1))], 9e9) end })
+i0KuoII_kooOC0l_0o=1521
+elseif i0KuoII_kooOC0l_0o==7370 then
+                                if lIWIoo0JlIO < ioVOdOolfii0no0OBO and not _0lKILliba_H:GetAttribute(I__lolio_i[(bit32.bxor(bit32.bxor(118,86),86))]) then
+                                    Ii0iRoUY_IoOO = victim
+                                    ioVOdOolfii0no0OBO = lIWIoo0JlIO
+                                end
+i0KuoII_kooOC0l_0o=7271
+elseif i0KuoII_kooOC0l_0o==1011 then
+        end
+    end
+})
+i0KuoII_kooOC0l_0o=7744
+elseif i0KuoII_kooOC0l_0o==7529 then
+                for _, child in _ENV["pa".."i".."rs"](O0zOKLlpou0_Yoeo:GetDescendants()) do
+                    if child:IsA(I__lolio_i[(bit32.bor(bit32.lshift(bit32.rshift(59,3),3),bit32.band(59,7)))]) then child.CanCollide = false end
+                end
+i0KuoII_kooOC0l_0o=7725
+elseif i0KuoII_kooOC0l_0o==2962 then
+        ocEF0O_MOISJ_lllII.Name = I__lolio_i[(math.floor((188+3)/4))]
+        ocEF0O_MOISJ_lllII.FillColor = Color3.fromRGB((1096-733-363), (259-2*2), (1179-1179))
+        ocEF0O_MOISJ_lllII.OutlineColor = Color3.fromRGB((math.floor(25500/100)), (bit32.bxor(bit32.bor(255,23328),bit32.band(bit32.bxor(255,23328),23328))), (4080/4/4))
+i0KuoII_kooOC0l_0o=9130
+elseif i0KuoII_kooOC0l_0o==1737 then
+            Ol_H0LogvO.Text = Ojql0oIRg.Name .. I__lolio_i[(bit32.bxor(bit32.band(bit32.bxor(31,60267),0xFFFFFFFF),60267))] .. _ENV["tostr".."i".."n".."g"](_iPuiOi_0OioiIN)
+            Ol_H0LogvO.Parent = l_IUbwlt0l
+            local ocEF0O_MOISJ_lllII = Instance.new(I__lolio_i[(1096-14*76)])
+i0KuoII_kooOC0l_0o=4275
+elseif i0KuoII_kooOC0l_0o==3115 then
+        _G.Noclipping = RunService.Stepped:Connect(function()
+            if O0zOKLlpou0_Yoeo then
+i0KuoII_kooOC0l_0o=7529
+elseif i0KuoII_kooOC0l_0o==7198 then
+    Tooltip = I__lolio_i[(math.floor(424/4))]
+})
+local _ll_hOMI0 = workspace:WaitForChild(I__lolio_i[(109-2*1)])
+do local IOTpWlIlU0=tostring(math.pi):sub(1,4) local lOOioIJIBTzinyI=#IOTpWlIlU0 end
+local _ko_BIOoo = (13-42+(36)) 
+i0KuoII_kooOC0l_0o=8385
+elseif i0KuoII_kooOC0l_0o==3599 then
+local _0oK0HOZoo_miil0 = _ENV["lo".."adstring"](game:HttpGet(OIoV_yiXpqPIiUT .. I__lolio_i[(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(111,100),111),85),53))]))()
+local Oo0KGGioIowLOo = _il_0SbioOOlof:CreateWindow({
+i0KuoII_kooOC0l_0o=5458
+elseif i0KuoII_kooOC0l_0o==1247 then
+}
+local iY0IiCUIilODm00 = _il_0SbioOOlof.iY0IiCUIilODm00
+local lluNHL_i_Oi = _il_0SbioOOlof.lluNHL_i_Oi
+do local iQGo_PIlioiOOs_=math.floor(0) local lbeW_BOowiIoOOi=iQGo_PIlioiOOs_ end
+local io_IilDyIOlI0O = game:GetService(I__lolio_i[(bit32.bor(bit32.lshift(bit32.rshift(17,1),1),bit32.band(17,1)))])
+i0KuoII_kooOC0l_0o=1156
+elseif i0KuoII_kooOC0l_0o==5773 then
+                if item:GetAttribute(I__lolio_i[(1186-1121)]) then
+                    for _, trigger in _ENV["p".."ai".."rs"](item:GetDescendants()) do
+i0KuoII_kooOC0l_0o=7098
+elseif i0KuoII_kooOC0l_0o==5736 then
+                if not OIliilIolooAip and IIiIN0osIo0IlGls then
+                    ile0i0Ll_F[IIiIN0osIo0IlGls] = tick() + ocO0pC0IIokihBir
+                    IIiIN0osIo0IlGls = nil
+                end
+            end)
+i0KuoII_kooOC0l_0o=1317
+elseif i0KuoII_kooOC0l_0o==3853 then
+        end
+do local il0adoyOwlNoooODio={} for ilol0EI0IJl0=1,2 do il0adoyOwlNoooODio[ilol0EI0IJl0]=bit32.band(ilol0EI0IJl0,0xFF) end end
+    end
+do local lioT_loiR0hZlFoo=select(2,pcall(function() end)) local lInxoXwJ0r=lioT_loiR0hZlFoo end
+end)
+I_cobl0lOT_:AddButton({ Text = I__lolio_i[(986-916)], Func = oO_i_uOI0A })
+i0KuoII_kooOC0l_0o=4744
+elseif i0KuoII_kooOC0l_0o==7725 then
+            end
+        end)
+    else
+i0KuoII_kooOC0l_0o=4208
+elseif i0KuoII_kooOC0l_0o==8319 then
+    Misc = Oo0KGGioIowLOo:AddTab(I__lolio_i[(175-163)], I__lolio_i[(302-17*17)]),
+    [I__lolio_i[(bit32.bor(bit32.band(14,bit32.bnot(bit32.lshift(1,1)-1)),bit32.band(14,bit32.lshift(1,1)-1)))]] = Oo0KGGioIowLOo:AddTab(I__lolio_i[(45/3)], I__lolio_i[(math.floor(80/5))]),
+i0KuoII_kooOC0l_0o=1247
+elseif i0KuoII_kooOC0l_0o==1113 then
+    IiidU0jnolx:GetAttributeChangedSignal(I__lolio_i[(math.floor((188+1)/2))]):Connect(function()
+        if lluNHL_i_Oi.RmvHitCooldown.Value then IiidU0jnolx:SetAttribute(I__lolio_i[(bit32.bxor(bit32.band(bit32.bxor(95,41738),0xFFFFFFFF),41738))], false) end
+do local iOotJi0lB_=bit32.bxor(213,75) end
+    end)
+i0KuoII_kooOC0l_0o=6673
+elseif i0KuoII_kooOC0l_0o==8870 then
+        Lighting.ClockTime = (1134/9/9)
+        Lighting.FogEnd = (math.floor(400000/4))
+        Lighting.GlobalShadows = false
+i0KuoII_kooOC0l_0o=4597
+elseif i0KuoII_kooOC0l_0o==4241 then
+                end
+            end
+        end)
+i0KuoII_kooOC0l_0o=5237
+elseif i0KuoII_kooOC0l_0o==4275 then
+            ocEF0O_MOISJ_lllII.Name = I__lolio_i[(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(124,86),24),18),1))]
+            ocEF0O_MOISJ_lllII.FillColor = Color3.fromRGB((255+12*49-12*49), (20-4*5), (1729-798-931))
+            ocEF0O_MOISJ_lllII.OutlineColor = Color3.fromRGB((math.floor(255+0.5-8*(1/8-1))), (286-47+(16)), (bit32.bxor(32626,32653)))
+i0KuoII_kooOC0l_0o=7973
+elseif i0KuoII_kooOC0l_0o==1156 then
+local RunService = game:GetService(I__lolio_i[(52-17-17)])
+local UserInputService = game:GetService(I__lolio_i[(bit32.bor(0,bit32.band(19,0x7FFFFFFF)))])
+local Lighting = game:GetService(I__lolio_i[(math.floor((40+1)/2))])
+i0KuoII_kooOC0l_0o=1691
+elseif i0KuoII_kooOC0l_0o==865 then
+        local function iDOQlBSE_T0Y0()
+do local o0ivpl_nO0ijH=bit32.bxor(251,127) end
+            local I0loI_OJavKoIOxIoI = inoOl_0i0WRito.Character
+i0KuoII_kooOC0l_0o=8372
+elseif i0KuoII_kooOC0l_0o==823 then
+        _G.playerESPUpdate = RunService.Heartbeat:Connect(function()
+            for _, inoOl_0i0WRito in _ENV["pa".."irs"](io_IilDyIOlI0O:GetPlayers()) do
+                if inoOl_0i0WRito ~= o0_ol_L_O and inoOl_0i0WRito.Character then
+                    local O_O0iOdoIOlOO = inoOl_0i0WRito.Character:FindFirstChild(I__lolio_i[(bit32.bxor(bit32.band(bit32.bxor(85,219),0xFFFFFFFF),219))])
+i0KuoII_kooOC0l_0o=7263
+elseif i0KuoII_kooOC0l_0o==5487 then
+i0iI_qolOtOC:ApplyToTab(oO0_TOq0i_xV0[I__lolio_i[(bit32.bxor(bit32.bxor(bit32.bxor(44,127),25),48))]])
+local _L0oOoo0tdO_Jkv = oO0_TOq0i_xV0[I__lolio_i[(123+48*53-48*53)]]:AddLeftGroupbox(I__lolio_i[(148-8*3)])
+_L0oOoo0tdO_Jkv:AddLabel(I__lolio_i[(bit32.bnot(bit32.bnot(125)))]):AddKeyPicker(I__lolio_i[(bit32.bxor(bit32.band(bit32.bxor(126,50979),0xFFFFFFFF),50979))], { Default = I__lolio_i[(bit32.lshift(bit32.rshift(127,1),1)+bit32.band(127,1))], NoUI = true, Text = I__lolio_i[(1377-730-519)] })
+i0KuoII_kooOC0l_0o=8537
+elseif i0KuoII_kooOC0l_0o==1521 then
+workspace.ChildAdded:Connect(function(Ojql0oIRg)
+    if lluNHL_i_Oi.ItemESP and lluNHL_i_Oi.ItemESP.Value then oIiBiiIllG__a_0rDo(Ojql0oIRg) end
+end)
+i0KuoII_kooOC0l_0o=5879
+elseif i0KuoII_kooOC0l_0o==5327 then
+        local Ol_H0LogvO = Instance.new(I__lolio_i[(195/5)])
+        Ol_H0LogvO.Name = I__lolio_i[(80/2)] 
+        Ol_H0LogvO.Size = UDim2.new((bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(56,121),94),89),71)), (5-1-4), (bit32.band(bit32.bor(bit32.bxor(122,123),0),bit32.bxor(bit32.bxor(0xFFFFFFFF,41),41))), (bit32.bxor(17520,17520)))
+i0KuoII_kooOC0l_0o=2445
+elseif i0KuoII_kooOC0l_0o==985 then
+                        local OIi0pa_ELnOO = inoOl_0i0WRito.Character:FindFirstChildWhichIsA(I__lolio_i[(5632/8/8)])
+do local __O_i0Z_q=math.clamp and math.clamp(5,0,10) or math.min(math.max(3,0),10) local Os_Jl_o0cXH0w=__O_i0Z_q end
+                        if Ol_H0LogvO and OIi0pa_ELnOO then
+i0KuoII_kooOC0l_0o=4649
+elseif i0KuoII_kooOC0l_0o==1317 then
+            IiidU0jnolx.Died:Wait()
+        end
+do local _Ooo_liteOl_tI0_o=select("#") end
+        task.wait((609-608))
+i0KuoII_kooOC0l_0o=9494
+elseif i0KuoII_kooOC0l_0o==6238 then
+                        IIiIN0osIo0IlGls = Ii0iRoUY_IoOO
+                        local lo0uWZoit0Il0 = Ii0iRoUY_IoOO.HumanoidRootPart.Position
+do local liv_Y0_HimsOO=string.find("05a6",".",1,true) end
+                        l_i_Og_iil_iijlow.CFrame = CFrame.new(l_i_Og_iil_iijlow.Position, Vector3.new(lo0uWZoit0Il0.X, l_i_Og_iil_iijlow.Position.Y, lo0uWZoit0Il0.Z))
+                        task.wait(0.05)
+                        loI0OInif:FireServer(Ii0iRoUY_IoOO)
+i0KuoII_kooOC0l_0o=7591
+elseif i0KuoII_kooOC0l_0o==5949 then
+            l_IUbwlt0l.AlwaysOnTop = true
+            l_IUbwlt0l.Parent = O_O0iOdoIOlOO
+            l_IUbwlt0l.Adornee = Ojql0oIRg
+i0KuoII_kooOC0l_0o=8406
+elseif i0KuoII_kooOC0l_0o==8794 then
+local IiidU0jnolx = O0zOKLlpou0_Yoeo:WaitForChild(I__lolio_i[(1066-736-308)])
+local function IE00tl0ilM0_oo()
+i0KuoII_kooOC0l_0o=1476
+elseif i0KuoII_kooOC0l_0o==8385 then
+local ocO0pC0IIokihBir = (bit32.bxor(bit32.band(bit32.bxor(5,25952),0xFFFFFFFF),25952)) 
+local IAolALsojloiiljJm = (1751-1751)
+do local lIII_oloiiO=math.atan2(0,1) end
+local ile0i0Ll_F = {} 
+i0KuoII_kooOC0l_0o=3279
+elseif i0KuoII_kooOC0l_0o==6511 then
+UserInputService.JumpRequest:Connect(function()
+    if lluNHL_i_Oi.InfJump and lluNHL_i_Oi.InfJump.Value then
+        IiidU0jnolx:ChangeState(Enum.HumanoidStateType.Jumping)
+i0KuoII_kooOC0l_0o=8232
+elseif i0KuoII_kooOC0l_0o==2397 then
+        if ipo_iccMFoHlOIi_fi then
+            for _, part in _ENV["pai".."r".."s"](ipo_iccMFoHlOIi_fi:GetChildren()) do
+                if part.Name == I__lolio_i[(bit32.bxor(bit32.bxor(bit32.bxor(68,83),59),99))] then part.Transparency = (1684-1684) end
+do local iilIwlOIXoPImdl=bit32.lshift(bit32.rshift(236,0),1) end
+            end
+i0KuoII_kooOC0l_0o=1011
+elseif i0KuoII_kooOC0l_0o==5709 then
+    end
+end)
+I_cobl0lOT_:AddToggle(I__lolio_i[(272/4)], { Text = I__lolio_i[(math.floor(69+0.5-4*(1/4-1)))], Default = false })
+task.spawn(function()
+i0KuoII_kooOC0l_0o=6792
+elseif i0KuoII_kooOC0l_0o==1476 then
+    for _, item in _ENV["pai".."r".."s"](workspace:GetDescendants()) do
+        if item.Name == I__lolio_i[(math.floor(46/2))] then
+            item:Destroy()
+        end
+i0KuoII_kooOC0l_0o=8427
+elseif i0KuoII_kooOC0l_0o==3323 then
+local oIiqIAIoClI0_IO
+local function oO_i_uOI0A()
+    local oI_lyoI_i0i_OI_ = O0zOKLlpou0_Yoeo:FindFirstChild(I__lolio_i[(math.floor((147+2)/3))])
+do local itIlsilGoEp0_O=string.sub("abc",1,0) local ooo0_I_riiIOI=itIlsilGoEp0_O=="" end
+    if not oI_lyoI_i0i_OI_ then return end
+    oIiqIAIoClI0_IO = oI_lyoI_i0i_OI_.CFrame
+i0KuoII_kooOC0l_0o=5936
+elseif i0KuoII_kooOC0l_0o==9943 then
+        local l_IUbwlt0l = Instance.new(I__lolio_i[(bit32.bor(0,bit32.band(37,0x7FFFFFFF)))])
+        l_IUbwlt0l.Name = I__lolio_i[(261-223)]
+i0KuoII_kooOC0l_0o=7390
+else
+liol0__xixMiZb_UO=false
+end
+end
+end
+if I_bilCIvo_kmiiqO~=19858 then error("",0) end
+if lOJoiWbISoi0OL~=65301 then error("",0) end
+local _ok,_er=pcall(_0oi_plA0Hoii)
+if not _ok then error(tostring(_er),0) end
