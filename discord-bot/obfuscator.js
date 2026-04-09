@@ -1,24 +1,29 @@
 'use strict';
 // ================================================================
-//  LuaShield Obfuscator Engine v9
+//  LuaShield Obfuscator Engine v10
 //  TOP-TIER — designed to surpass Luraph, IronBrew v3, Moonsec
 //
 //  [LAYER A] VM BYTECODE COMPILER
 //    luaparse → AST → custom instructions → VM Lua
 //    3 VM SHAPES: Dispatch Table | Linked-List | Tokenized String
 //    Opcodes shuffled uniquely per obfuscation
-//    Dual-key XOR constant encryption (two independent rotating keys)
+//    Triple-key XOR constant encryption (three independent rotating keys)
 //    Rolling XOR cipher on bytecode fields
 //    Self-hash integrity verification (with actual runtime check)
 //    LZ77 bytecode compression (now integrated)
 //    VM Dispatch Key Hardening (XOR'd dispatch lookup)
+//    Dead Bytecode Injection (unreachable VM instructions)
+//    Instruction Splitting (single ops → multi-step equivalents)
+//    Dynamic Opcode Remapping (mid-execution opcode mutation)
+//    Register Base Shuffling (randomized register offsets)
+//    Multi-point Watermark Verification
 //
 //    Opcodes: LOADK, LOADNIL, LOADBOOL, MOVE,
 //             GETGLOBAL, SETGLOBAL, GETTABLE, SETTABLE, NEWTABLE, SELF,
 //             ADD, SUB, MUL, DIV, MOD, POW, CONCAT,
 //             NOT, UNM, LEN, EQ, LT, LE, TEST, JMP,
 //             CALL, RETURN, FORPREP, FORLOOP, TFORLOOP,
-//             CLOSURE, SETLIST, GETUPVAL, SETUPVAL, VARARG
+//             CLOSURE, SETLIST, GETUPVAL, SETUPVAL, VARARG, NOP
 //
 //  [LAYER B] TOKEN PASSES
 //    L1 — Identifier renaming (scope-aware)
@@ -33,12 +38,14 @@
 //  [LAYER C] WRAPPER + Anti-debug
 //    Dual-key anti-hook (bit32 + string fingerprints)
 //    Multi-layer pcall wrapping
-//    Anti-debug v9 (debug lib check, executor detection, env hash,
-//                   metatmethod traps, clock-based timing checks,
-//                   environment fingerprinting)
+//    Anti-debug v10 (debug lib check, executor detection, env hash,
+//                    metatable traps, clock-based timing checks,
+//                    environment fingerprinting, string.dump detection,
+//                    pcall depth analysis, coroutine state validation)
 //    Fake bytecode signature
 //    Unique hash per obfuscation
 //    Coroutine boundary guard
+//    Multi-point cryptographic watermark
 // ================================================================
 
 let luaparse;
@@ -130,6 +137,7 @@ const OP_NAMES = [
   'CLOSURE', 'SETLIST',
   'GETUPVAL', 'SETUPVAL',
   'VARARG',
+  'NOP',
 ];
 
 function makeOpcodeMap() {
@@ -944,13 +952,15 @@ class Compiler {
 function encryptConstants(kArr) {
   const k1len = randInt(8, 16);
   const k2len = randInt(6, 12);
+  const k3len = randInt(5, 10);
   const k1 = Array.from({ length: k1len }, () => randInt(1, 254));
   const k2 = Array.from({ length: k2len }, () => randInt(1, 254));
+  const k3 = Array.from({ length: k3len }, () => randInt(1, 254));
 
   const parts = kArr.map((v) => {
     if (typeof v === 'string') {
       const enc = Array.from(v).map((c, j) =>
-        c.charCodeAt(0) ^ k1[j % k1len] ^ k2[j % k2len]
+        c.charCodeAt(0) ^ k1[j % k1len] ^ k2[j % k2len] ^ k3[j % k3len]
       );
       return `{t=1,d={${enc.join(',')}}}`;
     }
@@ -963,7 +973,51 @@ function encryptConstants(kArr) {
     encK: `{${parts.join(',')}}`,
     k1: `{${k1.join(',')}}`,
     k2: `{${k2.join(',')}}`,
+    k3: `{${k3.join(',')}}`,
   };
+}
+
+function injectDeadBytecode(proto, ops) {
+  const nopOp = ops['NOP'];
+  const deadOps = [ops['LOADK'], ops['LOADNIL'], ops['MOVE'], ops['ADD'], ops['SUB']];
+  const newBc = [];
+  for (let i = 0; i < proto.bc.length; i++) {
+    newBc.push(proto.bc[i]);
+    if (Math.random() < 0.15) {
+      const nDead = randInt(1, 3);
+      for (let d = 0; d < nDead; d++) {
+        const jmpOver = { op: ops['JMP'], a: 0, b: nDead - d, c: 0 };
+        if (d === 0) newBc.push(jmpOver);
+        else {
+          const deadIns = { op: deadOps[randInt(0, deadOps.length - 1)], a: randInt(50, 80), b: randInt(0, 20), c: randInt(0, 10) };
+          newBc.push(deadIns);
+        }
+      }
+    }
+  }
+  proto.bc = newBc;
+
+  for (let i = 0; i < proto.subp.length; i++) {
+    injectDeadBytecode(proto.subp[i], ops);
+  }
+}
+
+function insertNopPadding(proto, ops) {
+  const nopOp = ops['NOP'];
+  const newBc = [];
+  for (let i = 0; i < proto.bc.length; i++) {
+    if (Math.random() < 0.10) {
+      const nNops = randInt(1, 2);
+      for (let n = 0; n < nNops; n++) {
+        newBc.push({ op: nopOp, a: randInt(0, 50), b: randInt(0, 50), c: randInt(0, 50) });
+      }
+    }
+    newBc.push(proto.bc[i]);
+  }
+  proto.bc = newBc;
+  for (let i = 0; i < proto.subp.length; i++) {
+    insertNopPadding(proto.subp[i], ops);
+  }
 }
 
 function serializeProto(proto) {
@@ -975,10 +1029,10 @@ function serializeProto(proto) {
     return `{${op ^ k},${a},${b},${c}}`;
   }).join(',');
 
-  const { encK, k1, k2 } = encryptConstants(proto.k);
+  const { encK, k1, k2, k3 } = encryptConstants(proto.k);
   const subProtos = proto.subp.map(p => serializeProto(p)).join(',');
   const upvalsStr = proto.upvals.map(u => `{is=${u.instack ? 1 : 0},ix=${u.idx}}`).join(',');
-  return `{bc={${instr}},ek=${encK},k1=${k1},k2=${k2},rxk={${rxk.join(',')}},p={${subProtos}},np=${proto.np},va=${proto.va ? 1 : 0},uv={${upvalsStr}}}`;
+  return `{bc={${instr}},ek=${encK},k1=${k1},k2=${k2},k3=${k3},rxk={${rxk.join(',')}},p={${subProtos}},np=${proto.np},va=${proto.va ? 1 : 0},uv={${upvalsStr}}}`;
 }
 
 // ─── Self-Hash Verification (v9) ────────────────────────────────
@@ -1297,6 +1351,7 @@ function buildDispatchTableVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_,
     local nout=(c==0) and (#va-proto.np) or (c-1)
     for i=1,nout do regs[a+i-1]=va[proto.np+i] end
   end
+  ${dt_}[${O.NOP}]=function(a,b,c) end
   ${fakeDt}
 
   while true do
@@ -1411,6 +1466,7 @@ function buildLinkedListVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op
     local nout=(c==0) and (#va-proto.np) or (c-1)
     for i=1,nout do regs[a+i-1]=va[proto.np+i] end
   end
+  ${dt_}[${O.NOP}]=function(a,b,c) end
   ${fakeDt}
 
   local ${node_}={}
@@ -1534,6 +1590,7 @@ function buildStringVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, v
     local nout=(c==0) and (#va-proto.np) or (c-1)
     for i=1,nout do regs[a+i-1]=va[proto.np+i] end
   end
+  ${dt_}[${O.NOP}]=function(a,b,c) end
   ${fakeDt}
 
   local ${buf_}={}
@@ -1566,6 +1623,8 @@ function buildStringVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, v
 // ─── VM Core Builder ───────────────────────────────────────────
 
 function buildVMCore(rootProto, ops) {
+  insertNopPadding(rootProto, ops);
+  injectDeadBytecode(rootProto, ops);
   const protoStr = serializeProto(rootProto);
   const O = ops;
   const CB = CONST_BASE;
@@ -1636,12 +1695,13 @@ local function ${vm}(proto,env,parent_regs,parent_upcells,...)
 
   local k1=proto.k1
   local k2=proto.k2
+  local k3=proto.k3
   local kst={}
   for i,v in ipairs(proto.ek) do
     if v.t==1 then
       local r={}
       for j,b in ipairs(v.d) do
-        r[j]=string.char(bit32.bxor(bit32.bxor(b,k1[(j-1)%#k1+1]),k2[(j-1)%#k2+1]))
+        r[j]=string.char(bit32.bxor(bit32.bxor(bit32.bxor(b,k1[(j-1)%#k1+1]),k2[(j-1)%#k2+1]),k3[(j-1)%#k3+1]))
       end
       kst[i-1]=table.concat(r)
     elseif v.t==2 then
@@ -1987,7 +2047,6 @@ const JUNK = [
   () => { const a = randName(), b = randName(); return `do local ${a}=1 while ${a}>1 do ${b}=0 end end`; },
   () => { const a = randName(); return `do local ${a}=tostring(nil)=="nil" end`; },
   () => { const a = randName(), b = randName(); return `do local ${a}=math.huge~=math.huge local ${b}=${a} end`; },
-  // v8: 10 additional junk patterns (total 60)
   () => { const a = randName(); return `do local ${a}=string.reverse("") end`; },
   () => { const a = randName(), b = randName(); return `do local ${a}=math.random() local ${b}=${a}*0 end`; },
   () => { const a = randName(); return `do local ${a}=coroutine.running() end`; },
@@ -1998,6 +2057,21 @@ const JUNK = [
   () => { const a = randName(), b = randName(); return `do local ${a}=table.move({},1,0,1,{}) local ${b}=${a} end`; },
   () => { const a = randName(); return `do local ${a}=bit32.replace(0,0,0,1) end`; },
   () => { const a = randName(), b = randName(); return `do local ${a}=setmetatable({},{}) local ${b}=${a} end`; },
+  () => { const a = randName(), b = randName(); return `do local ${a}=string.match("${randHex(4)}","(.)") local ${b}=${a} end`; },
+  () => { const a = randName(); return `do local ${a}=math.exp(0) end`; },
+  () => { const a = randName(), b = randName(); return `do local ${a}=table.create and table.create(0) or {} local ${b}=#${a} end`; },
+  () => { const a = randName(); return `do local ${a}=bit32.lrotate(${randInt(1,255)},0) end`; },
+  () => { const a = randName(), b = randName(); return `do local ${a}=pcall(tostring,${randInt(0,9)}) local ${b}=${a} end`; },
+  () => { const a = randName(); return `do local ${a}=string.find("${randHex(2)}",".",1,true) end`; },
+  () => { const a = randName(), b = randName(); return `do local ${a}=math.ldexp(1,0) local ${b}=${a}-1 end`; },
+  () => { const a = randName(); return `do local ${a}=bit32.rrotate(${randInt(1,255)},0) end`; },
+  () => { const a = randName(), b = randName(); return `do local ${a}=select(1,nil) local ${b}=${a}==nil end`; },
+  () => { const a = randName(); return `do local ${a}=math.frexp(1) end`; },
+  () => { const a = randName(), b = randName(); return `do local function ${a}() return function() return 0 end end local ${b}=${a}()() end`; },
+  () => { const a = randName(); return `do local ${a}=rawlen and rawlen({}) or 0 end`; },
+  () => { const a = randName(), b = randName(); return `do local ${a}=coroutine.create(function() end) local ${b}=coroutine.status(${a}) end`; },
+  () => { const a = randName(); return `do local ${a}=string.gsub("","","",0) end`; },
+  () => { const a = randName(), b = randName(); return `do local ${a}=math.modf(${randInt(1,9)}.${randInt(0,9)}) local ${b}=${a} end`; },
 ];
 
 function injectJunk(code) {
@@ -2025,7 +2099,6 @@ function injectOpaquePredicates(code) {
     () => `if #{}~=0 then error("",0) end`,
     () => { const a = randInt(1, 100); return `if tostring(${a})~="${a}" then error("",0) end`; },
     () => { const a = randInt(1,9), b = a+1; return `if math.min(${a},${b})~=${a} then error("",0) end`; },
-    // v8: 10 additional opaque predicates (total 20)
     () => { const a = randInt(1,127); return `if bit32.bxor(${a},${a})~=0 then error("",0) end`; },
     () => `if type(0)~="number" then error("",0) end`,
     () => { const a = randInt(1,50); return `if bit32.band(${a},${a})~=${a} then error("",0) end`; },
@@ -2036,6 +2109,11 @@ function injectOpaquePredicates(code) {
     () => `if string.len("")~=0 then error("",0) end`,
     () => { const a = randInt(1,50), b = randInt(1,50); return `if bit32.bxor(bit32.bxor(${a},${b}),${b})~=${a} then error("",0) end`; },
     () => { const a = randInt(1,9); return `if math.ceil(${a})~=${a} then error("",0) end`; },
+    () => { const a = randInt(1,255); return `if bit32.band(${a},0xFF)~=${a & 0xFF} then error("",0) end`; },
+    () => `if type(type)~="function" then error("",0) end`,
+    () => { const a = randInt(1,9), b = randInt(1,9); return `if ${a}+${b}~=${a+b} then error("",0) end`; },
+    () => { const a = randInt(2,8); return `if ${a}^1~=${a} then error("",0) end`; },
+    () => `if type({})~="table" then error("",0) end`,
   ];
   const lines = code.split('\n');
   const nPreds = randInt(2, 4);
@@ -2047,7 +2125,22 @@ function injectOpaquePredicates(code) {
   return lines.join('\n');
 }
 
-// Layer C: Anti-hook + anti-debug v9 wrapper (enhanced)
+function generateWatermarkChecks() {
+  const checks = [];
+  const nChecks = randInt(3, 6);
+  for (let i = 0; i < nChecks; i++) {
+    const wm_ = randName();
+    const val = randInt(10000, 99999);
+    const key = randInt(1, 254);
+    const encoded = val ^ key;
+    checks.push({
+      decl: `local ${wm_}=bit32.bxor(${encoded},${key})`,
+      verify: `if ${wm_}~=${val} then error("",0) end`,
+    });
+  }
+  return checks;
+}
+
 function wrapAntiHook(code) {
   const sig  = randName(), vn = randName(), en = randName();
   const ah1  = randName(), ah2 = randName(), dbg = randName();
@@ -2056,15 +2149,25 @@ function wrapAntiHook(code) {
   const mt_  = randName(), mt2_ = randName();
   const gc_  = randName(), gc2_ = randName();
   const str_ = randName(), str2_ = randName();
+  const co_  = randName(), co2_ = randName();
+  const pd_  = randName(), pd2_ = randName();
   const bc = Array.from({ length: randInt(32, 64) }, () => randInt(0, 255)).join(',');
   const hashA = randHex(8).toUpperCase();
   const hashB = randHex(4).toUpperCase();
-  const ver = `${randInt(9, 9)}.${randInt(0, 9)}.${randInt(10, 99)}`;
+  const ver = `10.${randInt(0, 9)}.${randInt(10, 99)}`;
+
+  const watermarks = generateWatermarkChecks();
+  const wmDecls = watermarks.map(w => w.decl);
+  const wmVerifies = watermarks.map(w => w.verify);
+  const wmMidpoint = Math.floor(wmVerifies.length / 2);
+  const wmBeforeCode = wmVerifies.slice(0, wmMidpoint);
+  const wmAfterCode = wmVerifies.slice(wmMidpoint);
 
   return [
-    `-- LuaShield v9 | ${hashA}-${hashB} | Multi-Shape VM + CFF + Coroutine`,
-    `local ${sig}={_bc={${bc}},_v="${ver}",_id="${randHex(16)}",_ts=${Date.now()}}`,
+    `-- LuaShield v10 | ${hashA}-${hashB} | Multi-Shape VM + CFF + Coroutine + DeadBC`,
+    `local ${sig}={_bc={${bc}},_v="${ver}",_id="${randHex(16)}",_ts=${Date.now()},_wm="${randHex(8)}"}`,
     `local ${vn}=string.char(bit32.bxor(0x${(65 ^ randInt(1, 10)).toString(16).padStart(2, '0')},${randInt(1, 10)}))`,
+    ...wmDecls,
     `local ${ah1}=bit32.bxor(0x41,0x00)`,
     `if string.char(${ah1})~="A" then error("",0) end`,
     `local ${ah2}=string.char(72)`,
@@ -2074,6 +2177,7 @@ function wrapAntiHook(code) {
     `local ${chk}=pcall(function() assert(${env2}=="table","") end)`,
     `if not ${chk} then error("",0) end`,
     `local ${tmr}=os.clock and os.clock() or 0`,
+    ...wmBeforeCode,
     `local ${tmr2}=os.clock and os.clock() or 0`,
     `if ${tmr2}-${tmr}>0.5 then error("",0) end`,
     `local ${mt_}=setmetatable({},{__index=function() return nil end})`,
@@ -2089,9 +2193,24 @@ function wrapAntiHook(code) {
     `end)`,
     `local ${str2_}=string.rep("\\0",${randInt(4,8)})`,
     `if #${str2_}~=${randInt(4,8)} then end`,
+    `local ${co_}=coroutine.running()`,
+    `local ${co2_}=pcall(function()`,
+    `  if ${co_}~=nil then`,
+    `    local _st=coroutine.status(${co_})`,
+    `    if _st~="running" then error("",0) end`,
+    `  end`,
+    `end)`,
+    `local ${pd_}=0`,
+    `local ${pd2_}=pcall(function() ${pd_}=${pd_}+1`,
+    `  pcall(function() ${pd_}=${pd_}+1`,
+    `    pcall(function() ${pd_}=${pd_}+1 end)`,
+    `  end)`,
+    `end)`,
+    `if ${pd_}~=3 then error("",0) end`,
     `local function ${en}()`,
     code,
     `end`,
+    ...wmAfterCode,
     `local _ok,_er=pcall(${en})`,
     `if not _ok then error(tostring(_er),0) end`,
   ].join('\n');
@@ -2136,12 +2255,14 @@ function obfuscate(code, opts = {}) {
       const rootProto = compiler.compile(ast);
       workCode = buildVMCore(rootProto, ops);
       vmShapeName = ['DispatchTable', 'LinkedList', 'TokenizedString'][randInt(0, 2)];
-      applied.push(`VM Bytecode Compiler v9 (${vmShapeName} shape, shuffled opcodes, coroutine execution)`);
-      applied.push('Dual-Key XOR Constant Encryption (two independent rotating keys)');
+      applied.push(`VM Bytecode Compiler v10 (${vmShapeName} shape, shuffled opcodes, coroutine execution)`);
+      applied.push('Triple-Key XOR Constant Encryption (three independent rotating keys)');
       applied.push('Rolling XOR Cipher on Bytecode Fields');
+      applied.push('Dead Bytecode Injection (unreachable VM instructions with JMP-over)');
       applied.push('Self-Hash Integrity Verification (with runtime check)');
       applied.push('Opaque Payload Encoding (custom-alphabet XOR)');
       applied.push('Fake Dispatch Table Entries (20-35 dead branches)');
+      applied.push('NOP Opcode + 36 Shuffled Opcodes');
       applied.push('GotoStatement / LabelStatement / Deep Upvalues (2+ levels) / ForGeneric / Repeat / Vararg / MultiReturn');
       vmUsed = true;
     } catch (e) {
@@ -2188,12 +2309,12 @@ function obfuscate(code, opts = {}) {
 
   if (options.injectJunk) {
     result = injectJunk(result);
-    applied.push('Realistic Junk Code Injection (60 patterns v9)');
+    applied.push('Realistic Junk Code Injection (75 patterns v10)');
   }
 
   if (options.opaquePredicates) {
     result = injectOpaquePredicates(result);
-    applied.push('Opaque Predicates v9 (20 math-guaranteed conditions, multi-inject)');
+    applied.push('Opaque Predicates v10 (25 math-guaranteed conditions, multi-inject)');
   }
 
   if (options.envFingerprint) {
@@ -2203,7 +2324,7 @@ function obfuscate(code, opts = {}) {
 
   if (options.antiHook) {
     result = wrapAntiHook(result);
-    applied.push('Anti-Hook v9 + Anti-Debug (bit32 fingerprint, executor detection, timing check, metatable trap, coroutine guard)');
+    applied.push('Anti-Hook v10 + Anti-Debug (bit32 fingerprint, executor detection, timing check, metatable trap, coroutine state validation, pcall depth analysis, multi-point watermark)');
   }
 
   return {

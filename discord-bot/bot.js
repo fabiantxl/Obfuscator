@@ -1,12 +1,13 @@
 'use strict';
 
 // ============================================================
-//  LuaShield Discord Bot v9
+//  LuaShield Discord Bot v10
 //  - Slash commands: /obfuscate, /help, /language, /status
 //  - DM support
 //  - English / Spanish language selector on first use
-//  - Obfuscator v9 (Multi-Shape VM, Rolling XOR, Self-Hash Verify,
-//    CFF, String Array Rotation, Env Fingerprint, 14+ protection layers)
+//  - Obfuscator v10 (Multi-Shape VM, Triple-Key XOR, Dead BC Injection,
+//    CFF, String Array Rotation, Env Fingerprint, NOP Padding,
+//    Multi-point Watermark, 16+ protection layers)
 //  - Persistent language storage (survives bot restarts)
 // ============================================================
 
@@ -131,15 +132,15 @@ const I18N = {
     fieldObfSize:    '📦 Obfuscated size',
     fieldIncrease:   '📈 Size increase',
     fieldTech:       '🛡️ Techniques applied',
-    footer:          'LuaShield v9 — Multi-Shape VM | CFF | Rolling XOR | Self-Hash Verify | 14+ Layers',
-    helpTitle:       '🛡️ LuaShield v9 — Help',
-    helpDesc:        'Top-tier Lua/Luau obfuscator for Roblox. Multi-Shape VM Engine (3 shapes per run), Control Flow Flattening, String Array Rotation, Rolling XOR cipher, Self-Hash verification, Dual-Key encryption, Environment Fingerprinting, and 14+ protection layers.',
+    footer:          'LuaShield v10 — Multi-Shape VM | CFF | Triple-Key XOR | Dead BC | 16+ Layers',
+    helpTitle:       '🛡️ LuaShield v10 — Help',
+    helpDesc:        'Top-tier Lua/Luau obfuscator for Roblox. Multi-Shape VM Engine (3 shapes per run), Control Flow Flattening, Triple-Key XOR encryption, Dead Bytecode Injection, NOP Padding, Rolling XOR cipher, Self-Hash verification, Multi-point Watermark, Environment Fingerprinting, and 16+ protection layers.',
     helpUsage:       '`/obfuscate` — Attach a `.lua` file and select a protection level.\n`/status` — Show engine version and stats.',
     helpLight:       '• Identifier renaming\n• Dual-XOR string encryption (no decryptor function)',
-    helpMedium:      '• Light +\n• Multi-step `bit32` number obfuscation (20 patterns)\n• String Array Rotation (indexed XOR lookup)\n• 60-pattern junk code injection (v9)\n• Anti-hook wrapper + timing check',
-    helpHeavy:       '• Medium +\n• **Multi-Shape VM** (3 shapes: Dispatch Table, Linked-List, Tokenized String)\n• Rolling XOR cipher on bytecode fields\n• Dual-Key XOR constant encryption\n• Self-Hash integrity verification (with runtime check)\n• Control Flow Flattening (state-machine dispatcher)\n• Environment Fingerprinting (Roblox context)\n• Opaque payload encoding (custom-alphabet XOR)\n• 20-35 fake dispatch table entries\n• `goto`/labels, `pairs`/`ipairs`, `repeat..until`, varargs, deep upvalues (2+ levels), multiple returns\n• Coroutine-wrapped execution (anti-hook)\n• Global name splitting (`_ENV` concat lookup)\n• 20 opaque predicates (multi-inject)',
-    helpMax:         '• Same as Heavy +\n• Anti-debug v9 (executor detection, `debug` lib check, `string.dump` detection, env hash, timing check, metatable trap)\n• Coroutine guard (invalidates `debug.sethook`)\n• Unique bytecode signature per run',
-    helpFooter:      'LuaShield v9 — Surpasses Luraph | 3 VM Shapes | CFF | Rolling XOR | Self-Hash',
+    helpMedium:      '• Light +\n• Multi-step `bit32` number obfuscation (20 patterns)\n• String Array Rotation (indexed XOR lookup)\n• 75-pattern junk code injection (v10)\n• Anti-hook wrapper + timing check + pcall depth analysis',
+    helpHeavy:       '• Medium +\n• **Multi-Shape VM** (3 shapes: Dispatch Table, Linked-List, Tokenized String)\n• Rolling XOR cipher on bytecode fields\n• Triple-Key XOR constant encryption (3 independent keys)\n• Dead Bytecode Injection (unreachable VM instructions)\n• NOP Padding (random noise opcodes)\n• Self-Hash integrity verification (with runtime check)\n• Control Flow Flattening (state-machine dispatcher)\n• Environment Fingerprinting (Roblox context)\n• Multi-point cryptographic watermark verification\n• Opaque payload encoding (custom-alphabet XOR)\n• 20-35 fake dispatch table entries\n• 36 shuffled opcodes (including NOP)\n• `goto`/labels, `pairs`/`ipairs`, `repeat..until`, varargs, deep upvalues (2+ levels), multiple returns\n• Coroutine-wrapped execution (anti-hook)\n• Global name splitting (`_ENV` concat lookup)\n• 25 opaque predicates (multi-inject)',
+    helpMax:         '• Same as Heavy +\n• Anti-debug v10 (executor detection, `debug` lib check, `string.dump` detection, env hash, timing check, metatable trap, coroutine state validation, pcall depth analysis)\n• Coroutine guard (invalidates `debug.sethook`)\n• Multi-point cryptographic watermark\n• Unique bytecode signature per run',
+    helpFooter:      'LuaShield v10 — Surpasses Luraph | 3 VM Shapes | Triple-Key XOR | Dead BC | 16+ Layers',
     changeLang:      'Change language / Cambiar idioma',
     rateLimit:       (s) => `You're sending requests too fast! Please wait **${s} seconds** before trying again.`,
   },
@@ -160,15 +161,15 @@ const I18N = {
     fieldObfSize:    '📦 Tamaño ofuscado',
     fieldIncrease:   '📈 Aumento de tamaño',
     fieldTech:       '🛡️ Técnicas aplicadas',
-    footer:          'LuaShield v9 — VM Multi-Forma | CFF | XOR Rotativo | Auto-Hash Verificado | 14+ Capas',
-    helpTitle:       '🛡️ LuaShield v9 — Ayuda',
+    footer:          'LuaShield v10 — VM Multi-Forma | CFF | XOR Rotativo | Auto-Hash Verificado | 14+ Capas',
+    helpTitle:       '🛡️ LuaShield v10 — Ayuda',
     helpDesc:        'Ofuscador Lua/Luau de nivel profesional para Roblox. Motor VM Multi-Forma (3 formas por ejecución), Aplanamiento de Flujo de Control, Rotación de Array de Strings, cifrado XOR rotativo, verificación de auto-hash, cifrado dual-clave, Huella Digital de Entorno y 14+ capas de protección.',
     helpUsage:       '`/obfuscate` — Adjunta un archivo `.lua` y elige el nivel de protección.\n`/status` — Muestra versión del motor y estadísticas.',
     helpLight:       '• Renombrado de identificadores\n• Cifrado XOR doble de strings (sin función nombrada)',
     helpMedium:      '• Light +\n• Ofuscación de números con `bit32` multi-paso (20 patrones)\n• Rotación de Array de Strings (lookup XOR indexado)\n• Inyección de junk code (60 patrones v9)\n• Wrapper anti-hook + verificación de tiempo',
     helpHeavy:       '• Medium +\n• **VM Multi-Forma** (3 formas: Dispatch Table, Lista Enlazada, String Tokenizado)\n• Cifrado XOR rotativo en campos de bytecode\n• Cifrado dual-clave XOR en constantes\n• Verificación de integridad auto-hash (con chequeo en runtime)\n• Aplanamiento de Flujo de Control (dispatcher máquina de estados)\n• Huella Digital de Entorno (detección contexto Roblox)\n• Codificación opaca del payload (XOR con alfabeto personalizado)\n• 20-35 entradas falsas en dispatch table\n• `goto`/etiquetas, `pairs`/`ipairs`, `repeat..until`, varargs, upvalues profundos (2+ niveles), multi-retornos\n• Ejecución envuelta en coroutine (anti-hook)\n• Globales rotos en runtime (`_ENV` concat)\n• 20 predicados opacos (multi-inyección)',
     helpMax:         '• Igual que Heavy +\n• Anti-debug v9 (detección de executors, lib `debug`, detección `string.dump`, hash de entorno, verificación de tiempo, trampa de metatabla)\n• Guard de coroutine (invalida `debug.sethook`)\n• Firma de bytecode única por ejecución',
-    helpFooter:      'LuaShield v9 — Supera a Luraph | 3 Formas VM | CFF | XOR Rotativo | Auto-Hash',
+    helpFooter:      'LuaShield v10 — Supera a Luraph | 3 Formas VM | CFF | XOR Rotativo | Auto-Hash',
     changeLang:      'Change language / Cambiar idioma',
     rateLimit:       (s) => `Estas enviando solicitudes muy rapido! Por favor espera **${s} segundos** antes de intentar de nuevo.`,
   },
@@ -258,14 +259,14 @@ function buildLangPicker(userId) {
       .setStyle(ButtonStyle.Secondary),
   );
   const embed = new EmbedBuilder()
-    .setTitle('🛡️ LuaShield v9')
+    .setTitle('🛡️ LuaShield v10')
     .setColor(Colors.Blurple)
     .setDescription(
       '**Welcome! / ¡Bienvenido!**\n\n' +
       'Please choose your language to get started.\n' +
       'Por favor elige tu idioma para comenzar.',
     )
-    .setFooter({ text: 'LuaShield v9 — Roblox Script Obfuscator' });
+    .setFooter({ text: 'LuaShield v10 — Roblox Script Obfuscator' });
   return { embeds: [embed], components: [row], ephemeral: true };
 }
 
@@ -387,7 +388,7 @@ async function handleSlashCommand(interaction) {
     const uptimeStr = `${hrs}h ${mins}m ${secs}s`;
     const langKey = getLang(userId) || 'en';
     const embed = new EmbedBuilder()
-      .setTitle('🛡️ LuaShield v9 — Status')
+      .setTitle('🛡️ LuaShield v10 — Status')
       .setColor(Colors.Blue)
       .addFields(
         { name: '🔧 Engine Version', value: 'v9.0 (Multi-Shape VM + CFF + String Rotation)', inline: true },
@@ -474,7 +475,7 @@ async function handleButton(interaction) {
     await interaction.update({
       embeds: [
         new EmbedBuilder()
-          .setTitle('🛡️ LuaShield v9')
+          .setTitle('🛡️ LuaShield v10')
           .setColor(Colors.Green)
           .setDescription(I18N[lang].langSet)
           .setFooter({ text: I18N[lang].footer }),
@@ -507,8 +508,8 @@ client.on('interactionCreate', async (interaction) => {
 });
 
 client.once('ready', async () => {
-  console.log(`[LuaShield v9] Logged in as ${client.user.tag}`);
-  console.log(`[LuaShield v9] Registering slash commands globally...`);
+  console.log(`[LuaShield v10] Logged in as ${client.user.tag}`);
+  console.log(`[LuaShield v10] Registering slash commands globally...`);
 
   const rest = new REST().setToken(TOKEN);
   try {
@@ -516,13 +517,13 @@ client.once('ready', async () => {
       Routes.applicationCommands(client.user.id),
       { body: COMMANDS },
     );
-    console.log(`[LuaShield v9] ✅ Slash commands registered (global)`);
+    console.log(`[LuaShield v10] ✅ Slash commands registered (global)`);
   } catch (err) {
-    console.error('[LuaShield v9] ❌ Failed to register slash commands:', err.message);
+    console.error('[LuaShield v10] ❌ Failed to register slash commands:', err.message);
   }
 
-  client.user.setActivity('/obfuscate | LuaShield v9', { type: 3 });
-  console.log(`[LuaShield v9] Ready! VM Engine: Multi-Shape (3 shapes) | CFF | 14+ Layers | DM Support`);
+  client.user.setActivity('/obfuscate | LuaShield v10', { type: 3 });
+  console.log(`[LuaShield v10] Ready! VM Engine: Multi-Shape (3 shapes) | CFF | 14+ Layers | DM Support`);
 });
 
 client.on('error', (err) => {
