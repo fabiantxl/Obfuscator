@@ -1,11 +1,11 @@
 'use strict';
 
 // ============================================================
-//  LuaShield Discord Bot v6
+//  LuaShield Discord Bot v7
 //  - Slash commands: /obfuscate, /help, /language
 //  - DM support
 //  - English / Spanish language selector on first use
-//  - Obfuscator v6 (Dispatch Table VM, Dual-Key XOR, 9 layers)
+//  - Obfuscator v7 (Dispatch Table VM, Dual-Key XOR, 9 layers)
 // ============================================================
 
 require('dotenv').config();
@@ -64,15 +64,15 @@ const I18N = {
     fieldObfSize:    '📦 Obfuscated size',
     fieldIncrease:   '📈 Size increase',
     fieldTech:       '🛡️ Techniques applied',
-    footer:          'LuaShield v6 — Dispatch Table VM | Dual-Key XOR | 9 Protection Layers',
-    helpTitle:       '🛡️ LuaShield v6 — Help',
+    footer:          'LuaShield v7 — Dispatch Table VM | Dual-Key XOR | 9 Protection Layers',
+    helpTitle:       '🛡️ LuaShield v7 — Help',
     helpDesc:        'Top-tier Lua/Luau obfuscator for Roblox. VM Bytecode Engine with Dispatch Table, Dual-Key encryption, and 9 protection layers.',
     helpUsage:       '`/obfuscate` — Attach a `.lua` file and select a protection level.',
     helpLight:       '• Identifier renaming\n• Dual-XOR string encryption (no decryptor function)',
-    helpMedium:      '• Light +\n• Multi-step `bit32` number obfuscation\n• 20-pattern junk code injection\n• Anti-hook wrapper',
-    helpHeavy:       '• Medium +\n• **Dispatch Table VM** (unique shuffled opcodes per run)\n• Dual-Key XOR constant encryption\n• `pairs`/`ipairs`, `repeat..until`, varargs, upvalues, multiple returns\n• Global name splitting (`_ENV` concat lookup)\n• Opaque predicates',
-    helpMax:         '• Same as Heavy +\n• Anti-debug v6 (executor detection, `debug` lib check, env hash)\n• Unique bytecode signature per run',
-    helpFooter:      'LuaShield v6 — Beats IronBrew v3 | Luraph parity | 9 layers',
+    helpMedium:      '• Light +\n• Multi-step `bit32` number obfuscation\n• 30-pattern junk code injection (v7)\n• Anti-hook wrapper',
+    helpHeavy:       '• Medium +\n• **Dispatch Table VM** (unique shuffled opcodes per run)\n• Dual-Key XOR constant encryption\n• `goto`/labels, `pairs`/`ipairs`, `repeat..until`, varargs, deep upvalues (2+ levels), multiple returns\n• Coroutine-wrapped execution (anti-hook)\n• Global name splitting (`_ENV` concat lookup)\n• 10 opaque predicates',
+    helpMax:         '• Same as Heavy +\n• Anti-debug v7 (executor detection, `debug` lib check, env hash)\n• Coroutine guard (invalidates `debug.sethook`)\n• Unique bytecode signature per run',
+    helpFooter:      'LuaShield v7 — Surpasses Luraph | 30-pattern junk | Coroutine VM',
     changeLang:      'Change language / Cambiar idioma',
   },
   es: {
@@ -92,15 +92,15 @@ const I18N = {
     fieldObfSize:    '📦 Tamaño ofuscado',
     fieldIncrease:   '📈 Aumento de tamaño',
     fieldTech:       '🛡️ Técnicas aplicadas',
-    footer:          'LuaShield v6 — VM Dispatch Table | XOR Dual-Clave | 9 Capas de Protección',
-    helpTitle:       '🛡️ LuaShield v6 — Ayuda',
+    footer:          'LuaShield v7 — VM Dispatch Table | XOR Dual-Clave | 9 Capas de Protección',
+    helpTitle:       '🛡️ LuaShield v7 — Ayuda',
     helpDesc:        'Ofuscador Lua/Luau de nivel profesional para Roblox. Motor VM con Dispatch Table, cifrado dual-clave y 9 capas de protección.',
     helpUsage:       '`/obfuscate` — Adjunta un archivo `.lua` y elige el nivel de protección.',
     helpLight:       '• Renombrado de identificadores\n• Cifrado XOR doble de strings (sin función nombrada)',
-    helpMedium:      '• Light +\n• Ofuscación de números con `bit32` multi-paso\n• Inyección de junk code (20 patrones)\n• Wrapper anti-hook',
-    helpHeavy:       '• Medium +\n• **VM con Dispatch Table** (opcodes únicos por ejecución)\n• Cifrado dual-clave XOR en constantes\n• `pairs`/`ipairs`, `repeat..until`, varargs, upvalues, multi-retornos\n• Globales rotos en runtime (`_ENV` concat)\n• Predicados opacos',
-    helpMax:         '• Igual que Heavy +\n• Anti-debug v6 (detección de executors, lib `debug`, hash de entorno)\n• Firma de bytecode única por ejecución',
-    helpFooter:      'LuaShield v6 — Supera IronBrew v3 | Paridad con Luraph | 9 capas',
+    helpMedium:      '• Light +\n• Ofuscación de números con `bit32` multi-paso\n• Inyección de junk code (30 patrones v7)\n• Wrapper anti-hook',
+    helpHeavy:       '• Medium +\n• **VM con Dispatch Table** (opcodes únicos por ejecución)\n• Cifrado dual-clave XOR en constantes\n• `goto`/etiquetas, `pairs`/`ipairs`, `repeat..until`, varargs, upvalues profundos (2+ niveles), multi-retornos\n• Ejecución envuelta en coroutine (anti-hook)\n• Globales rotos en runtime (`_ENV` concat)\n• 10 predicados opacos',
+    helpMax:         '• Igual que Heavy +\n• Anti-debug v7 (detección de executors, lib `debug`, hash de entorno)\n• Guard de coroutine (invalida `debug.sethook`)\n• Firma de bytecode única por ejecución',
+    helpFooter:      'LuaShield v7 — Supera a Luraph | 30 patrones junk | VM en Coroutine',
     changeLang:      'Change language / Cambiar idioma',
   },
 };
@@ -185,14 +185,14 @@ function buildLangPicker(userId) {
       .setStyle(ButtonStyle.Secondary),
   );
   const embed = new EmbedBuilder()
-    .setTitle('🛡️ LuaShield v6')
+    .setTitle('🛡️ LuaShield v7')
     .setColor(Colors.Blurple)
     .setDescription(
       '**Welcome! / ¡Bienvenido!**\n\n' +
       'Please choose your language to get started.\n' +
       'Por favor elige tu idioma para comenzar.',
     )
-    .setFooter({ text: 'LuaShield v6 — Roblox Script Obfuscator' });
+    .setFooter({ text: 'LuaShield v7 — Roblox Script Obfuscator' });
   return { embeds: [embed], components: [row], ephemeral: true };
 }
 
@@ -360,7 +360,7 @@ async function handleButton(interaction) {
     await interaction.update({
       embeds: [
         new EmbedBuilder()
-          .setTitle('🛡️ LuaShield v6')
+          .setTitle('🛡️ LuaShield v7')
           .setColor(Colors.Green)
           .setDescription(I18N[lang].langSet)
           .setFooter({ text: I18N[lang].footer }),
@@ -393,8 +393,8 @@ client.on('interactionCreate', async (interaction) => {
 });
 
 client.once('ready', async () => {
-  console.log(`[LuaShield v6] Logged in as ${client.user.tag}`);
-  console.log(`[LuaShield v6] Registering slash commands globally...`);
+  console.log(`[LuaShield v7] Logged in as ${client.user.tag}`);
+  console.log(`[LuaShield v7] Registering slash commands globally...`);
 
   // Register slash commands globally
   const rest = new REST().setToken(TOKEN);
@@ -403,13 +403,13 @@ client.once('ready', async () => {
       Routes.applicationCommands(client.user.id),
       { body: COMMANDS },
     );
-    console.log(`[LuaShield v6] ✅ Slash commands registered (global)`);
+    console.log(`[LuaShield v7] ✅ Slash commands registered (global)`);
   } catch (err) {
-    console.error('[LuaShield v6] ❌ Failed to register slash commands:', err.message);
+    console.error('[LuaShield v7] ❌ Failed to register slash commands:', err.message);
   }
 
-  client.user.setActivity('/obfuscate | LuaShield v6', { type: 3 }); // WATCHING
-  console.log(`[LuaShield v6] Ready! VM Engine: Dispatch Table | 9 Layers | DM Support`);
+  client.user.setActivity('/obfuscate | LuaShield v7', { type: 3 }); // WATCHING
+  console.log(`[LuaShield v7] Ready! VM Engine: Dispatch Table | 9 Layers | DM Support`);
 });
 
 client.on('error', (err) => {

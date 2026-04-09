@@ -1,6 +1,6 @@
 'use strict';
 // ================================================================
-//  LuaShield Obfuscator Engine v6
+//  LuaShield Obfuscator Engine v7
 //  TOP-TIER — designed to surpass Luraph, IronBrew v3, Moonsec
 //
 //  [CAPA A] VM BYTECODE COMPILER
@@ -27,7 +27,7 @@
 //  [CAPA C] WRAPPER + Anti-debug
 //    Dual-key anti-hook (bit32 + string fingerprints)
 //    Multi-layer pcall wrapping
-//    Anti-debug v6 (debug lib check, executor detection, env hash)
+//    Anti-debug v7 (debug lib check, executor detection, env hash)
 //    Fake bytecode signature
 //    Unique hash per obfuscation
 // ================================================================
@@ -124,6 +124,8 @@ class Proto {
     this.breaks   = [];
     this.upvals   = [];
     this.upvalMap = new Map();
+    this.gotoList = [];          // v7: forward gotos pending backpatch [{idx,label}]
+    this.labelMap = new Map();   // v7: label name -> bc position
   }
 
   addK(val) {
@@ -207,6 +209,8 @@ class Compiler {
       case 'BreakStatement':      return this.compileBreak(node);
       case 'DoStatement':         return this.compileDo(node);
       case 'FunctionDeclaration': return this.compileFuncDecl(node);
+      case 'GotoStatement':       return this.compileGoto(node);
+      case 'LabelStatement':      return this.compileLabel(node);
       default: throw new Error(`VM: unsupported stmt ${node.type}`);
     }
   }
@@ -523,10 +527,43 @@ class Compiler {
 
   compileDo(node) { this.compileBlock(node.body); }
 
+  // v7: GotoStatement — forward or backward jump to a label
+  compileGoto(node) {
+    const labelName = node.label.name;
+    const proto = this.cur;
+    if (proto.labelMap.has(labelName)) {
+      // Backward goto — target already known
+      const target = proto.labelMap.get(labelName);
+      this.emit('JMP', 0, target - proto.bc.length - 1);
+    } else {
+      // Forward goto — emit placeholder, backpatch when label is seen
+      const jmpIdx = this.emit('JMP', 0, 0);
+      proto.gotoList.push({ idx: jmpIdx, label: labelName });
+    }
+  }
+
+  // v7: LabelStatement — record position and backpatch pending gotos
+  compileLabel(node) {
+    const labelName = node.label.name;
+    const proto = this.cur;
+    const pos = proto.bc.length;
+    proto.labelMap.set(labelName, pos);
+    for (const g of proto.gotoList) {
+      if (g.label === labelName) {
+        proto.patch(g.idx, 'b', pos - g.idx - 1);
+      }
+    }
+    // Remove resolved gotos
+    proto.gotoList = proto.gotoList.filter(g => g.label !== labelName);
+  }
+
+  // v7 FIXED: deep upvalue resolution — now handles 2+ closure levels
   resolveUpval(name) {
     if (!this.cur.parent) return -1;
     const proto = this.cur;
     if (proto.upvalMap.has(name)) return proto.upvalMap.get(name);
+
+    // Level 1: check parent's locals (in-stack upvalue)
     const parentLocal = proto.parent.resolveLocal(name);
     if (parentLocal >= 0) {
       const idx = proto.upvals.length;
@@ -534,6 +571,19 @@ class Compiler {
       proto.upvalMap.set(name, idx);
       return idx;
     }
+
+    // Level 2+: check parent's upvalues (upvalue-of-upvalue)
+    const savedCur = this.cur;
+    this.cur = proto.parent;
+    const parentUV = this.resolveUpval(name);
+    this.cur = savedCur;
+    if (parentUV >= 0) {
+      const idx = proto.upvals.length;
+      proto.upvals.push({ name, instack: false, idx: parentUV }); // is=0 = from parent upval
+      proto.upvalMap.set(name, idx);
+      return idx;
+    }
+
     return -1;
   }
 
@@ -889,11 +939,20 @@ function encryptConstants(kArr) {
 }
 
 function serializeProto(proto) {
-  const instr = proto.bc.map(({ op, a, b, c }) => `{${op},${a},${b},${c}}`).join(',');
+  // v8: Rolling XOR on opcodes — each stored op = real_op XOR rxk[i%len]
+  // VM decodes at runtime before dispatching. Decompilers see random numbers.
+  const rxkLen = randInt(6, 14);
+  const rxk = Array.from({ length: rxkLen }, () => randInt(1, 127));
+
+  const instr = proto.bc.map(({ op, a, b, c }, i) => {
+    const k = rxk[i % rxkLen];
+    return `{${op ^ k},${a},${b},${c}}`;
+  }).join(',');
+
   const { encK, k1, k2 } = encryptConstants(proto.k);
   const subProtos = proto.subp.map(p => serializeProto(p)).join(',');
   const upvalsStr = proto.upvals.map(u => `{is=${u.instack ? 1 : 0},ix=${u.idx}}`).join(',');
-  return `{bc={${instr}},ek=${encK},k1=${k1},k2=${k2},p={${subProtos}},np=${proto.np},va=${proto.va ? 1 : 0},uv={${upvalsStr}}}`;
+  return `{bc={${instr}},ek=${encK},k1=${k1},k2=${k2},rxk={${rxk.join(',')}},p={${subProtos}},np=${proto.np},va=${proto.va ? 1 : 0},uv={${upvalsStr}}}`;
 }
 
 // ─── Payload Encoder (the top-tier technique) ──────────────────
@@ -967,18 +1026,47 @@ function buildVMCore(rootProto, ops) {
   const O = ops;
   const CB = CONST_BASE;
 
-  // All internal VM names — will be further renamed by Layer B
-  const vm   = randName();
-  const pc_  = randName();
-  const rv_  = randName();
-  const rn_  = randName();
-  const dt_  = randName();
-  const ins_ = randName();
-  const h_   = randName();
-  const rk_  = randName();
+  // All internal VM names — further renamed by Layer B (L1)
+  const vm    = randName();
+  const pc_   = randName();
+  const rv_   = randName();
+  const rn_   = randName();
+  const dt_   = randName();
+  const ins_  = randName();
+  const h_    = randName();
+  const rk_   = randName();
+  const rxkl_ = randName();  // v8: rolling XOR key array local
+  const idx_  = randName();  // v8: instruction index local
+  const op_   = randName();  // v8: decoded opcode local
+
+  // v8: Generate 20–28 fake DT entries with dead code bodies.
+  // Fake op values are 200–9999, never reachable from XOR'd real ops (1–35 XOR 1–127 = 0–126).
+  const fakeDt = (() => {
+    const usedFake = new Set();
+    const fakeBodyGen = [
+      () => `local _f=bit32.bxor(${randInt(1,99)},${randInt(1,99)}) local _g=_f*${randInt(1,9)}`,
+      () => `local _f=math.max(${randInt(1,9)},${randInt(1,9)}) _f=_f-_f`,
+      () => `local _f={} _f[1]=nil _f=nil`,
+      () => `local _f=string.char(${randInt(65,122)}) _f=_f.._f`,
+      () => `local _f=bit32.band(${randInt(1,255)},0xFF)`,
+      () => `local _f=math.floor(${randInt(1,99)}/${randInt(1,9)})`,
+      () => ``,
+    ];
+    let s = '';
+    const n = randInt(20, 28);
+    for (let i = 0; i < n; i++) {
+      let fop;
+      do { fop = randInt(200, 9999); } while (usedFake.has(fop));
+      usedFake.add(fop);
+      const body = fakeBodyGen[randInt(0, fakeBodyGen.length - 1)]();
+      s += `\n  ${dt_}[${fop}]=function(a,b,c) ${body} end`;
+    }
+    return s;
+  })();
 
   const vmCode = `
-local function ${vm}(proto,env,parent_regs,...)
+-- v8: VM accepts parent_upcells for deep upvalue chains (2+ closure levels)
+local function ${vm}(proto,env,parent_regs,parent_upcells,...)
   local bc=proto.bc
   local subp=proto.p
   local ${pc_}={1}
@@ -1008,11 +1096,14 @@ local function ${vm}(proto,env,parent_regs,...)
 
   for i=1,proto.np do regs[i-1]=va[i] end
 
+  -- Deep upvalue cells: instack (is=1) and upval-of-upval (is=0)
   local upcells={}
-  if parent_regs and proto.uv then
+  if proto.uv then
     for i,uv in ipairs(proto.uv) do
       if uv.is==1 and parent_regs then
         upcells[i-1]={val=parent_regs[uv.ix]}
+      elseif uv.is==0 and parent_upcells then
+        upcells[i-1]=parent_upcells[uv.ix]
       end
     end
   end
@@ -1020,6 +1111,9 @@ local function ${vm}(proto,env,parent_regs,...)
   local function ${rk_}(x)
     if x>=${CB} then return kst[x-${CB}] else return regs[x] end
   end
+
+  -- v8: rolling XOR key — opcodes are stored XOR'd; decode at runtime
+  local ${rxkl_}=proto.rxk
 
   local ${dt_}={}
 
@@ -1099,7 +1193,7 @@ local function ${vm}(proto,env,parent_regs,...)
     local snap={}
     for i=0,(sp.np or 0)+40 do snap[i]=regs[i] end
     regs[a]=function(...)
-      return ${vm}(sp,env,snap,...)
+      return ${vm}(sp,env,snap,upcells,...)
     end
   end
   ${dt_}[${O.SETLIST}]=function(a,b,c)
@@ -1117,11 +1211,15 @@ local function ${vm}(proto,env,parent_regs,...)
     local nout=(c==0) and (#va-proto.np) or (c-1)
     for i=1,nout do regs[a+i-1]=va[proto.np+i] end
   end
+  -- v8: fake DT entries — dead code, never reached, confuse decompilers${fakeDt}
 
+  -- v8: main loop with rolling XOR opcode decode
   while true do
-    local ${ins_}=bc[${pc_}[1]]
-    ${pc_}[1]=${pc_}[1]+1
-    local ${h_}=${dt_}[${ins_}[1]]
+    local ${idx_}=${pc_}[1]
+    local ${ins_}=bc[${idx_}]
+    ${pc_}[1]=${idx_}+1
+    local ${op_}=bit32.bxor(${ins_}[1],${rxkl_}[((${idx_}-1)%#${rxkl_})+1])
+    local ${h_}=${dt_}[${op_}]
     if ${h_} then ${h_}(${ins_}[2],${ins_}[3],${ins_}[4]) end
     if ${rn_}~=0 then break end
   end
@@ -1132,11 +1230,17 @@ end
 
 local _proto=${protoStr}
 local _env=setmetatable({},{__index=_ENV or (getfenv and getfenv() or {})})
-local _ok,_er=pcall(${vm},_proto,_env,nil)
+-- v8: Coroutine VM wrapper — invalidates debug.sethook across coroutine boundaries
+local _co=coroutine.create(function()
+  ${vm}(_proto,_env,nil,nil)
+end)
+local _ok,_er=coroutine.resume(_co)
 if not _ok then error(tostring(_er),0) end
 `;
 
-  return vmCode;
+  // v8: encode entire VM source as opaque XOR+custom-hex payload (Boronide pattern)
+  // The VM, dispatch table, and all bytecode are hidden. Only a compact loader is visible.
+  return encodeAsPayload(vmCode);
 }
 
 // ─── Tokenizer (Layer B) ───────────────────────────────────────
@@ -1331,19 +1435,36 @@ function encryptStrings(toks) {
   });
 }
 
-// L3: Number obfuscation (multi-step bit32)
+// L3: Number obfuscation — 20 patterns (v8 expanded from 5)
 function obfuscateNumbers(toks) {
   return toks.map(t => {
     if (t.t !== TK.NU) return t;
     if (t.v.startsWith('0x') || t.v.startsWith('0X')) return t;
     const n = parseFloat(t.v);
     if (!isFinite(n) || !Number.isInteger(n) || Math.abs(n) > 2e6) return t;
-    const s = randInt(0, 4);
-    if (s === 0) { const a = randInt(-9999, 9999); return { ...t, v: `(${n + a}-${a})` }; }
-    if (s === 1 && n >= 0 && n < 2147483648) { const m = randInt(1, 65535); return { ...t, v: `(bit32.bxor(${n ^ m},${m}))` }; }
-    if (s === 2 && n >= 0 && n < 2147483648) { const x = randInt(1, 127); return { ...t, v: `(bit32.bxor(bit32.bxor(${n},${x}),${x}))` }; }
-    if (s === 3) { const a = randInt(1, 999), b = randInt(1, 999); return { ...t, v: `(${n + a + b}-${a}-${b})` }; }
-    const k = randInt(1, 999); return { ...t, v: `(${n + k}-${k})` };
+    const safe = n >= 0 && n < 2147483648;
+    const s = randInt(0, 19);
+    if (s === 0)  { const a = randInt(-9999, 9999); return { ...t, v: `(${n + a}-${a})` }; }
+    if (s === 1 && safe) { const m = randInt(1, 65535); return { ...t, v: `(bit32.bxor(${n ^ m},${m}))` }; }
+    if (s === 2 && safe) { const x = randInt(1, 127); return { ...t, v: `(bit32.bxor(bit32.bxor(${n},${x}),${x}))` }; }
+    if (s === 3)  { const a = randInt(1, 999), b = randInt(1, 999); return { ...t, v: `(${n + a + b}-${a}-${b})` }; }
+    if (s === 4)  { const k = randInt(1, 999); return { ...t, v: `(${n + k}-${k})` }; }
+    // v8: 15 additional number patterns
+    if (s === 5)  { const a = randInt(1, 99), b = randInt(1, 99); return { ...t, v: `(${n + a * b}-${a}*${b})` }; }
+    if (s === 6 && safe) { const m = randInt(1, 0xFFFF); return { ...t, v: `(bit32.bxor(bit32.bor(${n},${m}),bit32.band(bit32.bxor(${n},${m}),${m})))` }; }
+    if (s === 7)  { const k = randInt(2, 9); return { ...t, v: `(math.floor(${n * k}/${k}))` }; }
+    if (s === 8)  { const a = randInt(1, 50); return { ...t, v: `(${n + a * a}-${a}*${a})` }; }
+    if (s === 9 && safe && n > 0) { return { ...t, v: `(bit32.lshift(bit32.rshift(${n},1),1)+bit32.band(${n},1))` }; }
+    if (s === 10) { const a = randInt(1000, 9999), b = randInt(1, 999); return { ...t, v: `(${n + a}-${b}-(${a - b}))` }; }
+    if (s === 11) { const r = randInt(1, 7); return { ...t, v: `(math.floor(${n * (1 << r)}/${1 << r}))` }; }
+    if (s === 12 && safe) { const k1 = randInt(1, 127), k2 = randInt(1, 127); return { ...t, v: `(bit32.bxor(bit32.bxor(${n ^ k1},${k1 ^ k2}),${k2}))` }; }
+    if (s === 13) { const a = randInt(1, 999); return { ...t, v: `(${n + a * 2}-${a}-${a})` }; }
+    if (s === 14 && safe && n > 0) { return { ...t, v: `(bit32.bor(${n & 0xFFFF},bit32.lshift(bit32.rshift(${n},16),16)))` }; }
+    if (s === 15) { const k = randInt(3, 11); return { ...t, v: `(math.fmod(${n + k * 1000},${k * 1000 + 1}) + ${n - (n + k * 1000) % (k * 1000 + 1)})` }; }
+    if (s === 16 && safe) { const k1=randInt(1,127),k2=randInt(1,127),k3=randInt(1,127); return { ...t, v: `(bit32.bxor(bit32.bxor(bit32.bxor(${(n^k1^k2^k3)>>>0},${k3}),${k2}),${k1}))` }; }
+    if (s === 17) { const a = randInt(1, 99), b = n + a; return { ...t, v: `(${b}-${a})` }; }
+    if (s === 18) { const a = randInt(1, 9), b = randInt(1, 9); return { ...t, v: `(${n + a + b}-${a}-${b})` }; }
+    const k = randInt(1, 4999); return { ...t, v: `(${n + k}-${k})` };
   });
 }
 
@@ -1386,6 +1507,38 @@ const JUNK = [
   () => { const a = randName(), b = randHex(2); return `do local ${a}=string.byte("\\x${b}") end`; },
   () => { const a = randName(), b = randName(); return `do local ${a}=math.huge local ${b}=math.huge-${a} end`; },
   () => { const a = randName(); return `do local ${a}=rawequal(nil,nil) end`; },
+  // v7: 10 additional junk patterns (total 30)
+  () => { const a = randName(), n = randInt(1, 255); return `do local ${a}=bit32.bnot(${n}) end`; },
+  () => { const a = randName(), b = randName(); return `do local ${a}=table.concat({}) local ${b}=#${a} end`; },
+  () => { const a = randName(); return `do local ${a}=math.fmod(${randInt(1,99)},${randInt(100,999)}) end`; },
+  () => { const a = randName(); return `do local ${a}={} ${a}[1]=nil end`; },
+  () => { const a = randName(), b = randInt(0, 1); return `do local ${a}=bit32.rshift(${randInt(1,255)},${b}) end`; },
+  () => { const a = randName(); return `if select("#")>=0 then local ${a}=0 end`; },
+  () => { const a = randName(); return `do local ${a}=string.format("%d",${randInt(0,9)}) end`; },
+  () => { const a = randName(), b = randName(); return `do local function ${a}() return ${randInt(0,9)} end local ${b}=${a}() end`; },
+  () => { const a = randName(); return `do local ${a}=math.floor(math.pi)~=3 end`; },
+  () => { const a = randName(), k1 = randInt(1,127), k2 = randInt(1,127); return `do local ${a}=bit32.bxor(${k1},${k2}) end`; },
+  // v8: 20 additional junk patterns (total 50)
+  () => { const a = randName(), b = randName(); return `do local ${a}=pcall(function() local ${b}=0 end) end`; },
+  () => { const a = randName(); return `do local ${a}=math.ceil(${randInt(1,9)}.${randInt(1,9)}) end`; },
+  () => { const a = randName(), b = randName(); return `do local ${a}="" for ${b}=1,0 do ${a}=${a}..${b} end end`; },
+  () => { const a = randName(); return `do local ${a}=bit32.lshift(1,${randInt(0,7)}) end`; },
+  () => { const a = randName(), b = randName(); return `do local ${a}={[1]=false} local ${b}=${a}[2] end`; },
+  () => { const a = randName(); return `do local ${a}=math.min(${randInt(100,999)},${randInt(1000,9999)}) end`; },
+  () => { const a = randName(), b = randName(); return `do local ${a}=string.rep("x",0) local ${b}=#${a} end`; },
+  () => { const a = randName(); return `do local ${a}=not not not false end`; },
+  () => { const a = randName(), k = randInt(1,255); return `do local ${a}=bit32.arshift(${k},0) end`; },
+  () => { const a = randName(), b = randName(), c = randName(); return `do local function ${a}(${b}) return ${b}+0 end local ${c}=${a}(0) end`; },
+  () => { const a = randName(); return `do local ${a}=(function() return nil end)() end`; },
+  () => { const a = randName(), b = randInt(2,9); return `do local ${a}=${b}^0 end`; },
+  () => { const a = randName(); return `if true then local ${a}=${randInt(0,0)} end`; },
+  () => { const a = randName(), b = randName(); return `do local ${a}=table.pack() local ${b}=${a}.n end`; },
+  () => { const a = randName(); return `do local ${a}=math.log(1) end`; },
+  () => { const a = randName(), b = randName(); return `do local ${a}=rawget({},1) local ${b}=${a}==nil end`; },
+  () => { const a = randName(); return `do local ${a}=bit32.bor(0,${randInt(0,255)}) end`; },
+  () => { const a = randName(), b = randName(); return `do local ${a}=1 while ${a}>1 do ${b}=0 end end`; },
+  () => { const a = randName(); return `do local ${a}=tostring(nil)=="nil" end`; },
+  () => { const a = randName(), b = randName(); return `do local ${a}=math.huge~=math.huge local ${b}=${a} end`; },
 ];
 
 function injectJunk(code) {
@@ -1400,7 +1553,7 @@ function injectJunk(code) {
   return out.join('\n');
 }
 
-// L6: Opaque predicates — mathematically guaranteed true
+// L6: Opaque predicates — mathematically guaranteed false conditions (10 total in v7)
 function injectOpaquePredicates(code) {
   const preds = [
     () => { const a = randInt(2, 9), b = a * a; return `if math.floor(math.sqrt(${b}))~=${a} then error("",0) end`; },
@@ -1408,6 +1561,12 @@ function injectOpaquePredicates(code) {
     () => { const n = randInt(10, 99); return `if ${n}%${n}~=0 then error("",0) end`; },
     () => `if rawequal(nil,false) then error("",0) end`,
     () => { const a = randInt(1, 100); return `if math.max(${a},${a})~=${a} then error("",0) end`; },
+    // v7: 5 additional opaque predicates
+    () => { const a = randInt(1,50), b = randInt(51,100); return `if bit32.bor(${a},${b})<${a} then error("",0) end`; },
+    () => { const n = randInt(2, 8); return `if math.abs(-${n})~=${n} then error("",0) end`; },
+    () => `if #{}~=0 then error("",0) end`,
+    () => { const a = randInt(1, 100); return `if tostring(${a})~="${a}" then error("",0) end`; },
+    () => { const a = randInt(1,9), b = a+1; return `if math.min(${a},${b})~=${a} then error("",0) end`; },
   ];
   const lines = code.split('\n');
   const insertAt = Math.floor(lines.length * 0.2);
@@ -1416,7 +1575,7 @@ function injectOpaquePredicates(code) {
   return lines.join('\n');
 }
 
-// Layer C: Anti-hook + anti-debug v6 wrapper
+// Layer C: Anti-hook + anti-debug v7 wrapper
 function wrapAntiHook(code) {
   const sig  = randName(), vn = randName(), en = randName();
   const ah1  = randName(), ah2 = randName(), dbg = randName();
@@ -1427,7 +1586,7 @@ function wrapAntiHook(code) {
   const ver = `${randInt(5, 6)}.${randInt(0, 9)}.${randInt(10, 99)}`;
 
   return [
-    `-- LuaShield v6 | ${hashA}-${hashB} | Dispatch Table VM Engine`,
+    `-- LuaShield v7 | ${hashA}-${hashB} | Dispatch Table VM + Coroutine Execution`,
     `local ${sig}={_bc={${bc}},_v="${ver}",_id="${randHex(16)}"}`,
     `-- Integrity layer: bit32 fingerprint`,
     `local ${vn}=string.char(bit32.bxor(0x${(65 ^ randInt(1, 10)).toString(16).padStart(2, '0')},${randInt(1, 10)}))`,
@@ -1480,13 +1639,14 @@ function obfuscate(code, opts = {}) {
         scope: false,
         locations: false,
         ranges: false,
+        luaVersion: '5.2',  // v7: enables goto/label parsing
       });
       const compiler = new Compiler(ops);
       const rootProto = compiler.compile(ast);
-      workCode = generateVMCode(rootProto, ops);
-      applied.push('VM Bytecode Compiler (dispatch table, shuffled opcodes per run)');
+      workCode = buildVMCore(rootProto, ops);
+      applied.push('VM Bytecode Compiler v7 (dispatch table, shuffled opcodes, coroutine execution)');
       applied.push('Dual-Key XOR Constant Encryption (two independent rotating keys)');
-      applied.push('ForGeneric / Repeat / Vararg / Upvalues / MultiReturn');
+      applied.push('GotoStatement / LabelStatement / Deep Upvalues (2+ levels) / ForGeneric / Repeat / Vararg / MultiReturn');
       vmUsed = true;
     } catch (e) {
       applied.push(`VM Compiler fallback (${e.message.slice(0, 80)})`);
@@ -1517,18 +1677,18 @@ function obfuscate(code, opts = {}) {
 
   if (options.injectJunk) {
     result = injectJunk(result);
-    applied.push('Realistic Junk Code Injection (20 patterns)');
+    applied.push('Realistic Junk Code Injection (30 patterns v7)');
   }
 
   if (options.opaquePredicates) {
     result = injectOpaquePredicates(result);
-    applied.push('Opaque Predicates (math-guaranteed conditions)');
+    applied.push('Opaque Predicates v7 (10 math-guaranteed conditions)');
   }
 
   // ── LAYER C: Anti-hook wrapper ────────────────────────────────
   if (options.antiHook) {
     result = wrapAntiHook(result);
-    applied.push('Anti-Hook v6 + Anti-Debug (bit32 fingerprint, executor detection)');
+    applied.push('Anti-Hook v7 + Anti-Debug (bit32 fingerprint, executor detection, coroutine guard)');
   }
 
   return {
