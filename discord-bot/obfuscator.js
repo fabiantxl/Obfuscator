@@ -1413,49 +1413,7 @@ function wrapEnvironmentFingerprint(code) {
 // ─── Payload Encoder ────────────────────────────────────────────
 
 function encodeAsPayload(vmCode) {
-  const hexDigits = shuffle(['0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f']);
-  const alphabet = hexDigits.join('');
-
-  const keyLen = randInt(14, 28);
-  const key = Array.from({ length: keyLen }, () => randInt(1, 254));
-
-  let encoded = '';
-  for (let i = 0; i < vmCode.length; i++) {
-    const b = vmCode.charCodeAt(i) ^ key[i % keyLen];
-    encoded += hexDigits[b >> 4] + hexDigits[b & 0xF];
-  }
-
-  const ne = (s) => '"' + [...s].map(c => `\\${c.charCodeAt(0)}`).join('') + '"';
-
-  const nChr   = randName(), nBxr  = randName(), nCat  = randName();
-  const nSub   = randName(), nExe  = randName(), nGf   = randName();
-  const nAlpha = randName(), nKey  = randName(), nPay  = randName();
-  const nRev   = randName(), nDec  = randName(), nBi   = randName();
-  const nIdx   = randName(), nV    = randName();
-
-  const lines = [
-    `local ${nGf}=getfenv or function() return _ENV end`,
-    `local ${nChr}=${nGf}()[${ne('string')}][${ne('char')}]`,
-    `local ${nBxr}=${nGf}()[${ne('bit32')}][${ne('bxor')}]`,
-    `local ${nCat}=${nGf}()[${ne('table')}][${ne('concat')}]`,
-    `local ${nSub}=${nGf}()[${ne('string')}][${ne('sub')}]`,
-    `local ${nExe}=${nGf}()[${ne('loadstring')}] or ${nGf}()[${ne('load')}]`,
-    `local ${nAlpha}="${alphabet}"`,
-    `local ${nKey}={${key.join(',')}}`,
-    `local ${nPay}="${encoded}"`,
-    `local ${nRev}={}`,
-    `for ${nIdx}=1,16 do ${nRev}[${nSub}(${nAlpha},${nIdx},${nIdx})]=${nIdx}-1 end`,
-    `local ${nDec}={}`,
-    `local ${nBi}=0`,
-    `for ${nIdx}=1,#${nPay},2 do`,
-    `local ${nV}=${nRev}[${nSub}(${nPay},${nIdx},${nIdx})]*16+${nRev}[${nSub}(${nPay},${nIdx}+1,${nIdx}+1)]`,
-    `${nDec}[#${nDec}+1]=${nChr}(${nBxr}(${nV},${nKey}[${nBi}%#${nKey}+1]))`,
-    `${nBi}=${nBi}+1`,
-    `end`,
-    `${nExe}(${nCat}(${nDec}))()`,
-  ];
-
-  return lines.join('\n');
+  return `do\n${vmCode}\nend`;
 }
 
 // ─── VM Shape Builders (v8: 3 alternative shapes) ───────────────
@@ -2082,7 +2040,7 @@ const JUNK = [
   () => { const a = randName(); return `do local ${a}=select("#") end`; },
   () => { const a = randName(), b = randName(); return `do local ${a}=type("x")=="string" local ${b}=${a} end`; },
   () => { const a = randName(); return `for ${a}=1,0 do end`; },
-  () => { const a = randName(), b = randHex(2); return `do local ${a}=string.byte("\\x${b}") end`; },
+  () => { const a = randName(), b = randInt(32, 126); return `do local ${a}=string.byte(string.char(${b})) end`; },
   () => { const a = randName(), b = randName(); return `do local ${a}=math.huge local ${b}=math.huge-${a} end`; },
   () => { const a = randName(); return `do local ${a}=rawequal(nil,nil) end`; },
   () => { const a = randName(), n = randInt(1, 255); return `do local ${a}=bit32.bnot(${n}) end`; },
@@ -2247,19 +2205,20 @@ function wrapAntiHook(code) {
   const env2 = randName(), chk = randName();
   const tmr  = randName(), tmr2 = randName();
   const mt_  = randName(), mt2_ = randName();
-  const gc_  = randName(), gc2_ = randName();
+  const gc_  = randName();
   const str_ = randName(), str2_ = randName();
   const co_  = randName(), co2_ = randName();
   const pd_  = randName(), pd2_ = randName();
   const uv_  = randName(), uv2_ = randName();
   const ci_  = randName(), ci2_ = randName();
   const sd_  = randName(), sd2_ = randName();
-  const gf_  = randName(), gf2_ = randName();
+  const gf_  = randName();
   const ht_  = randName(), ht2_ = randName();
   const bc = Array.from({ length: randInt(32, 64) }, () => randInt(0, 255)).join(',');
   const hashA = randHex(8).toUpperCase();
   const hashB = randHex(4).toUpperCase();
-  const ver = `12.${randInt(0, 9)}.${randInt(10, 99)}`;
+  const ver = `13.${randInt(0, 9)}.${randInt(10, 99)}`;
+  const ts = Date.now();
 
   const watermarks = generateWatermarkChecks();
   const wmDecls = watermarks.map(w => w.decl);
@@ -2271,26 +2230,36 @@ function wrapAntiHook(code) {
   const honeypotVar = randName();
   const honeypotKey = randInt(10000, 99999);
   const honeypotEnc = honeypotKey ^ randInt(1, 254);
+  const repLen = randInt(4,8);
 
   return [
     `--[[ `,
-    `    ╔═══════════════════════════════════════════════════╗`,
-    `    ║                                                   ║`,
-    `    ║   ██╗     ██╗   ██╗ █████╗ ███████╗██╗  ██╗      ║`,
-    `    ║   ██║     ██║   ██║██╔══██╗██╔════╝██║  ██║      ║`,
-    `    ║   ██║     ██║   ██║███████║███████╗███████║      ║`,
-    `    ║   ██║     ██║   ██║██╔══██║╚════██║██╔══██║      ║`,
-    `    ║   ███████╗╚██████╔╝██║  ██║███████║██║  ██║      ║`,
-    `    ║   ╚══════╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝      ║`,
-    `    ║                                                   ║`,
-    `    ║           S H I E L D   v${ver.split('.')[0]}                    ║`,
-    `    ║                                                   ║`,
-    `    ║   ID: ${hashA}-${hashB}                           ║`,
-    `    ║   Protected Script                                ║`,
-    `    ║                                                   ║`,
-    `    ╚═══════════════════════════════════════════════════╝`,
+    `    ╔══════════════════════════════════════════════════════════╗`,
+    `    ║                                                          ║`,
+    `    ║   ██╗     ██╗   ██╗ █████╗ ███████╗██╗  ██╗██╗██████╗   ║`,
+    `    ║   ██║     ██║   ██║██╔══██╗██╔════╝██║  ██║██║██╔═══╝   ║`,
+    `    ║   ██║     ██║   ██║███████║███████╗███████║██║██████╗    ║`,
+    `    ║   ██║     ██║   ██║██╔══██║╚════██║██╔══██║██║██╔═══╝   ║`,
+    `    ║   ███████╗╚██████╔╝██║  ██║███████║██║  ██║██║██████╗   ║`,
+    `    ║   ╚══════╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═╝╚═════╝   ║`,
+    `    ║                                                          ║`,
+    `    ║      ╔═╗╦ ╦╦╔═╗╦  ╔╦╗  Protection Engine v${ver}      ║`,
+    `    ║      ╚═╗╠═╣║║╣ ║   ║║  Powered by LuaShield            ║`,
+    `    ║      ╚═╝╩ ╩╩╚═╝╩═╝╚═╝  github.com/fabiantxl            ║`,
+    `    ║                                                          ║`,
+    `    ║   ┌──────────────────────────────────────────┐           ║`,
+    `    ║   │  Build: ${hashA}-${hashB}          │           ║`,
+    `    ║   │  Time:  ${new Date(ts).toISOString().slice(0,19)}Z          │           ║`,
+    `    ║   │  Mode:  Enterprise Protection          │           ║`,
+    `    ║   └──────────────────────────────────────────┘           ║`,
+    `    ║                                                          ║`,
+    `    ║   ⚠  This script is protected by LuaShield.             ║`,
+    `    ║   ⚠  Unauthorized modification or redistribution        ║`,
+    `    ║      is strictly prohibited.                             ║`,
+    `    ║                                                          ║`,
+    `    ╚══════════════════════════════════════════════════════════╝`,
     `]]`,
-    `local ${sig}={_bc={${bc}},_v="${ver}",_id="${randHex(16)}",_ts=${Date.now()},_wm="${randHex(8)}",_ck="${randHex(12)}"}`,
+    `local ${sig}={_bc={${bc}},_v="${ver}",_id="${randHex(16)}",_ts=${ts},_wm="${randHex(8)}",_ck="${randHex(12)}"}`,
     `local ${vn}=string.char(bit32.bxor(0x${(65 ^ randInt(1, 10)).toString(16).padStart(2, '0')},${randInt(1, 10)}))`,
     ...wmDecls,
     `local ${ah1}=bit32.bxor(0x41,0x00)`,
@@ -2309,74 +2278,26 @@ function wrapAntiHook(code) {
     `local ${mt2_}=${mt_}["${randHex(4)}"]`,
     `if ${mt2_}~=nil then error("",0) end`,
     `local ${gc_}=pcall(function() local _=collectgarbage("count") end)`,
-    `local ${str_}=pcall(function()`,
-    `  local _t=string.dump or nil`,
-    `  if _t then`,
-    `    local _ok2,_=pcall(_t,function() end)`,
-    `    if _ok2 then error("",0) end`,
-    `  end`,
-    `end)`,
-    (() => { const repLen = randInt(4,8); return [
+    `local ${str_}=pcall(function() local _t=string.dump or nil if _t then local _ok2,_=pcall(_t,function() end) if _ok2 then error("",0) end end end)`,
     `local ${str2_}=string.rep("\\0",${repLen})`,
     `if #${str2_}~=${repLen} then end`,
-    ].join('\n'); })(),
     `local ${co_}=coroutine.running()`,
-    `local ${co2_}=pcall(function()`,
-    `  if ${co_}~=nil then`,
-    `    local _st=coroutine.status(${co_})`,
-    `    if _st~="running" then error("",0) end`,
-    `  end`,
-    `end)`,
+    `local ${co2_}=pcall(function() if ${co_}~=nil then local _st=coroutine.status(${co_}) if _st~="running" then error("",0) end end end)`,
     `local ${pd_}=0`,
-    `local ${pd2_}=pcall(function() ${pd_}=${pd_}+1`,
-    `  pcall(function() ${pd_}=${pd_}+1`,
-    `    pcall(function() ${pd_}=${pd_}+1 end)`,
-    `  end)`,
-    `end)`,
+    `local ${pd2_}=pcall(function() ${pd_}=${pd_}+1 pcall(function() ${pd_}=${pd_}+1 pcall(function() ${pd_}=${pd_}+1 end) end) end)`,
     `if ${pd_}~=3 then error("",0) end`,
-    `local ${uv_}=(function()`,
-    `  local _secret=${randInt(10000,99999)}`,
-    `  return function() return _secret end`,
-    `end)()`,
-    `local ${uv2_}=pcall(function()`,
-    `  if debug and debug.getupvalue then`,
-    `    local _n,_v=debug.getupvalue(${uv_},1)`,
-    `    if _n then error("",0) end`,
-    `  end`,
-    `end)`,
+    `local ${uv_}=(function() local _secret=${randInt(10000,99999)} return function() return _secret end end)()`,
+    `local ${uv2_}=pcall(function() if debug and debug.getupvalue then local _n,_v=debug.getupvalue(${uv_},1) if _n then error("",0) end end end)`,
     `local ${ci_}=function() return true end`,
-    `local ${ci2_}=pcall(function()`,
-    `  if tostring(${ci_}):sub(1,8)~="function" then error("",0) end`,
-    `end)`,
+    `local ${ci2_}=pcall(function() if tostring(${ci_}):sub(1,8)~="function" then error("",0) end end)`,
     `local ${sd_}=0`,
-    `local ${sd2_}=pcall(function()`,
-    `  local function _c(n) if n>0 then return _c(n-1) end return true end`,
-    `  _c(5)`,
-    `  ${sd_}=1`,
-    `end)`,
+    `local ${sd2_}=pcall(function() local function _c(n) if n>0 then return _c(n-1) end return true end _c(5) ${sd_}=1 end)`,
     `if ${sd_}~=1 then error("",0) end`,
-    `local ${gf_}=pcall(function()`,
-    `  if getfenv then`,
-    `    local _e=getfenv(0)`,
-    `    if type(_e)~="table" then error("",0) end`,
-    `  end`,
-    `end)`,
-    `local ${ht_}=setmetatable({},{`,
-    `  __newindex=function(t,k,v) rawset(t,k,v) end,`,
-    `  __index=function(t,k) return rawget(t,k) end`,
-    `})`,
+    `local ${gf_}=pcall(function() if getfenv then local _e=getfenv(0) if type(_e)~="table" then error("",0) end end end)`,
+    `local ${ht_}=setmetatable({},{__newindex=function(t,k,v) rawset(t,k,v) end,__index=function(t,k) return rawget(t,k) end})`,
     `${ht_}["${randHex(4)}"]=true`,
     `local ${ht2_}=${ht_}["${randHex(4)}"]`,
-    `local ${honeypotVar}=setmetatable({_k=${honeypotEnc}},{`,
-    `  __index=function(self,k)`,
-    `    if k=="_d" then error("",0) end`,
-    `    return rawget(self,k)`,
-    `  end,`,
-    `  __newindex=function(self,k,v)`,
-    `    if k=="_d" then error("",0) end`,
-    `    rawset(self,k,v)`,
-    `  end`,
-    `})`,
+    `local ${honeypotVar}=setmetatable({_k=${honeypotEnc}},{__index=function(self,k) if k=="_d" then error("",0) end return rawget(self,k) end,__newindex=function(self,k,v) if k=="_d" then error("",0) end rawset(self,k,v) end})`,
     `local function ${en}()`,
     code,
     `end`,
@@ -2550,6 +2471,37 @@ const PRESETS = {
     renameVars: true, encryptStrings: true,
     obfuscateNumbers: true, breakGlobals: false,
     injectJunk: true, opaquePredicates: false, antiHook: true,
+    controlFlowFlatten: false, stringArrayRotate: true, envFingerprint: false,
+    vmNesting: false,
+  },
+  heavy: {
+    vmCompile: true,
+    renameVars: true, encryptStrings: true,
+    obfuscateNumbers: true, breakGlobals: true,
+    injectJunk: true, opaquePredicates: true, antiHook: true,
+    controlFlowFlatten: true, stringArrayRotate: true, envFingerprint: true,
+    vmNesting: false,
+  },
+  max: {
+    vmCompile: true,
+    renameVars: true, encryptStrings: true,
+    obfuscateNumbers: true, breakGlobals: true,
+    injectJunk: true, opaquePredicates: true, antiHook: true,
+    controlFlowFlatten: true, stringArrayRotate: true, envFingerprint: true,
+    vmNesting: true, tripleNesting: false,
+  },
+  ultra: {
+    vmCompile: true,
+    renameVars: true, encryptStrings: true,
+    obfuscateNumbers: true, breakGlobals: true,
+    injectJunk: true, opaquePredicates: true, antiHook: true,
+    controlFlowFlatten: true, stringArrayRotate: true, envFingerprint: true,
+    vmNesting: true, tripleNesting: true,
+  },
+};
+
+module.exports = { obfuscate, PRESETS };
+: true,
     controlFlowFlatten: false, stringArrayRotate: true, envFingerprint: false,
     vmNesting: false,
   },
