@@ -1,0 +1,550 @@
+-- LuaShield v6 | CB3FD4D85139B923-ED380B9C | Dispatch Table VM Engine
+local iBO0D_x_OI={_bc={143,49,217,164,156,18,243,102,29,171,72,139,194,113,185,207,221,155,55,121,19,229,70,44,147,235,192,237,76,157,183,253,165,23,37,152,105,47,164,183,225,116,188,11,76,120,136,142,248,13,65,28,142,71,176,152,187,41,190,188,10,76,221},_v="5.1.33",_id="eebddbbf0e8a6f5ed3363dd20078461c"}
+-- Integrity layer: bit32 fingerprint
+local _m_Yipi_ffDor__=string.char(bit32.bxor(0x4b,6))
+local iOfGpAs_aolzIbvx=bit32.bxor(0x41,0x00)
+if string.char(iOfGpAs_aolzIbvx)~="A" then error("",0) end
+-- Integrity layer: string.char consistency
+local i_sOTW0_HRi_iI=string.char(72)
+if i_sOTW0_HRi_iI~="H" then error("",0) end
+-- Anti-debug: debug library presence check
+local la_izeI_0oO_i0oIWl=pcall(function() if debug~=nil and debug.getinfo~=nil then error("",0) end end)
+-- Anti-executor: environment sanity
+local lo_0liOl0o0_O=type(_ENV)
+local oGlJIiuooa0lOOcl__=pcall(function() assert(lo_0liOl0o0_O=="table","") end)
+if not oGlJIiuooa0lOOcl__ then error("",0) end
+local function I_paCllo00IIIoio()
+-- // Configuración de la Librería Obsidian
+local IIl_TO_BCHhir = (function(_oioII0QU,l__lMOt0D,ooOIlrPoiB) local Ioi0_orDI_llI={} for lihIOSiAilqRO=1,#l__lMOt0D do Ioi0_orDI_llI[lihIOSiAilqRO]=string.char(bit32.bxor(bit32.bxor(l__lMOt0D[lihIOSiAilqRO],_oioII0QU[(lihIOSiAilqRO-1)%#_oioII0QU+1]),ooOIlrPoiB[(lihIOSiAilqRO-1)%#ooOIlrPoiB+1])) end return table.concat(Ioi0_orDI_llI) end)({72,224,84,195,204,47,26,154,177,67,117,227},{240,176,173,82,21,37,25,72,40,242,38,64,206,35,16,135,68,166,191,205,89,208,188,188,10,105,218,125,156,140,152,95,236,64,236,109,241,178,176,70,5,112,91,20,53,253,62,65,230,40,23,134,85,173,171,208,19,207,190,186,10,50},{208,36,141,225,170,48,44,253,235})
+do local ic0_cI0_zo=bit32.bxor(82,62) end
+local OiiOO_IIxby = _ENV["lo".."adstr".."i".."ng"](game:HttpGet(IIl_TO_BCHhir .. (function(oR0oOOOuOOg_Ki_i,lFdisOACItlls0iIO,IuIiOIlozlIQBdoMO) local oIN00liR0BQV={} for O_IIOo_oo_EklOor=1,#lFdisOACItlls0iIO do oIN00liR0BQV[O_IIOo_oo_EklOor]=string.char(bit32.bxor(bit32.bxor(lFdisOACItlls0iIO[O_IIOo_oo_EklOor],oR0oOOOuOOg_Ki_i[(O_IIOo_oo_EklOor-1)%#oR0oOOOuOOg_Ki_i+1]),IuIiOIlozlIQBdoMO[(O_IIOo_oo_EklOor-1)%#IuIiOIlozlIQBdoMO+1])) end return table.concat(oIN00liR0BQV) end)({43,111,52,62,120},{31,238,22,243,97,177,86,165,42,229,10},{120,232,64,191})))()
+local OlOoOo0qiDOIqT_c = _ENV["loa".."d".."st".."rin".."g"](game:HttpGet(IIl_TO_BCHhir .. (function(OnOlOoKllx_Ii,oo0o0loI0I,oBo_coll_g) local i0oorcilSOiIHepoi0={} for OOi_IKI_fllwIi0II=1,#oo0o0loI0I do i0oorcilSOiIHepoi0[OOi_IKI_fllwIi0II]=string.char(bit32.bxor(bit32.bxor(oo0o0loI0I[OOi_IKI_fllwIi0II],OnOlOoKllx_Ii[(OOi_IKI_fllwIi0II-1)%#OnOlOoKllx_Ii+1]),oBo_coll_g[(OOi_IKI_fllwIi0II-1)%#oBo_coll_g+1])) end return table.concat(i0oorcilSOiIHepoi0) end)({11,218,53,156,147,53,99,233,177,182},{135,188,23,127,242,146,13,80,219,149,234,176,172,188,16,86,66,0,204,76,38,66,86},{237,2,70,140,15,212,65})))()
+do local iQolifP0tL_FPooI=select("#") end
+local _I0o_zT0whiIi__Eo = _ENV["load".."st".."r".."i".."ng"](game:HttpGet(IIl_TO_BCHhir .. (function(_0Io0lOlip_vn,IOwl_oJIIQIO00I,oO_HZoipOIll_O) local lMOFcR0iOIo0={} for OoWjioIoo=1,#IOwl_oJIIQIO00I do lMOFcR0iOIo0[OoWjioIoo]=string.char(bit32.bxor(bit32.bxor(IOwl_oJIIQIO00I[OoWjioIoo],_0Io0lOlip_vn[(OoWjioIoo-1)%#_0Io0lOlip_vn+1]),oO_HZoipOIll_O[(OoWjioIoo-1)%#oO_HZoipOIll_O+1])) end return table.concat(lMOFcR0iOIo0) end)({45,21,86,188,67,234,49,89,8,177,161},{62,63,73,204,118,235,80,113,118,156,182,46,15,39,134,86,193,56,104,63,182,142},{114,78,123,31,91})))()
+do local OO_eiIiIIaOIii=math.huge local _aIlZPIoFO0=math.huge-OO_eiIiIIaOIii end
+
+-- // Ventana Principal
+local o_OUo_0indIl = OiiOO_IIxby:CreateWindow({
+    Title = (function(_Fjh0NOOooWl0qoI,_lI0HIlIk,oOlxiolfoOoooxliII) local IIRO_h0ixHbYJQZ={} for _IAOoIIPlyi_hoce0R=1,#_lI0HIlIk do IIRO_h0ixHbYJQZ[_IAOoIIPlyi_hoce0R]=string.char(bit32.bxor(bit32.bxor(_lI0HIlIk[_IAOoIIPlyi_hoce0R],_Fjh0NOOooWl0qoI[(_IAOoIIPlyi_hoce0R-1)%#_Fjh0NOOooWl0qoI+1]),oOlxiolfoOoooxliII[(_IAOoIIPlyi_hoce0R-1)%#oOlxiolfoOoooxliII+1])) end return table.concat(IIRO_h0ixHbYJQZ) end)({29,50,124,236,43,126},{196,203,158,2,184,132,155,203,130,5},{141,145,135,206,209,143,242}),
+    Footer = (function(oYDlsFaIva,llOiDOi_looYhoo,IO_I0Oo0imi) local OelikIkIKOo={} for _nfVlQxcyl=1,#llOiDOi_looYhoo do OelikIkIKOo[_nfVlQxcyl]=string.char(bit32.bxor(bit32.bxor(llOiDOi_looYhoo[_nfVlQxcyl],oYDlsFaIva[(_nfVlQxcyl-1)%#oYDlsFaIva+1]),IO_I0Oo0imi[(_nfVlQxcyl-1)%#IO_I0Oo0imi+1])) end return table.concat(OelikIkIKOo) end)({190,199,252,225,250,227,128},{26,252,8,153,93,195,61,225,111,205,65,189,93},{198,66,212,62}),
+    Icon = 711777336,
+    NotifySide = (function(I0OOOolPLIlOiOOO,lBTiOrloo_jiIZVIB_,OIIOlIiC_R) local l_m_ycr0__lI_liQ0={} for iGipb_loo=1,#lBTiOrloo_jiIZVIB_ do l_m_ycr0__lI_liQ0[iGipb_loo]=string.char(bit32.bxor(bit32.bxor(lBTiOrloo_jiIZVIB_[iGipb_loo],I0OOOolPLIlOiOOO[(iGipb_loo-1)%#I0OOOolPLIlOiOOO+1]),OIIOlIiC_R[(iGipb_loo-1)%#OIIOlIiC_R+1])) end return table.concat(l_m_ycr0__lI_liQ0) end)({97,18,128,46,173,162},{38,18,189,13,62},{21,105,90,75,231,14,252,122,142}),
+    ShowCustomCursor = true,
+})
+
+do local oMOJlOoJIn=bit32.band(110,0xFF) end
+-- // Definición de Tabs
+local i_do_R__lGOoiiII = {
+    Main = o_OUo_0indIl:AddTab((function(olE_o_ii0IOIfIOd__,IZeillHliIclC_,iIIipiNWol0z0Qlo_) local o_lioVIZ_l={} for i_0OOo_oN_Noi=1,#IZeillHliIclC_ do o_lioVIZ_l[i_0OOo_oN_Noi]=string.char(bit32.bxor(bit32.bxor(IZeillHliIclC_[i_0OOo_oN_Noi],olE_o_ii0IOIfIOd__[(i_0OOo_oN_Noi-1)%#olE_o_ii0IOIfIOd__+1]),iIIipiNWol0z0Qlo_[(i_0OOo_oN_Noi-1)%#iIIipiNWol0z0Qlo_+1])) end return table.concat(o_lioVIZ_l) end)({56,205,57,228,246,94,7,155},{197,6,118,241},{176,170,38,123,67,58}), (function(oOiIEjaiOwsloaoN,_0fD0_l0Tr,OizbEO_hz_i_L) local o_oVIGyOpOOO={} for _nTulil__Md0l0eOsl=1,#_0fD0_l0Tr do o_oVIGyOpOOO[_nTulil__Md0l0eOsl]=string.char(bit32.bxor(bit32.bxor(_0fD0_l0Tr[_nTulil__Md0l0eOsl],oOiIEjaiOwsloaoN[(_nTulil__Md0l0eOsl-1)%#oOiIEjaiOwsloaoN+1]),OizbEO_hz_i_L[(_nTulil__Md0l0eOsl-1)%#OizbEO_hz_i_L+1])) end return table.concat(o_oVIGyOpOOO) end)({191,156,220,168,106,223,41,139,71,159},{187,68,173,112,174,214,250},{103,183,28,181,165})),
+    Esp = o_OUo_0indIl:AddTab((function(lOlRqlihONFN,Ol_IOOb0O0lOdo_K,O000i__o0mf_OlZp) local lPoZ0p_O_oOQllo={} for O00Avl0XIsilIoiO=1,#Ol_IOOb0O0lOdo_K do lPoZ0p_O_oOQllo[O00Avl0XIsilIoiO]=string.char(bit32.bxor(bit32.bxor(Ol_IOOb0O0lOdo_K[O00Avl0XIsilIoiO],lOlRqlihONFN[(O00Avl0XIsilIoiO-1)%#lOlRqlihONFN+1]),O000i__o0mf_OlZp[(O00Avl0XIsilIoiO-1)%#O000i__o0mf_OlZp+1])) end return table.concat(lPoZ0p_O_oOQllo) end)({205,163,116,67,139,135,148,240},{130,5,34},{10,245,6,52,31,169,194}), (function(Oo_IpoOollHOI,l_iH0_ri0oQcr,oi_ooLlwIvUlxwo_) local _0l0IoOoilibi={} for _oKvRCYI_=1,#l_iH0_ri0oQcr do _0l0IoOoilibi[_oKvRCYI_]=string.char(bit32.bxor(bit32.bxor(l_iH0_ri0oQcr[_oKvRCYI_],Oo_IpoOollHOI[(_oKvRCYI_-1)%#Oo_IpoOollHOI+1]),oi_ooLlwIvUlxwo_[(_oKvRCYI_-1)%#oi_ooLlwIvUlxwo_+1])) end return table.concat(_0l0IoOoilibi) end)({101,73,118,68,220,181,41,68,84,35,198,180},{177,251,104,248,59,231,133},{181,220,112,211,158,55,200,232,25})),
+    Misc = o_OUo_0indIl:AddTab((function(OI0Ori_N_GIllKI_l,_IxlNIO0iI,_qCivp_oO__VOiI) local IUiWIlG0iOO={} for l_l0IO_PZoXliz=1,#_IxlNIO0iI do IUiWIlG0iOO[l_l0IO_PZoXliz]=string.char(bit32.bxor(bit32.bxor(_IxlNIO0iI[l_l0IO_PZoXliz],OI0Ori_N_GIllKI_l[(l_l0IO_PZoXliz-1)%#OI0Ori_N_GIllKI_l+1]),_qCivp_oO__VOiI[(l_l0IO_PZoXliz-1)%#_qCivp_oO__VOiI+1])) end return table.concat(IUiWIlG0iOO) end)({148,8,35,184,222,94},{177,202,32,184},{104,171,112,99,245,250,85}), (function(O_OIff_Il_,_IOioMOoOliOdOlIii,ouiV0OhmoI_Dau) local loljZl_IOO_Oo_0iT={} for oGl0o_0llO_C_WooO=1,#_IOioMOoOliOdOlIii do loljZl_IOO_Oo_0iT[oGl0o_0llO_C_WooO]=string.char(bit32.bxor(bit32.bxor(_IOioMOoOliOdOlIii[oGl0o_0llO_C_WooO],O_OIff_Il_[(oGl0o_0llO_C_WooO-1)%#O_OIff_Il_+1]),ouiV0OhmoI_Dau[(oGl0o_0llO_C_WooO-1)%#ouiV0OhmoI_Dau+1])) end return table.concat(loljZl_IOO_Oo_0iT) end)({103,185,210,17,143,178,142},{70,106,10,248,123,156,180,168,131,26,201,106,72,172,91,47,225,218},{82,167,170,140,128,77,82,226})),
+    [(function(OOo0OoOe_TY0OokO,luFlaGI0oo_0eI_,oaIpiLiiiw_c_o0I0o) local III_i0vOIZCeJ={} for io_F00D0BolA__=1,#luFlaGI0oo_0eI_ do III_i0vOIZCeJ[io_F00D0BolA__]=string.char(bit32.bxor(bit32.bxor(luFlaGI0oo_0eI_[io_F00D0BolA__],OOo0OoOe_TY0OokO[(io_F00D0BolA__-1)%#OOo0OoOe_TY0OokO+1]),oaIpiLiiiw_c_o0I0o[(io_F00D0BolA__-1)%#oaIpiLiiiw_c_o0I0o+1])) end return table.concat(III_i0vOIZCeJ) end)({130,229,217,189,22,36},{66,171,99,80,226,170,3,40,34,221,255},{149,7,154,190,145,250,245,164})] = o_OUo_0indIl:AddTab((function(lOFIQIiTiiz0i0Qouw,oIOfOHDaoZCI,_0bOilFO_NS) local iO_l_fOr0n0lRWyIoO={} for OsyoooOIXoOli=1,#oIOfOHDaoZCI do iO_l_fOr0n0lRWyIoO[OsyoooOIXoOli]=string.char(bit32.bxor(bit32.bxor(oIOfOHDaoZCI[OsyoooOIXoOli],lOFIQIiTiiz0i0Qouw[(OsyoooOIXoOli-1)%#lOFIQIiTiiz0i0Qouw+1]),_0bOilFO_NS[(OsyoooOIXoOli-1)%#_0bOilFO_NS+1])) end return table.concat(iO_l_fOr0n0lRWyIoO) end)({178,79,87,120,83,47,162},{177,225,202,113,96,188,107,129,119,215,182},{86,231,189,90}), (function(olI_u0hiI_O_bII,lPr0_P_o_lMONIdO,iAll_Dg0Y00IloZv_) local OEgFaXpO0IIro={} for I0_i0Niy0BiOlilll=1,#lPr0_P_o_lMONIdO do OEgFaXpO0IIro[I0_i0Niy0BiOlilll]=string.char(bit32.bxor(bit32.bxor(lPr0_P_o_lMONIdO[I0_i0Niy0BiOlilll],olI_u0hiI_O_bII[(I0_i0Niy0BiOlilll-1)%#olI_u0hiI_O_bII+1]),iAll_Dg0Y00IloZv_[(I0_i0Niy0BiOlilll-1)%#iAll_Dg0Y00IloZv_+1])) end return table.concat(OEgFaXpO0IIro) end)({222,137,70,156,2,63},{163,185,103,120,237,210,162,82},{14,85,85,144,134,131,27,168,252})),
+    
+}
+
+-- // Variables de entorno y servicios
+local oTi0iZOI_iI_0 = OiiOO_IIxby.oTi0iZOI_iI_0
+local l0Gu0i0ll0uOO00_OW = OiiOO_IIxby.l0Gu0i0ll0uOO00_OW
+do local lIBOYxil0IIoA=select("#") end
+local Iwol0IG0rxO0oi0 = game:GetService((function(_IOlOiipoIz0e,OmIolooRgwlYiO,iAo_O00c0_0luoo_I) local Oq0CtO_o_mohl={} for lAollbJV_poiieOhw_=1,#OmIolooRgwlYiO do Oq0CtO_o_mohl[lAollbJV_poiieOhw_]=string.char(bit32.bxor(bit32.bxor(OmIolooRgwlYiO[lAollbJV_poiieOhw_],_IOlOiipoIz0e[(lAollbJV_poiieOhw_-1)%#_IOlOiipoIz0e+1]),iAo_O00c0_0luoo_I[(lAollbJV_poiieOhw_-1)%#iAo_O00c0_0luoo_I+1])) end return table.concat(Oq0CtO_o_mohl) end)({195,227,146,161,213,211,223,181,191},{128,6,247,152,52,229,236},{19,137,4,64,132,68,64}))
+local RunService = game:GetService((function(Oo000mlCboLIRDlo,_oIXqDFAo_0Iiool,O_layO0Kl__XO) local or_IoIJ0Iioo0_oOI={} for lOOlIliiOl=1,#_oIXqDFAo_0Iiool do or_IoIJ0Iioo0_oOI[lOOlIliiOl]=string.char(bit32.bxor(bit32.bxor(_oIXqDFAo_0Iiool[lOOlIliiOl],Oo000mlCboLIRDlo[(lOOlIliiOl-1)%#Oo000mlCboLIRDlo+1]),O_layO0Kl__XO[(lOOlIliiOl-1)%#O_layO0Kl__XO+1])) end return table.concat(or_IoIJ0Iioo0_oOI) end)({46,196,2,222,104,105,47,103,106,117,145,143},{64,114,136,137,58,138,73,50,202,244},{60,195,228,4,55,145,16}))
+do local _lOoJQiI_iiOIl=type("x")=="string" local lxok0o0ilO_IMEoiE=_lOoJQiI_iiOIl end
+local UserInputService = game:GetService((function(OOihWlbfi_o_i0iIo0,ojbiyxCuRDiOoIuOl,O0_HYfOlwi0o0O) local oyoI_lNO_E_II0_u={} for oBIzIllE0XOiit=1,#ojbiyxCuRDiOoIuOl do oyoI_lNO_E_II0_u[oBIzIllE0XOiit]=string.char(bit32.bxor(bit32.bxor(ojbiyxCuRDiOoIuOl[oBIzIllE0XOiit],OOihWlbfi_o_i0iIo0[(oBIzIllE0XOiit-1)%#OOihWlbfi_o_i0iIo0+1]),O0_HYfOlwi0o0O[(oBIzIllE0XOiit-1)%#O0_HYfOlwi0o0O+1])) end return table.concat(oyoI_lNO_E_II0_u) end)({240,164,236,170,166,25},{122,42,34,62,99,31,90,60,253,38,62,192,96,65,231,21},{223,253,171,230,140,104,218,237,101}))
+local Lighting = game:GetService((function(omALiiTIon00_B0O_,iD_IoeIJilzI_d,Oo_lFOoEE0i) local oOoidoII_lIIoCoiI={} for oaA_oKO0o0lI=1,#iD_IoeIJilzI_d do oOoidoII_lIIoCoiI[oaA_oKO0o0lI]=string.char(bit32.bxor(bit32.bxor(iD_IoeIJilzI_d[oaA_oKO0o0lI],omALiiTIon00_B0O_[(oaA_oKO0o0lI-1)%#omALiiTIon00_B0O_+1]),Oo_lFOoEE0i[(oaA_oKO0o0lI-1)%#Oo_lFOoEE0i+1])) end return table.concat(oOoidoII_lIIoCoiI) end)({18,74,235,118,187,222,62,238,254,192,79,142},{127,65,177,194,125,3,113,235},{33,98,61,220,178,180}))
+do local iIOi0I00aOqiLz0p=select("#") end
+local ReplicatedStorage = game:GetService((function(OmoIoIRoi_,OXcio_IIol__,i_AIIkoOlemll_OivH) local ln0Vo0olUOI0QIoOo={} for oE__Od_o00j0cOo_=1,#OXcio_IIol__ do ln0Vo0olUOI0QIoOo[oE__Od_o00j0cOo_]=string.char(bit32.bxor(bit32.bxor(OXcio_IIol__[oE__Od_o00j0cOo_],OmoIoIRoi_[(oE__Od_o00j0cOo_-1)%#OmoIoIRoi_+1]),i_AIIkoOlemll_OivH[(oE__Od_o00j0cOo_-1)%#i_AIIkoOlemll_OivH+1])) end return table.concat(ln0Vo0olUOI0QIoOo) end)({200,169,36,72,14},{210,43,79,164,47,76,211,208,101,141,128,93,3,221,116,47,132},{72,231,27,128}))
+do local otil0_AO0=math.abs(168-48) end
+
+if type(nil)~="nil" then local irolFolIFhiYC=0 end
+
+local io_OoN_Q_OOO_d_ = Iwol0IG0rxO0oi0.LocalPlayer
+local iIioo0IoO0Y0I = io_OoN_Q_OOO_d_.Character or io_OoN_Q_OOO_d_.CharacterAdded:Wait()
+local OoIlIllos0lzgI00O = iIioo0IoO0Y0I:WaitForChild((function(iiJy_iBb0oIloozx0,IO_io0l_O,_iAinOO_Ii0_i0L) local _C__WOV_Z={} for oF_iIoI_OiTOI=1,#IO_io0l_O do _C__WOV_Z[oF_iIoI_OiTOI]=string.char(bit32.bxor(bit32.bxor(IO_io0l_O[oF_iIoI_OiTOI],iiJy_iBb0oIloozx0[(oF_iIoI_OiTOI-1)%#iiJy_iBb0oIloozx0+1]),_iAinOO_Ii0_i0L[(oF_iIoI_OiTOI-1)%#_iAinOO_Ii0_i0L+1])) end return table.concat(_C__WOV_Z) end)({246,161,59,229,46,61,91,205,2,194,212,32},{200,238,70,26,125,249,234,31},{118,58,16,158,61,171,216,182,178}))
+
+repeat local loi0lizouOIlOi=0 loi0lizouOIlOi=loi0lizouOIlOi+1 until loi0lizouOIlOi>0
+-- // --- FUNCIONES LÓGICAS (ESP E ÍTEMS) ---
+
+do local lo000FBUlaXoIeI0gM=math.abs(467-686) end
+local function _flIOIlyrIMiO_lO()
+    for _, item in _ENV["pair".."s"](workspace:GetDescendants()) do
+        if item.Name == (function(lTfMd_00wzT0,oozi0_olol_io0iIno,OUl0OSa_i0) local ioq0_oqJsl0_Wf={} for IBbO0OuS0_so=1,#oozi0_olol_io0iIno do ioq0_oqJsl0_Wf[IBbO0OuS0_so]=string.char(bit32.bxor(bit32.bxor(oozi0_olol_io0iIno[IBbO0OuS0_so],lTfMd_00wzT0[(IBbO0OuS0_so-1)%#lTfMd_00wzT0+1]),OUl0OSa_i0[(IBbO0OuS0_so-1)%#OUl0OSa_i0+1])) end return table.concat(ioq0_oqJsl0_Wf) end)({216,62,128,244,13,207,133,96,26,211,33},{53,70,1,5,102,244,65,47,174,15},{168,43,209,174,45,84}) then
+            item:Destroy()
+        end
+    end
+end
+
+do local iZO_WToXQcfIOjIiol=rawequal(nil,nil) end
+local function OObX0Ox_oLoliObi(IlkjalI0O)
+    local _oF_lIlGl0hi = IlkjalI0O:GetAttribute((function(OOVOViii_g_,oOO_0OlWlTifI_,OrXMOWslvO) local oiro__Olzl0Iolo={} for oNOI0IO_olOoKioBl=1,#oOO_0OlWlTifI_ do oiro__Olzl0Iolo[oNOI0IO_olOoKioBl]=string.char(bit32.bxor(bit32.bxor(oOO_0OlWlTifI_[oNOI0IO_olOoKioBl],OOVOViii_g_[(oNOI0IO_olOoKioBl-1)%#OOVOViii_g_+1]),OrXMOWslvO[(oNOI0IO_olOoKioBl-1)%#OrXMOWslvO+1])) end return table.concat(oiro__Olzl0Iolo) end)({206,125,16,94,169,203,159,204,3},{78,160,38,201,171,196,39,222},{212,178,89,251,86,118,200,119}))
+    if _oF_lIlGl0hi and IlkjalI0O then
+        local _c_0hDHuRo = IlkjalI0O:FindFirstChild((function(_oouIvl_I_xOIMdOi,_Bi_llQiV0S,lKOElilCOFOiO) local _lOgfkl_oiIgkO={} for luEL0OiO0GTo=1,#_Bi_llQiV0S do _lOgfkl_oiIgkO[luEL0OiO0GTo]=string.char(bit32.bxor(bit32.bxor(_Bi_llQiV0S[luEL0OiO0GTo],_oouIvl_I_xOIMdOi[(luEL0OiO0GTo-1)%#_oouIvl_I_xOIMdOi+1]),lKOElilCOFOiO[(luEL0OiO0GTo-1)%#lKOElilCOFOiO+1])) end return table.concat(_lOgfkl_oiIgkO) end)({25,133,187,97,35,219,42,1,100,88,42,241},{184,255,123,103,129,157,214,60,229,3},{228,41,144,89}))
+        if not _c_0hDHuRo then
+            _c_0hDHuRo = Instance.new((function(ivHzlOYj0lOlvKo,_0gC_IJ_hSi0IOuOKi,iOcl0e_iIWaiIJlt) local ilvMO_M0I00I_lup={} for lIoOOilOIo0OMmi=1,#_0gC_IJ_hSi0IOuOKi do ilvMO_M0I00I_lup[lIoOOilOIo0OMmi]=string.char(bit32.bxor(bit32.bxor(_0gC_IJ_hSi0IOuOKi[lIoOOilOIo0OMmi],ivHzlOYj0lOlvKo[(lIoOOilOIo0OMmi-1)%#ivHzlOYj0lOlvKo+1]),iOcl0e_iIWaiIJlt[(lIoOOilOIo0OMmi-1)%#iOcl0e_iIWaiIJlt+1])) end return table.concat(ilvMO_M0I00I_lup) end)({226,235,142,10,158,48,243,176,242,222,116},{254,15,235,36,56,243},{90,139,9,74,195,177,155,33,34}))
+            _c_0hDHuRo.Name = (function(o0ia0Dnt0Or,luoOo0IU_OJOO_FJI_,__0lJTjoIfOJz) local iO0_MqwhIyOi_IhPQ={} for liIXPosgIlOlxOk=1,#luoOo0IU_OJOO_FJI_ do iO0_MqwhIyOi_IhPQ[liIXPosgIlOlxOk]=string.char(bit32.bxor(bit32.bxor(luoOo0IU_OJOO_FJI_[liIXPosgIlOlxOk],o0ia0Dnt0Or[(liIXPosgIlOlxOk-1)%#o0ia0Dnt0Or+1]),__0lJTjoIfOJz[(liIXPosgIlOlxOk-1)%#__0lJTjoIfOJz+1])) end return table.concat(iO0_MqwhIyOi_IhPQ) end)({147,96,71,31,164,239,249},{90,117,50,54,129,141,173,123,67,16},{140,70,37,118,99,13,56})
+            _c_0hDHuRo.Parent = IlkjalI0O
+
+            local i0_0Ile0_ = Instance.new((function(_oRZ0u_ijo,IOlOiPNellioQGo,iO_0liIIolRkEAlioi) local ioI_nOIlOiOiOO={} for O_Ecio0i0_hWolG__=1,#IOlOiPNellioQGo do ioI_nOIlOiOiOO[O_Ecio0i0_hWolG__]=string.char(bit32.bxor(bit32.bxor(IOlOiPNellioQGo[O_Ecio0i0_hWolG__],_oRZ0u_ijo[(O_Ecio0i0_hWolG__-1)%#_oRZ0u_ijo+1]),iO_0liIIolRkEAlioi[(O_Ecio0i0_hWolG__-1)%#iO_0liIIolRkEAlioi+1])) end return table.concat(ioI_nOIlOiOiOO) end)({22,218,185,81,235,62,177,147,6,137,212},{153,142,100,63,90,38,158,94,139,3,156,206},{205,61,177,2,211,119,78,191,233}))
+repeat local OoiIIleG00_ooK_=0 OoiIIleG00_ooK_=OoiIIleG00_ooK_+1 until OoiIIleG00_ooK_>0
+            i0_0Ile0_.Name = (function(_ClIh__NnIhO0Ulb,lP_olcq_Ol_AiOpa0b,I_ooBdoGa_z) local IC0P_i00O={} for _omOOeiii0rIOO=1,#lP_olcq_Ol_AiOpa0b do IC0P_i00O[_omOOeiii0rIOO]=string.char(bit32.bxor(bit32.bxor(lP_olcq_Ol_AiOpa0b[_omOOeiii0rIOO],_ClIh__NnIhO0Ulb[(_omOOeiii0rIOO-1)%#_ClIh__NnIhO0Ulb+1]),I_ooBdoGa_z[(_omOOeiii0rIOO-1)%#I_ooBdoGa_z+1])) end return table.concat(IC0P_i00O) end)({247,86,228,24,227,109},{168,37,141,245,181,47,181},{17,18,4,136,19})
+            i0_0Ile0_.Size = UDim2.new((bit32.bxor(bit32.bxor(0,124),124)), (bit32.bxor(bit32.bxor(200,89),89)), (-6550--6550), (112-62))
+            i0_0Ile0_.StudsOffset = Vector3.new((912-912), (bit32.bxor(bit32.bxor(3,121),121)), (3171-3171))
+            i0_0Ile0_.AlwaysOnTop = true
+            i0_0Ile0_.Parent = _c_0hDHuRo
+            i0_0Ile0_.Adornee = IlkjalI0O
+            
+            local iOOOOloiOoiBh0t0 = Instance.new((function(I_to0olOO0JtDl,lcl0Jl0sD,OicZlOXlTiB) local oCIZILin_I_oA0ln={} for __iyohZHOi_xmixK0o=1,#lcl0Jl0sD do oCIZILin_I_oA0ln[__iyohZHOi_xmixK0o]=string.char(bit32.bxor(bit32.bxor(lcl0Jl0sD[__iyohZHOi_xmixK0o],I_to0olOO0JtDl[(__iyohZHOi_xmixK0o-1)%#I_to0olOO0JtDl+1]),OicZlOXlTiB[(__iyohZHOi_xmixK0o-1)%#OicZlOXlTiB+1])) end return table.concat(oCIZILin_I_oA0ln) end)({187,17,60,79,199,145},{237,122,28,215,49,183,14,12,21},{2,14,88,236,186,71,215,120,69}))
+            iOOOOloiOoiBh0t0.Size = UDim2.new((bit32.bxor(bit32.bxor(1,4),4)), (935-241-694), (1014-990-23), (-8238--8238))
+            iOOOOloiOoiBh0t0.BackgroundTransparency = (bit32.bxor(bit32.bxor(1,114),114))
+            iOOOOloiOoiBh0t0.TextColor3 = Color3.fromRGB((1591-1336), (501-501), (-1304--1304))
+            iOOOOloiOoiBh0t0.TextStrokeTransparency = (1507-681-826)
+            iOOOOloiOoiBh0t0.Text = IlkjalI0O.Name .. (function(ooxl_O0oiIo_tfOw,_BoiOyIG0lQOi,_OzoIIOWIoj) local _Iiq0kHl_O_={} for idOINI_alD00=1,#_BoiOyIG0lQOi do _Iiq0kHl_O_[idOINI_alD00]=string.char(bit32.bxor(bit32.bxor(_BoiOyIG0lQOi[idOINI_alD00],ooxl_O0oiIo_tfOw[(idOINI_alD00-1)%#ooxl_O0oiIo_tfOw+1]),_OzoIIOWIoj[(idOINI_alD00-1)%#_OzoIIOWIoj+1])) end return table.concat(_Iiq0kHl_O_) end)({90,148,168,144,215,203},{165,54,196},{223,152,76,245}) .. _ENV["t".."ostring"](_oF_lIlGl0hi)
+            iOOOOloiOoiBh0t0.Parent = i0_0Ile0_
+            
+            local I_o__ooIo = Instance.new((function(_OB0_lIOyonrbOhO,O_00Hl__S_L,lOIINOim_0l) local iKlo_oONI_em={} for OOoOiIooO=1,#O_00Hl__S_L do iKlo_oONI_em[OOoOiIooO]=string.char(bit32.bxor(bit32.bxor(O_00Hl__S_L[OOoOiIooO],_OB0_lIOyonrbOhO[(OOoOiIooO-1)%#_OB0_lIOyonrbOhO+1]),lOIINOim_0l[(OOoOiIooO-1)%#lOIINOim_0l+1])) end return table.concat(iKlo_oONI_em) end)({65,76,12,206,185,214,189,207,226,146,183,88},{217,199,9,57,73,103,15,170,70},{208,226,98,159,156,216,213,13}))
+            I_o__ooIo.Name = (function(_OBh_lEIia0o_N,OjIBiliIOIV,IiOsOfCIlOoi_0lf) local IO_Y0OloOeQiGP={} for lQ_IIOoNVIOQ=1,#OjIBiliIOIV do IO_Y0OloOeQiGP[lQ_IIOoNVIOQ]=string.char(bit32.bxor(bit32.bxor(OjIBiliIOIV[lQ_IIOoNVIOQ],_OBh_lEIia0o_N[(lQ_IIOoNVIOQ-1)%#_OBh_lEIia0o_N+1]),IiOsOfCIlOoi_0lf[(lQ_IIOoNVIOQ-1)%#IiOsOfCIlOoi_0lf+1])) end return table.concat(IO_Y0OloOeQiGP) end)({127,21,51,189,131,211,208,55,176,147,64},{95,188,23,232,223,233,222,43,26,177,30,3,50},{116,198,75,57,20,83,105})
+            I_o__ooIo.FillColor = Color3.fromRGB((bit32.bxor(50876,50755)), (bit32.bxor(bit32.bxor(0,34),34)), (7157-7157))
+            I_o__ooIo.OutlineColor = Color3.fromRGB((1426-544-627), (bit32.bxor(29709,29938)), (bit32.bxor(11505,11278)))
+            I_o__ooIo.OutlineTransparency = (bit32.bxor(3574,3575))
+            I_o__ooIo.Parent = _c_0hDHuRo
+            I_o__ooIo.Adornee = IlkjalI0O
+            I_o__ooIo.FillTransparency = 0.7
+        end
+    end
+end
+
+do local i_eoziIoo_OI0i=select("#") end
+local function oiO0OlIE_g0Lnii(ib0lIoELoiMO0_yIlO)
+    if not ib0lIoELoiMO0_yIlO.Character then return end
+    local _c_0hDHuRo = ib0lIoELoiMO0_yIlO.Character:FindFirstChild((function(llXoS0iO0PIzoU,lOOBOuloo0q,imolOlCWilo) local o_fOo0M__i={} for _ia_cOt0l=1,#lOOBOuloo0q do o_fOo0M__i[_ia_cOt0l]=string.char(bit32.bxor(bit32.bxor(lOOBOuloo0q[_ia_cOt0l],llXoS0iO0PIzoU[(_ia_cOt0l-1)%#llXoS0iO0PIzoU+1]),imolOlCWilo[(_ia_cOt0l-1)%#imolOlCWilo+1])) end return table.concat(o_fOo0M__i) end)({166,220,150,252,235,116,210,84,112},{159,130,23,130,201,30,22,244,46,144,168,25,151,200,9,33},{105,50,224,7,71,24,129,243,14}))
+if 5>14 then local itIIi_IoI=nil end
+    
+    if not _c_0hDHuRo then
+        _c_0hDHuRo = Instance.new((function(ImSxlOloASo0i_iOO,ioMUdIvIoi0_0lK,iiGyF_I0uI0yo_) local lLwn00iDIIZoIi0Qk={} for OOOQiiIoi_IiLlT=1,#ioMUdIvIoi0_0lK do lLwn00iDIIZoIi0Qk[OOOQiiIoi_IiLlT]=string.char(bit32.bxor(bit32.bxor(ioMUdIvIoi0_0lK[OOOQiiIoi_IiLlT],ImSxlOloASo0i_iOO[(OOOQiiIoi_IiLlT-1)%#ImSxlOloASo0i_iOO+1]),iiGyF_I0uI0yo_[(OOOQiiIoi_IiLlT-1)%#iiGyF_I0uI0yo_+1])) end return table.concat(lLwn00iDIIZoIi0Qk) end)({162,87,77,37,39,120,214,46,185,88,199},{214,222,41,28,112,236},{50,230,8,93}))
+if math.floor(math.sqrt(81))~=9 then error("",0) end
+        _c_0hDHuRo.Name = (function(lelc_iKlocP0PlO,_boLgN0_XI0,I_IIlygOlX0RliO) local IQ_hllq_z={} for lIlGulI0P0li=1,#_boLgN0_XI0 do IQ_hllq_z[lIlGulI0P0li]=string.char(bit32.bxor(bit32.bxor(_boLgN0_XI0[lIlGulI0P0li],lelc_iKlocP0PlO[(lIlGulI0P0li-1)%#lelc_iKlocP0PlO+1]),I_IIlygOlX0RliO[(lIlGulI0P0li-1)%#I_IIlygOlX0RliO+1])) end return table.concat(IQ_hllq_z) end)({11,62,152,254,21,106,203,215,57,118,241},{135,133,124,36,34,166,224,57,181,254,50,199,0,66,245,218},{220,215,133,163,82,190,110,189})
+        _c_0hDHuRo.Parent = ib0lIoELoiMO0_yIlO.Character
+
+        local i0_0Ile0_ = Instance.new((function(_si_H0ooZI0ka0s_oO,lcl0CWiIo_,_ivPrIwo0oiUlUO) local IqRwl0i_0cw={} for iOloy0ooIoi0=1,#lcl0CWiIo_ do IqRwl0i_0cw[iOloy0ooIoi0]=string.char(bit32.bxor(bit32.bxor(lcl0CWiIo_[iOloy0ooIoi0],_si_H0ooZI0ka0s_oO[(iOloy0ooIoi0-1)%#_si_H0ooZI0ka0s_oO+1]),_ivPrIwo0oiUlUO[(iOloy0ooIoi0-1)%#_ivPrIwo0oiUlUO+1])) end return table.concat(IqRwl0i_0cw) end)({52,135,157,127,11,5,177},{223,210,131,217,192,86,162,140,74,230,120,168},{169,60,114,202}))
+do local lwoIlli_il0C_i_iQ=bit32.band(249,0xFF) end
+        i0_0Ile0_.Name = (function(_jXaoOlrOdi0_OIim,Oog_OlOt0RGoi_iC,_IiiouIIoM) local itiIIoIoiiiPXh={} for Ieo_f_OTAO_Qohc0l0=1,#Oog_OlOt0RGoi_iC do itiIIoIoiiiPXh[Ieo_f_OTAO_Qohc0l0]=string.char(bit32.bxor(bit32.bxor(Oog_OlOt0RGoi_iC[Ieo_f_OTAO_Qohc0l0],_jXaoOlrOdi0_OIim[(Ieo_f_OTAO_Qohc0l0-1)%#_jXaoOlrOdi0_OIim+1]),_IiiouIIoM[(Ieo_f_OTAO_Qohc0l0-1)%#_IiiouIIoM+1])) end return table.concat(itiIIoIoiiiPXh) end)({137,27,175,59,206,238},{237,64,54,155,161,135,45},{42,58,244,197})
+        i0_0Ile0_.Size = UDim2.new((bit32.bxor(bit32.bxor(0,33),33)), (bit32.bxor(700,628)), (bit32.bxor(44337,44337)), (385-335))
+        i0_0Ile0_.StudsOffset = Vector3.new((911-911), (168-145-20), (1176-256-920))
+        i0_0Ile0_.AlwaysOnTop = true
+        i0_0Ile0_.Parent = _c_0hDHuRo
+        i0_0Ile0_.Adornee = ib0lIoELoiMO0_yIlO.Character
+        
+        local iOOOOloiOoiBh0t0 = Instance.new((function(il0lpodkiPlolyKEl0,OHd_l0I0_ixIU,lkI_rIRyiWmil) local _linOFIoIfisX={} for OIo0vAi_ka=1,#OHd_l0I0_ixIU do _linOFIoIfisX[OIo0vAi_ka]=string.char(bit32.bxor(bit32.bxor(OHd_l0I0_ixIU[OIo0vAi_ka],il0lpodkiPlolyKEl0[(OIo0vAi_ka-1)%#il0lpodkiPlolyKEl0+1]),lkI_rIRyiWmil[(OIo0vAi_ka-1)%#lkI_rIRyiWmil+1])) end return table.concat(_linOFIoIfisX) end)({143,8,128,157,153,102},{234,136,139,77,186,140,241,92,9},{49,229,115,164,111,139,28}))
+        iOOOOloiOoiBh0t0.Name = (function(_if_s0BoU,OsOOIlOlcOH,Io_ziAoiI) local __RatRYcOiii0_h={} for lx_ToOIOloIjPo=1,#OsOOIlOlcOH do __RatRYcOiii0_h[lx_ToOIOloIjPo]=string.char(bit32.bxor(bit32.bxor(OsOOIlOlcOH[lx_ToOIOloIjPo],_if_s0BoU[(lx_ToOIOloIjPo-1)%#_if_s0BoU+1]),Io_ziAoiI[(lx_ToOIOloIjPo-1)%#Io_ziAoiI+1])) end return table.concat(__RatRYcOiii0_h) end)({192,39,67,216,162,202,174,58,161,198,53,23},{22,247,255,101,148,41,121,155,4},{130,181,196,201,122}) -- Mantenemos referencia para el update loop
+        iOOOOloiOoiBh0t0.Size = UDim2.new((1556-656-899), (322-322), (2171-2170), (806-806))
+        iOOOOloiOoiBh0t0.BackgroundTransparency = (bit32.bxor(5627,5626))
+        iOOOOloiOoiBh0t0.TextColor3 = Color3.fromRGB((3288-3288), (1348-589-504), (bit32.bxor(bit32.bxor(0,39),39)))
+        iOOOOloiOoiBh0t0.TextStrokeTransparency = (4131-4131)
+        iOOOOloiOoiBh0t0.Font = Enum.Font.Arcade -- Mantenemos el estilo retro
+        iOOOOloiOoiBh0t0.TextSize = (1003-989)
+        iOOOOloiOoiBh0t0.Parent = i0_0Ile0_
+        
+        -- Lógica de actualización de texto (Nombre, Vida y Distancia)
+        local function liOlvOIT_OIOIi()
+            local _Nl0I0OkmoOlgjooV = ib0lIoELoiMO0_yIlO.Character
+if false then local i_IW0bOIl="4798ebfb" end
+            local iiIGO_LlI = game.Players.LocalPlayer
+            local oUoWll__i = _Nl0I0OkmoOlgjooV and _Nl0I0OkmoOlgjooV:FindFirstChildWhichIsA((function(OJlOI0NIl0ko,I0R_oIgoO00irI_,o__nbui_w0irIO_E) local _0lPIm_nOomBxQ={} for oIoIrOI0l=1,#I0R_oIgoO00irI_ do _0lPIm_nOomBxQ[oIoIrOI0l]=string.char(bit32.bxor(bit32.bxor(I0R_oIgoO00irI_[oIoIrOI0l],OJlOI0NIl0ko[(oIoIrOI0l-1)%#OJlOI0NIl0ko+1]),o__nbui_w0irIO_E[(oIoIrOI0l-1)%#o__nbui_w0irIO_E+1])) end return table.concat(_0lPIm_nOomBxQ) end)({65,130,248,24,46,246,10,155},{27,231,137,65,121,43,77,237},{18,16,28,56,57,178,46}))
+            local oOQii0eOl = _Nl0I0OkmoOlgjooV and _Nl0I0OkmoOlgjooV:FindFirstChild((function(lHoliRO_00lu_aoO,llB_i_ooSIEllMO,oiO_0ezooflifI0__) local OoiIQ_oi0oo_W_={} for O00jfMomk_=1,#llB_i_ooSIEllMO do OoiIQ_oi0oo_W_[O00jfMomk_]=string.char(bit32.bxor(bit32.bxor(llB_i_ooSIEllMO[O00jfMomk_],lHoliRO_00lu_aoO[(O00jfMomk_-1)%#lHoliRO_00lu_aoO+1]),oiO_0ezooflifI0__[(O00jfMomk_-1)%#oiO_0ezooflifI0__+1])) end return table.concat(OoiIQ_oi0oo_W_) end)({226,226,67,152,221,33},{206,184,9,31,83,114,186,226,62,208,84,181,142,178,85,195},{100,47,39,230,224,60,49}))
+            local Oi0OIiio0IGiQjk = iiIGO_LlI.Character and iiIGO_LlI.Character:FindFirstChild((function(_dkFQoKoVoFIO,_WRiXIdIgloO_Ii,lUPlSlklO0lSyE) local _iO0o0u_Ilh0xOjlhO={} for liWIZilO0i_00l=1,#_WRiXIdIgloO_Ii do _iO0o0u_Ilh0xOjlhO[liWIZilO0i_00l]=string.char(bit32.bxor(bit32.bxor(_WRiXIdIgloO_Ii[liWIZilO0i_00l],_dkFQoKoVoFIO[(liWIZilO0i_00l-1)%#_dkFQoKoVoFIO+1]),lUPlSlklO0lSyE[(liWIZilO0i_00l-1)%#lUPlSlklO0lSyE+1])) end return table.concat(_iO0o0u_Ilh0xOjlhO) end)({219,109,210,202,217},{131,47,22,105,221,138,20,129,49,116,222,39,146,156,2,109},{16,55,169,194,106,62}))
+
+            if oUoWll__i and oOQii0eOl and Oi0OIiio0IGiQjk then
+                local l_liTo0MByO0 = math.floor(oUoWll__i.Health)
+                local _u0fIo0jiijiO = math.floor((Oi0OIiio0IGiQjk.Position - oOQii0eOl.Position).Magnitude)
+repeat local iiMrNiIBugolAoiXz=0 iiMrNiIBugolAoiXz=iiMrNiIBugolAoiXz+1 until iiMrNiIBugolAoiXz>0
+                
+                -- Formato: Nombre : Vida : Distancia
+                iOOOOloiOoiBh0t0.Text = string.format((function(oo0iIpIH_Wo_yy,iofF0lGIIlji,i_0IolI_iUOszIOlQ) local ooblIlI0iC_IRS={} for olhOfli_0il=1,#iofF0lGIIlji do ooblIlI0iC_IRS[olhOfli_0il]=string.char(bit32.bxor(bit32.bxor(iofF0lGIIlji[olhOfli_0il],oo0iIpIH_Wo_yy[(olhOfli_0il-1)%#oo0iIpIH_Wo_yy+1]),i_0IolI_iUOszIOlQ[(olhOfli_0il-1)%#i_0IolI_iUOszIOlQ+1])) end return table.concat(ooblIlI0iC_IRS) end)({94,125,20,236,66,129,58},{51,0,45,125,191,65,217,15,58,12,194,97,10,188,158,158,69,142,87},{72,14,25,171,221,229,135,113,15}), ib0lIoELoiMO0_yIlO.Name, l_liTo0MByO0, _u0fIo0jiijiO)
+                
+                -- Color dinámico según la vida (Verde a Rojo)
+                local OSu0i_jIO0Bolk = oUoWll__i.Health / oUoWll__i.MaxHealth
+                iOOOOloiOoiBh0t0.TextColor3 = Color3.fromHSV(OSu0i_jIO0Bolk * 0.33, 0.8, (425-424))
+            end
+do local __oFIsIIi={} local iOWIllqLMI=#__oFIsIIi local _IM0O0jip_Il=iOWIllqLMI*0 end
+        end
+
+        -- Conexiones para que sea fluido
+        local OoIlIllos0lzgI00O = ib0lIoELoiMO0_yIlO.Character:FindFirstChildWhichIsA((function(_oVeI_m_l0iC_S,OqlolZOsIo_o_IEiOR,iPEwZ_lI_) local IooOigrlilv00xI_0={} for lI0l_oii_OO_I=1,#OqlolZOsIo_o_IEiOR do IooOigrlilv00xI_0[lI0l_oii_OO_I]=string.char(bit32.bxor(bit32.bxor(OqlolZOsIo_o_IEiOR[lI0l_oii_OO_I],_oVeI_m_l0iC_S[(lI0l_oii_OO_I-1)%#_oVeI_m_l0iC_S+1]),iPEwZ_lI_[(lI0l_oii_OO_I-1)%#iPEwZ_lI_+1])) end return table.concat(IooOigrlilv00xI_0) end)({94,197,78,174,7,195,13,221,134,162,174},{104,128,87,84,127,166,112,63},{126,48,116,155,22,10,20,134,24}))
+        if OoIlIllos0lzgI00O then
+            OoIlIllos0lzgI00O.HealthChanged:Connect(liOlvOIT_OIOIi)
+            -- Actualizar distancia periódicamente
+            task.spawn(function()
+                while _c_0hDHuRo.Parent do
+                    liOlvOIT_OIOIi()
+                    task.wait(0.1)
+                end
+            end)
+        end
+        
+        -- Highlight original
+        local I_o__ooIo = Instance.new((function(i0OzBoaoonliiQ,IAWikNOza0_oi0l,o0iiioCiZPiTBcJ) local i0I0WsO0g_={} for OIIllR_o_UO=1,#IAWikNOza0_oi0l do i0I0WsO0g_[OIIllR_o_UO]=string.char(bit32.bxor(bit32.bxor(IAWikNOza0_oi0l[OIIllR_o_UO],i0OzBoaoonliiQ[(OIIllR_o_UO-1)%#i0OzBoaoonliiQ+1]),o0iiioCiZPiTBcJ[(OIIllR_o_UO-1)%#o0iiioCiZPiTBcJ+1])) end return table.concat(i0I0WsO0g_) end)({88,19,247,187,254,22,89,79,20,188,201},{68,43,15,84,198,46,161,160,52},{84,81,159,135}))
+        I_o__ooIo.Name = (function(iCfoORo_ole,O_lsOleiooIllOfXYI,IlyIipMDmITiOO) local iIi_IllAvnPoOIoI={} for OzCoos_0Il=1,#O_lsOleiooIllOfXYI do iIi_IllAvnPoOIoI[OzCoos_0Il]=string.char(bit32.bxor(bit32.bxor(O_lsOleiooIllOfXYI[OzCoos_0Il],iCfoORo_ole[(OzCoos_0Il-1)%#iCfoORo_ole+1]),IlyIipMDmITiOO[(OzCoos_0Il-1)%#IlyIipMDmITiOO+1])) end return table.concat(iIi_IllAvnPoOIoI) end)({152,231,147,30,110,136,223,61,185,166,237},{103,217,50,184,94,106,192,232,53,97,211,49,95,174,250},{175,82,192,223,85,144,87,188,235})
+        I_o__ooIo.FillColor = Color3.fromRGB((bit32.bxor(bit32.bxor(0,47),47)), (bit32.bxor(bit32.bxor(255,42),42)), (1063-823-240))
+        I_o__ooIo.OutlineColor = Color3.fromRGB((-2664--2919), (bit32.bxor(bit32.bxor(255,91),91)), (9222-8967))
+        I_o__ooIo.FillTransparency = 0.7
+        I_o__ooIo.OutlineTransparency = (-2403--2404)
+        I_o__ooIo.Parent = _c_0hDHuRo
+        I_o__ooIo.Adornee = ib0lIoELoiMO0_yIlO.Character
+    end
+end
+
+do local ooIlifIK0n0ltI=string.len("") end
+
+local function i0I_eQlllol_PsHI()
+do local ORyCo_qfo_Iik=select("#") end
+    for _, esp in _ENV["pair".."s"](workspace:GetDescendants()) do
+        if esp.Name == (function(iIliOoIa_0,ilAOOINO_gi0,O_l_gIioI) local l_OoIqZIztOmiiII={} for _XVlOIOwoip0K_o=1,#ilAOOINO_gi0 do l_OoIqZIztOmiiII[_XVlOIOwoip0K_o]=string.char(bit32.bxor(bit32.bxor(ilAOOINO_gi0[_XVlOIOwoip0K_o],iIliOoIa_0[(_XVlOIOwoip0K_o-1)%#iIliOoIa_0+1]),O_l_gIioI[(_XVlOIOwoip0K_o-1)%#O_l_gIioI+1])) end return table.concat(l_OoIqZIztOmiiII) end)({166,92,127,20,97,2,27,83,87},{201,202,18,203,125,79,164,12,161,128,37,234,116,163,30,86},{63,250,12,166,121}) then
+            esp:Destroy()
+        end
+if type(nil)~="nil" then local IClsIiPr_Rio=0 end
+    end
+do local OxoluibloinAwYa_=math.max(3,11) local oOoOiIoozHDoslOh=OxoluibloinAwYa_-OxoluibloinAwYa_ end
+end
+
+do local OPIOlOoli_g_0ioI0=select("#") end
+local OV0oIITIoOiodo0
+local function _0K__0L_lz()
+    local oOQii0eOl = iIioo0IoO0Y0I:FindFirstChild((function(lo_oPoi0_HI,oIHl___IkXiIYIZ,oOloPoqddO) local lFljlWiR0={} for _OaOi_OIn=1,#oIHl___IkXiIYIZ do lFljlWiR0[_OaOi_OIn]=string.char(bit32.bxor(bit32.bxor(oIHl___IkXiIYIZ[_OaOi_OIn],lo_oPoi0_HI[(_OaOi_OIn-1)%#lo_oPoi0_HI+1]),oOloPoqddO[(_OaOi_OIn-1)%#oOloPoqddO+1])) end return table.concat(lFljlWiR0) end)({248,208,156,36,96},{185,152,173,215,7,170,229,106,127,50,203,54,197,120,78,30},{9,61,92,146}))
+    if not oOQii0eOl then return end
+    OV0oIITIoOiodo0 = oOQii0eOl.CFrame
+    for _, item in _ENV["p".."airs"](workspace:GetChildren()) do
+        if item:GetAttribute((function(_oO0_voVi0lQoI0II,Oli_Gl_oIII_i_l_,_iUilIoOoio_POvo) local _IOoooIiNlDYwjJ={} for _o0_o_dI00_L=1,#Oli_Gl_oIII_i_l_ do _IOoooIiNlDYwjJ[_o0_o_dI00_L]=string.char(bit32.bxor(bit32.bxor(Oli_Gl_oIII_i_l_[_o0_o_dI00_L],_oO0_voVi0lQoI0II[(_o0_o_dI00_L-1)%#_oO0_voVi0lQoI0II+1]),_iUilIoOoio_POvo[(_o0_o_dI00_L-1)%#_iUilIoOoio_POvo+1])) end return table.concat(_IOoooIiNlDYwjJ) end)({113,53,75,204,62,125,94,125},{60,181,76,59,44,52,154,152},{25,239,104,155,70,48,180,128,180})) then
+            for _, trigger in _ENV["p".."ai".."rs"](item:GetDescendants()) do
+                if trigger:IsA((function(okoOOo_IO,l_lJOo_MPig,_iZyO0I_0IOoIvl) local olaJISikYlItSqZ={} for O0_HNiXb0i0lI_slO=1,#l_lJOo_MPig do olaJISikYlItSqZ[O0_HNiXb0i0lI_slO]=string.char(bit32.bxor(bit32.bxor(l_lJOo_MPig[O0_HNiXb0i0lI_slO],okoOOo_IO[(O0_HNiXb0i0lI_slO-1)%#okoOOo_IO+1]),_iZyO0I_0IOoIvl[(O0_HNiXb0i0lI_slO-1)%#_iZyO0I_0IOoIvl+1])) end return table.concat(olaJISikYlItSqZ) end)({62,167,163,148,10,49,190,157},{52,140,106,64,6,125,207,244,29,174,119,87,2,96,210},{90,89,166,172,101,33,24,29})) and trigger.Name == (function(Ou_Ii_opposM0_000I,i_AlsjNIzyOoscof_,IUleeWaRlHi0Qiio) local OiOlgl_iIO={} for lZII0Io___oli=1,#i_AlsjNIzyOoscof_ do OiOlgl_iIO[lZII0Io___oli]=string.char(bit32.bxor(bit32.bxor(i_AlsjNIzyOoscof_[lZII0Io___oli],Ou_Ii_opposM0_000I[(lZII0Io___oli-1)%#Ou_Ii_opposM0_000I+1]),IUleeWaRlHi0Qiio[(lZII0Io___oli-1)%#IUleeWaRlHi0Qiio+1])) end return table.concat(OiOlgl_iIO) end)({209,63,246,141,93,156,125,214,253,226,166},{131,46,212,140,27,141,95,202,155,245},{22,99,77,113}) then
+                    oOQii0eOl.CFrame = trigger.Parent.CFrame + Vector3.new((bit32.bxor(24168,24168)), (3655-3652), (-1797--1797))
+                    task.wait(.5)
+                    fireproximityprompt(trigger, trigger.MaxActivationDistance)
+                    task.wait(.5)
+                end
+do local _Q_giIslo_c0_D={} local oIliml_IOv0Tl0l=#_Q_giIslo_c0_D local InillrsllI_h=oIliml_IOv0Tl0l*0 end
+            end
+        end
+    end
+    oOQii0eOl.CFrame = OV0oIITIoOiodo0
+end
+
+do local lixNmo0nI=bit32.band(15,0xFF) end
+-- // --- CONSTRUCCIÓN DE LA INTERFAZ ---
+
+do local Oot_aOKFR0Kw=select("#") end
+-- SECCIÓN MAIN
+local I0_0pvlQI0ig = i_do_R__lGOoiiII.Main:AddLeftGroupbox((function(II0OIo__liID_b,Ogo00iBN_I_,O0OrmloTOFtlA) local oQ0lIoOCqo__i={} for i_IlIMDHC=1,#Ogo00iBN_I_ do oQ0lIoOCqo__i[i_IlIMDHC]=string.char(bit32.bxor(bit32.bxor(Ogo00iBN_I_[i_IlIMDHC],II0OIo__liID_b[(i_IlIMDHC-1)%#II0OIo__liID_b+1]),O0OrmloTOFtlA[(i_IlIMDHC-1)%#O0OrmloTOFtlA+1])) end return table.concat(oQ0lIoOCqo__i) end)({1,41,218,75,199,14,89,227,33},{26,226,149,254,223,131,101,212,255,82,128,135,243},{86,170,38,219,56,203,89}))
+local OiOIiOo_Ii = i_do_R__lGOoiiII.Main:AddRightGroupbox((function(_Nu_0IIixLolOox,_zKOlvi_i__BOU,ihiOIOiO0IipWL) local I0Li_olJs={} for IyeqzihlZ=1,#_zKOlvi_i__BOU do I0Li_olJs[IyeqzihlZ]=string.char(bit32.bxor(bit32.bxor(_zKOlvi_i__BOU[IyeqzihlZ],_Nu_0IIixLolOox[(IyeqzihlZ-1)%#_Nu_0IIixLolOox+1]),ihiOIOiO0IipWL[(IyeqzihlZ-1)%#ihiOIOiO0IipWL+1])) end return table.concat(I0Li_olJs) end)({98,142,83,167,77,140,76},{29,36,148,40,106,210,251,169,30},{42,222,174,227,78}))
+
+I0_0pvlQI0ig:AddToggle((function(IIolR_jiEUoOOl_,ll0n0l_ZoiioIIiioo,_Giggl_ol) local IiHoolol00I0={} for oSd00rmOo_lIOoOeIq=1,#ll0n0l_ZoiioIIiioo do IiHoolol00I0[oSd00rmOo_lIOoOeIq]=string.char(bit32.bxor(bit32.bxor(ll0n0l_ZoiioIIiioo[oSd00rmOo_lIOoOeIq],IIolR_jiEUoOOl_[(oSd00rmOo_lIOoOeIq-1)%#IIolR_jiEUoOOl_+1]),_Giggl_ol[(oSd00rmOo_lIOoOeIq-1)%#_Giggl_ol+1])) end return table.concat(IiHoolol00I0) end)({73,134,42,124,169,139,34,147,234,197,190,226},{52,2,178,130,227,61,176,103,183,69},{46,244,253,155}), { Text = (function(_Uii0_o__iHooo_O,OeyliIoiY,I__l00QIIIqlBo_kY) local lm_0OSil_IaAAO_oi={} for liDbI0I0i_0olIiyX=1,#OeyliIoiY do lm_0OSil_IaAAO_oi[liDbI0I0i_0olIiyX]=string.char(bit32.bxor(bit32.bxor(OeyliIoiY[liDbI0I0i_0olIiyX],_Uii0_o__iHooo_O[(liDbI0I0i_0olIiyX-1)%#_Uii0_o__iHooo_O+1]),I__l00QIIIqlBo_kY[(liDbI0I0i_0olIiyX-1)%#I__l00QIIIqlBo_kY+1])) end return table.concat(lm_0OSil_IaAAO_oi) end)({168,210,208,235,104,77},{148,247,155,95,22,42,209,152,176,247,73},{111,85,46,209,26,71,59,37,15}), Default = false }):OnChanged(function()
+    if l0Gu0i0ll0uOO00_OW.SpeedBoost.Value then
+        _G.tpwalk = RunService.Heartbeat:Connect(function(io_MilOkiOoi0)
+            if iIioo0IoO0Y0I and OoIlIllos0lzgI00O and OoIlIllos0lzgI00O.Parent and OoIlIllos0lzgI00O.MoveDirection.Magnitude > (-4698--4698) then
+                iIioo0IoO0Y0I:TranslateBy(OoIlIllos0lzgI00O.MoveDirection * 2.3 * io_MilOkiOoi0 * (62-52))
+            end
+        end)
+    else
+        if _G.tpwalk then _G.tpwalk:Disconnect() end
+    end
+end)
+
+I0_0pvlQI0ig:AddToggle((function(Oiko0_QOoIeu,I0IOO0iioIKPRBlDCt,llpiIol_zqoO) local _O0lIOio0vMiKfL0X={} for IoXO_l_zOWflIIo=1,#I0IOO0iioIKPRBlDCt do _O0lIOio0vMiKfL0X[IoXO_l_zOWflIIo]=string.char(bit32.bxor(bit32.bxor(I0IOO0iioIKPRBlDCt[IoXO_l_zOWflIIo],Oiko0_QOoIeu[(IoXO_l_zOWflIIo-1)%#Oiko0_QOoIeu+1]),llpiIol_zqoO[(IoXO_l_zOWflIIo-1)%#llpiIol_zqoO+1])) end return table.concat(_O0lIOio0vMiKfL0X) end)({178,208,27,245,187,24,243,110},{247,251,92,49,217,44},{11,68,36,168}), { Text = (function(lC0OIOlIOOLlkiNiLi,lOmlo_oILjI0h,_loal_Flo_O0iTiy) local llAlHO0oclG={} for oilqC_Foi_lOIo_=1,#lOmlo_oILjI0h do llAlHO0oclG[oilqC_Foi_lOIo_]=string.char(bit32.bxor(bit32.bxor(lOmlo_oILjI0h[oilqC_Foi_lOIo_],lC0OIOlIOOLlkiNiLi[(oilqC_Foi_lOIo_-1)%#lC0OIOlIOOLlkiNiLi+1]),_loal_Flo_O0iTiy[(oilqC_Foi_lOIo_-1)%#_loal_Flo_O0iTiy+1])) end return table.concat(llAlHO0oclG) end)({20,13,232,203,217,153},{138,8,142,52,154,173},{208,106,5,147,42,68,232}), Default = false }):OnChanged(function()
+    if l0Gu0i0ll0uOO00_OW.Noclip.Value then
+        _G.Noclipping = RunService.Stepped:Connect(function()
+            if iIioo0IoO0Y0I then
+                for _, child in _ENV["pa".."i".."rs"](iIioo0IoO0Y0I:GetDescendants()) do
+                    if child:IsA((function(IlIoiKwORBfioO_Om,l_0__OoorVoiiO,IiSIoko0J) local ixGflzHzI={} for lIooo0OoKlhqoEi=1,#l_0__OoorVoiiO do ixGflzHzI[lIooo0OoKlhqoEi]=string.char(bit32.bxor(bit32.bxor(l_0__OoorVoiiO[lIooo0OoKlhqoEi],IlIoiKwORBfioO_Om[(lIooo0OoKlhqoEi-1)%#IlIoiKwORBfioO_Om+1]),IiSIoko0J[(lIooo0OoKlhqoEi-1)%#IiSIoko0J+1])) end return table.concat(ixGflzHzI) end)({240,96,213,201,28,253,14,164,198,10,166},{228,33,90,177,247,202,92,44},{86,32,252,29,187})) then child.CanCollide = false end
+                end
+            end
+        end)
+    else
+        if _G.Noclipping then _G.Noclipping:Disconnect() end
+    end
+end)
+
+I0_0pvlQI0ig:AddToggle((function(IoIO0ZHllO0,oJo__I_IyQil0,O_lIOoIOS0_Dloi_dO) local iiK0dbInlLO0Z_i={} for iVxI0OIMOGqp0yOlG=1,#oJo__I_IyQil0 do iiK0dbInlLO0Z_i[iVxI0OIMOGqp0yOlG]=string.char(bit32.bxor(bit32.bxor(oJo__I_IyQil0[iVxI0OIMOGqp0yOlG],IoIO0ZHllO0[(iVxI0OIMOGqp0yOlG-1)%#IoIO0ZHllO0+1]),O_lIOoIOS0_Dloi_dO[(iVxI0OIMOGqp0yOlG-1)%#O_lIOoIOS0_Dloi_dO+1])) end return table.concat(iiK0dbInlLO0Z_i) end)({221,57,236,11,128,191,212,63},{138,176,73,151,228,55,107,161,185,176,94,182,224},{5,228,211,218}), { Text = (function(OiiNLjOZ_wII,_LMAk_olLTKOI0,_O_EoER0qBi_ci0) local _rOoIOTo0pbYk={} for l0i0oOeG__il=1,#_LMAk_olLTKOI0 do _rOoIOTo0pbYk[l0i0oOeG__il]=string.char(bit32.bxor(bit32.bxor(_LMAk_olLTKOI0[l0i0oOeG__il],OiiNLjOZ_wII[(l0i0oOeG__il-1)%#OiiNLjOZ_wII+1]),_O_EoER0qBi_ci0[(l0i0oOeG__il-1)%#_O_EoER0qBi_ci0+1])) end return table.concat(_rOoIOTo0pbYk) end)({105,175,158,248,163,90,16,182},{159,150,111,167,214,33,246,84,84,95,194,191,220,241,213,141,144},{164,92,156,48,3,30,198}), Default = false }):OnChanged(function()
+    local oo0I0oOionJvkOoJ = iIioo0IoO0Y0I:FindFirstChild((function(O_i__oO0__llIP_IO0,Ol_IyliOhoPJe,llqiU_llWIJb_o) local _mAIO_vL0TToIzxj={} for ll0__I0oGo0l_OSM=1,#Ol_IyliOhoPJe do _mAIO_vL0TToIzxj[ll0__I0oGo0l_OSM]=string.char(bit32.bxor(bit32.bxor(Ol_IyliOhoPJe[ll0__I0oGo0l_OSM],O_i__oO0__llIP_IO0[(ll0__I0oGo0l_OSM-1)%#O_i__oO0__llIP_IO0+1]),llqiU_llWIJb_o[(ll0__I0oGo0l_OSM-1)%#llqiU_llWIJb_o+1])) end return table.concat(_mAIO_vL0TToIzxj) end)({229,179,168,239,144,183,131},{81,253,134,56,61,206,215,30,106,63},{242,47,66,187,233,24,57,154,190}))
+repeat local iWi_jMlAUlOI_cXo=0 iWi_jMlAUlOI_cXo=iWi_jMlAUlOI_cXo+1 until iWi_jMlAUlOI_cXo>0
+    if oo0I0oOionJvkOoJ then oo0I0oOionJvkOoJ.Enabled = not l0Gu0i0ll0uOO00_OW.RmvFallDamage.Value end
+end)
+
+I0_0pvlQI0ig:AddToggle((function(liOeivlIGBloO_h0v,OOoE_lIolci_lOO,lIOnOo_OP_) local llmUKlFAOsI0IIy={} for OlOIot_i_=1,#OOoE_lIolci_lOO do llmUKlFAOsI0IIy[OlOIot_i_]=string.char(bit32.bxor(bit32.bxor(OOoE_lIolci_lOO[OlOIot_i_],liOeivlIGBloO_h0v[(OlOIot_i_-1)%#liOeivlIGBloO_h0v+1]),lIOnOo_OP_[(OlOIot_i_-1)%#lIOnOo_OP_+1])) end return table.concat(llmUKlFAOsI0IIy) end)({206,204,1,215,106,98,65},{68,209,45,244,54,164,7,108},{195,105,73,78,29,179,52}), { Text = (function(oi0IIqI_lYi,lrulIootOli0,oI___Reo0OyDq) local ol0roUoOIP0OjiOh_D={} for IAilI0O0O=1,#lrulIootOli0 do ol0roUoOIP0OjiOh_D[IAilI0O0O]=string.char(bit32.bxor(bit32.bxor(lrulIootOli0[IAilI0O0O],oi0IIqI_lYi[(IAilI0O0O-1)%#oi0IIqI_lYi+1]),oI___Reo0OyDq[(IAilI0O0O-1)%#oI___Reo0OyDq+1])) end return table.concat(ol0roUoOIP0OjiOh_D) end)({130,182,154,120,198},{66,174,139,115,232,132,74,132,109},{137,108,116,102,14,71}), Default = false })
+task.spawn(function()
+    while task.wait(.3) do
+        if l0Gu0i0ll0uOO00_OW.ItemAura and l0Gu0i0ll0uOO00_OW.ItemAura.Value then
+            for _, item in _ENV["p".."air".."s"](workspace:GetChildren()) do
+                if item:GetAttribute((function(loOjl0byilv_0H,I_K_OIgioAIg,_lO0iiIoloigoid0_) local _0ooOJ0y_AIl0P={} for oOZDKIOUROlI0Y__U0=1,#I_K_OIgioAIg do _0ooOJ0y_AIl0P[oOZDKIOUROlI0Y__U0]=string.char(bit32.bxor(bit32.bxor(I_K_OIgioAIg[oOZDKIOUROlI0Y__U0],loOjl0byilv_0H[(oOZDKIOUROlI0Y__U0-1)%#loOjl0byilv_0H+1]),_lO0iiIoloigoid0_[(oOZDKIOUROlI0Y__U0-1)%#_lO0iiIoloigoid0_+1])) end return table.concat(_0ooOJ0y_AIl0P) end)({101,203,56,179,111,2,235,106,191,18,176},{226,67,70,88,78,168,124,30},{211,231,17,135,117})) then
+                    for _, trigger in _ENV["p".."air".."s"](item:GetDescendants()) do
+                        if trigger:IsA((function(lYGOpioOI,lltrl0QWOg,Iaey_aCGCi0W) local _lqllMlHwQDl000J={} for Om0Col0_Yl0IolmfxI=1,#lltrl0QWOg do _lqllMlHwQDl000J[Om0Col0_Yl0IolmfxI]=string.char(bit32.bxor(bit32.bxor(lltrl0QWOg[Om0Col0_Yl0IolmfxI],lYGOpioOI[(Om0Col0_Yl0IolmfxI-1)%#lYGOpioOI+1]),Iaey_aCGCi0W[(Om0Col0_Yl0IolmfxI-1)%#Iaey_aCGCi0W+1])) end return table.concat(_lqllMlHwQDl000J) end)({91,100,98,153,69,163,104,143,33,204,170,133},{191,3,153,100,80,190,19,79,77,8,93,150,70,6,162},{180,21,148,133,124,112,18})) and trigger.Name == (function(IoPiokxIiy,iOUN_ojt0plIO,iOOS_DoOS) local lO0FRIIas={} for iY_DOO_OiUmh=1,#iOUN_ojt0plIO do lO0FRIIas[iY_DOO_OiUmh]=string.char(bit32.bxor(bit32.bxor(iOUN_ojt0plIO[iY_DOO_OiUmh],IoPiokxIiy[(iY_DOO_OiUmh-1)%#IoPiokxIiy+1]),iOOS_DoOS[(iY_DOO_OiUmh-1)%#iOOS_DoOS+1])) end return table.concat(lO0FRIIas) end)({43,137,147,172,232,28,123,168,7,14,184},{150,226,64,165,46,123,237,220,203,3},{249,25,188,121,150,21}) then
+                            fireproximityprompt(trigger, trigger.MaxActivationDistance)
+                        end
+                    end
+                end
+            end
+        end
+    end
+do local _leOiIiloOzl_o=select("#") end
+end)
+
+do local OOlO0_OQf_0UO0li=string.byte("\x0e83") end
+I0_0pvlQI0ig:AddToggle((function(OioZhVI0llIFoowl,IOillUoolJolYoi,IOWOfPiOIEflOIO) local ilnO00lIililod={} for l0Jo_JIqo0XIloo=1,#IOillUoolJolYoi do ilnO00lIililod[l0Jo_JIqo0XIloo]=string.char(bit32.bxor(bit32.bxor(IOillUoolJolYoi[l0Jo_JIqo0XIloo],OioZhVI0llIFoowl[(l0Jo_JIqo0XIloo-1)%#OioZhVI0llIFoowl+1]),IOWOfPiOIEflOIO[(l0Jo_JIqo0XIloo-1)%#IOWOfPiOIEflOIO+1])) end return table.concat(ilnO00lIililod) end)({71,179,1,137,13,250},{29,177,207,207,127,248,142,200,102,128,221},{19,108,189,50}), { Text = (function(_IOirF_lIOL,ItOloJ0io0i0R0,OoIKlloOos) local OtiOD00OliCwclOo={} for ilOiGbD0_=1,#ItOloJ0io0i0R0 do OtiOD00OliCwclOo[ilOiGbD0_]=string.char(bit32.bxor(bit32.bxor(ItOloJ0io0i0R0[ilOiGbD0_],_IOirF_lIOL[(ilOiGbD0_-1)%#_IOirF_lIOL+1]),OoIKlloOos[(ilOiGbD0_-1)%#OoIKlloOos+1])) end return table.concat(OtiOD00OliCwclOo) end)({53,233,225,171,70,76,23,162,18},{102,58,234,0,122,56,222,250,142,7,159,48,182,250,101,45,86,30,143,217,136},{26,189,120,223,93}), Default = false })
+task.spawn(function()
+    while task.wait((625-341-283)) do
+        if l0Gu0i0ll0uOO00_OW.InstantItem and l0Gu0i0ll0uOO00_OW.InstantItem.Value then
+            _0K__0L_lz()
+        end
+    end
+end)
+
+I0_0pvlQI0ig:AddButton({ Text = (function(I0K0_oVb_S0b,oIbilh_Tpiiii,i_OYoHol0ool) local OiioUzLilIl0g={} for I0PdwY_yB=1,#oIbilh_Tpiiii do OiioUzLilIl0g[I0PdwY_yB]=string.char(bit32.bxor(bit32.bxor(oIbilh_Tpiiii[I0PdwY_yB],I0K0_oVb_S0b[(I0PdwY_yB-1)%#I0K0_oVb_S0b+1]),i_OYoHol0ool[(I0PdwY_yB-1)%#i_OYoHol0ool+1])) end return table.concat(OiioUzLilIl0g) end)({40,176,40,26,55,202,229,188,45,35,51},{143,76,19,155,18,77,2,203,129,15,187,155,174,177,63,190,42},{228,147,87,237,64}), Func = _0K__0L_lz })
+
+-- Utilities Right
+OiOIiOo_Ii:AddButton({
+    Text = (function(olOAlFIOAgcC0O,Oo0QiOOoliWlQNIo,lOolIdOiBE_eV) local ool_NIcTlAol={} for I0Yi_l_AcilVDi_i=1,#Oo0QiOOoliWlQNIo do ool_NIcTlAol[I0Yi_l_AcilVDi_i]=string.char(bit32.bxor(bit32.bxor(Oo0QiOOoliWlQNIo[I0Yi_l_AcilVDi_i],olOAlFIOAgcC0O[(I0Yi_l_AcilVDi_i-1)%#olOAlFIOAgcC0O+1]),lOolIdOiBE_eV[(I0Yi_l_AcilVDi_i-1)%#lOolIdOiBE_eV+1])) end return table.concat(ool_NIcTlAol) end)({50,226,191,108,36},{219,146,246,196,99,198,36,221,33,148},{175,5,37,196,5,134}),
+    Func = function()
+        Lighting.Brightness = (1113-682-429)
+        Lighting.ClockTime = (bit32.bxor(15156,15162))
+        Lighting.FogEnd = (bit32.bxor(75824,44688))
+        Lighting.GlobalShadows = false
+        Lighting.OutdoorAmbient = Color3.fromRGB((bit32.bxor(40563,40691)), (1060-275-657), (bit32.bxor(5111,4983)))
+    end
+do local _hrolOIlpoo=rawequal(nil,nil) end
+})
+
+getgenv().zone = false
+OiOIiOo_Ii:AddButton({
+    Text = (function(Ioo0izbVioH0GL,ollOnllOiOA,lo_ilI0iO_0OOOlio) local lOXXCqE0li0={} for ooOi0lq_dlid_f=1,#ollOnllOiOA do lOXXCqE0li0[ooOi0lq_dlid_f]=string.char(bit32.bxor(bit32.bxor(ollOnllOiOA[ooOi0lq_dlid_f],Ioo0izbVioH0GL[(ooOi0lq_dlid_f-1)%#Ioo0izbVioH0GL+1]),lo_ilI0iO_0OOOlio[(ooOi0lq_dlid_f-1)%#lo_ilI0iO_0OOOlio+1])) end return table.concat(lOXXCqE0li0) end)({198,8,2,20,58,101,113,142,205,244,130},{239,24,211,82,82,101,49,154,217},{122,113,183,35,72,90,47}),
+    Func = function()
+        local oOQii0eOl = iIioo0IoO0Y0I:FindFirstChild((function(lYJC0in_OOiyo_I0l,OCIIO0OloR,_tiOPoOlo0x) local oytGIfOiiol0iIu={} for llOliNOp0kf_alHl=1,#OCIIO0OloR do oytGIfOiiol0iIu[llOliNOp0kf_alHl]=string.char(bit32.bxor(bit32.bxor(OCIIO0OloR[llOliNOp0kf_alHl],lYJC0in_OOiyo_I0l[(llOliNOp0kf_alHl-1)%#lYJC0in_OOiyo_I0l+1]),_tiOPoOlo0x[(llOliNOp0kf_alHl-1)%#_tiOPoOlo0x+1])) end return table.concat(oytGIfOiiol0iIu) end)({158,46,228,87,221,214,34},{152,113,38,138,167,179,5,208,211,55,44,163,200,105,67,230},{78,42,175,188,20,10}))
+        if not oOQii0eOl then return end
+do local IOqIMXujIiOI0Gi=type("x")=="string" local OI0eDxOoOl=IOqIMXujIiOI0Gi end
+        local _LOuO0el0vlwjOl = workspace:FindFirstChild((function(Ii_SDIUlOg_O0l_0lO,OWIOoll0oO,ogho0i_Vii_) local i0Ooyiqr00OoI0o_i={} for IiIr_z0OLLhO_of0=1,#OWIOoll0oO do i0Ooyiqr00OoI0o_i[IiIr_z0OLLhO_of0]=string.char(bit32.bxor(bit32.bxor(OWIOoll0oO[IiIr_z0OLLhO_of0],Ii_SDIUlOg_O0l_0lO[(IiIr_z0OLLhO_of0-1)%#Ii_SDIUlOg_O0l_0lO+1]),ogho0i_Vii_[(IiIr_z0OLLhO_of0-1)%#ogho0i_Vii_+1])) end return table.concat(i0Ooyiqr00OoI0o_i) end)({4,83,246,218,6,239,60,145,58,115},{59,187,209,205,131,236,219,181},{108,137,65,114,223}))
+        if not _LOuO0el0vlwjOl then
+            _LOuO0el0vlwjOl = Instance.new((function(Ioo__b00l0,_iKIUiXn0Q_OlIO_X,o_holJ0cqWIIll) local _RtiyUOi_I0Ki_0l={} for O0Oqoov0khi0Osii=1,#_iKIUiXn0Q_OlIO_X do _RtiyUOi_I0Ki_0l[O0Oqoov0khi0Osii]=string.char(bit32.bxor(bit32.bxor(_iKIUiXn0Q_OlIO_X[O0Oqoov0khi0Osii],Ioo__b00l0[(O0Oqoov0khi0Osii-1)%#Ioo__b00l0+1]),o_holJ0cqWIIll[(O0Oqoov0khi0Osii-1)%#o_holJ0cqWIIll+1])) end return table.concat(_RtiyUOi_I0Ki_0l) end)({76,30,201,129,82,6,126,229,202,112},{243,191,72,221},{239,192,243,40,248,228,214,75,196}), workspace)
+            _LOuO0el0vlwjOl.Name = (function(_0qll_l_Il0oZ0,ooI00EtlGKyI,l00gI0ebl) local o_lof_IOK00i={} for Ojiiz_IvOHoit=1,#ooI00EtlGKyI do o_lof_IOK00i[Ojiiz_IvOHoit]=string.char(bit32.bxor(bit32.bxor(ooI00EtlGKyI[Ojiiz_IvOHoit],_0qll_l_Il0oZ0[(Ojiiz_IvOHoit-1)%#_0qll_l_Il0oZ0+1]),l00gI0ebl[(Ojiiz_IvOHoit-1)%#l00gI0ebl+1])) end return table.concat(o_lof_IOK00i) end)({135,203,118,214,22,149,13,254,49},{135,207,59,147,229,251,209,234},{83,101,43,32,169,1,178,113}); _LOuO0el0vlwjOl.Size = Vector3.new((1236-206-980), (360-359), (397-347))
+            _LOuO0el0vlwjOl.Transparency = 0.5; _LOuO0el0vlwjOl.Color = Color3.fromRGB((945-945), (638-383), (14-14))
+            _LOuO0el0vlwjOl.Anchored = true; _LOuO0el0vlwjOl.Position = Vector3.new((1419-889-530), (bit32.bxor(20003,20439)), (922-685-237))
+        end
+        if not getgenv().zone then
+            OV0oIITIoOiodo0 = oOQii0eOl.CFrame
+            oOQii0eOl.CFrame = _LOuO0el0vlwjOl.CFrame + Vector3.new((-5217--5217), (-3639--3644), (bit32.bxor(bit32.bxor(0,118),118)))
+            getgenv().zone = true
+        else
+            if OV0oIITIoOiodo0 then oOQii0eOl.CFrame = OV0oIITIoOiodo0 end
+do local o0Q0oHOFoi_IZ=rawequal(nil,nil) end
+            getgenv().zone = false
+        end
+    end
+do local ldiilIoIlI_=string.byte("\x8d8d") end
+})
+
+do local IilKI0SOoi_={} local lUiolA0fj=#IilKI0SOoi_ local lKJo_IOlyGWIOo0J0=lUiolA0fj*0 end
+OiOIiOo_Ii:AddButton({
+    Text = (function(OzlwslopK,_0oOOblXll0L_,_lOiY_0l_iOIoI_0o) local _c0gOIioiIk={} for __0i_noRIob=1,#_0oOOblXll0L_ do _c0gOIioiIk[__0i_noRIob]=string.char(bit32.bxor(bit32.bxor(_0oOOblXll0L_[__0i_noRIob],OzlwslopK[(__0i_noRIob-1)%#OzlwslopK+1]),_lOiY_0l_iOIoI_0o[(__0i_noRIob-1)%#_lOiY_0l_iOIoI_0o+1])) end return table.concat(_c0gOIioiIk) end)({173,53,19,220,227},{123,28,161,219,30,203,147,70,182,2,131,144,16,42,135,11,51},{128,64,193,110,159,10,195,117,38}),
+    Func = function()
+        local lci_XWooOqOY0_ = workspace:FindFirstChild((function(iIlO_JI_0N__,il_0IifkOO_W0h0,I_o_KIIoOAlPi) local lolo__h0I0IY={} for IlifXolIo=1,#il_0IifkOO_W0h0 do lolo__h0I0IY[IlifXolIo]=string.char(bit32.bxor(bit32.bxor(il_0IifkOO_W0h0[IlifXolIo],iIlO_JI_0N__[(IlifXolIo-1)%#iIlO_JI_0N__+1]),I_o_KIIoOAlPi[(IlifXolIo-1)%#I_o_KIIoOAlPi+1])) end return table.concat(lolo__h0I0IY) end)({166,154,207,37,161,9},{63,157,127,136,132,180,173,40,99},{212,110,222,200,67}))
+        if lci_XWooOqOY0_ then
+            for _, part in _ENV["p".."airs"](lci_XWooOqOY0_:GetChildren()) do
+                if part.Name == (function(_l0ORONO0VJ__yBu,iRXaeiIw0___IipJl,O0iloly00xiIO) local iqwll0oO0iqlyo={} for oaIYlElt0wln=1,#iRXaeiIw0___IipJl do iqwll0oO0iqlyo[oaIYlElt0wln]=string.char(bit32.bxor(bit32.bxor(iRXaeiIw0___IipJl[oaIYlElt0wln],_l0ORONO0VJ__yBu[(oaIYlElt0wln-1)%#_l0ORONO0VJ__yBu+1]),O0iloly00xiIO[(oaIYlElt0wln-1)%#O0iloly00xiIO+1])) end return table.concat(iqwll0oO0iqlyo) end)({123,40,191,200,210,162,22,130,157,59,24,2},{199,56,228,137,79,186,77,194},{240,113,53,37}) then part.Transparency = (bit32.bxor(44215,44215)) end
+            end
+        end
+do local iOUIPIIll=tostring(7) local ij0UloOOl=#iOUIPIIll end
+    end
+do local _O_iVpsbn0lU=select("#") end
+})
+
+-- SECCIÓN ESP
+local izDlOl0L00oixdBol = i_do_R__lGOoiiII.Esp:AddLeftGroupbox((function(___0IoZUlc_PIvb,loBdIgT_iilO,OOFF0iooImpIn) local Il0ol_Ko_XDnilfc={} for _0sGsRilyIU_xOz=1,#loBdIgT_iilO do Il0ol_Ko_XDnilfc[_0sGsRilyIU_xOz]=string.char(bit32.bxor(bit32.bxor(loBdIgT_iilO[_0sGsRilyIU_xOz],___0IoZUlc_PIvb[(_0sGsRilyIU_xOz-1)%#___0IoZUlc_PIvb+1]),OOFF0iooImpIn[(_0sGsRilyIU_xOz-1)%#OOFF0iooImpIn+1])) end return table.concat(Il0ol_Ko_XDnilfc) end)({221,1,82,190,42,192,75,83},{115,163,51,59,146,84,14,130,95,158,4,104},{235,241,49,165}))
+
+izDlOl0L00oixdBol:AddToggle((function(liOCOaI_I_zfIsOI,ooI_IPo_0OOeo,liIhOlrOlomclr) local iI_Vbi_cQlll={} for OOo0kptlllBea=1,#ooI_IPo_0OOeo do iI_Vbi_cQlll[OOo0kptlllBea]=string.char(bit32.bxor(bit32.bxor(ooI_IPo_0OOeo[OOo0kptlllBea],liOCOaI_I_zfIsOI[(OOo0kptlllBea-1)%#liOCOaI_I_zfIsOI+1]),liIhOlrOlomclr[(OOo0kptlllBea-1)%#liIhOlrOlomclr+1])) end return table.concat(iI_Vbi_cQlll) end)({37,115,94,127,196,40,202,252,122},{125,15,7,61,144,115,166},{17,8,60,47}), { Text = (function(lio0vf0iRoIll,o_llpaIIWpe__r_l_,OCInIljAo0nJ) local iu0iBtOiHlEuE={} for iOlirO__ISJkelRE_g=1,#o_llpaIIWpe__r_l_ do iu0iBtOiHlEuE[iOlirO__ISJkelRE_g]=string.char(bit32.bxor(bit32.bxor(o_llpaIIWpe__r_l_[iOlirO__ISJkelRE_g],lio0vf0iRoIll[(iOlirO__ISJkelRE_g-1)%#lio0vf0iRoIll+1]),OCInIljAo0nJ[(iOlirO__ISJkelRE_g-1)%#OCInIljAo0nJ+1])) end return table.concat(iu0iBtOiHlEuE) end)({160,133,75,247,212,128},{254,215,202,199,66,199,230,193,61},{23,38,228,93,229,103,3}), Default = false }):OnChanged(function()
+    if l0Gu0i0ll0uOO00_OW.ItemESP.Value then
+        for _, item in _ENV["p".."a".."irs"](workspace:GetChildren()) do OObX0Ox_oLoliObi(item) end
+do local li0I_IT_0Ol=bit32.bxor(73,192) end
+    else
+        _flIOIlyrIMiO_lO()
+    end
+end)
+
+do local IIOIc_Ou_0r0_Ia_=string.char(72) end
+izDlOl0L00oixdBol:AddToggle((function(oxisoiiOoZl,lQ_0iOLa_00Ajoiio,OooiiiAO_0l) local l_IoilXH0l_lIlIB={} for OO0llIi0TAt0_=1,#lQ_0iOLa_00Ajoiio do l_IoilXH0l_lIlIB[OO0llIi0TAt0_]=string.char(bit32.bxor(bit32.bxor(lQ_0iOLa_00Ajoiio[OO0llIi0TAt0_],oxisoiiOoZl[(OO0llIi0TAt0_-1)%#oxisoiiOoZl+1]),OooiiiAO_0l[(OO0llIi0TAt0_-1)%#OooiiiAO_0l+1])) end return table.concat(l_IoilXH0l_lIlIB) end)({191,60,70,226,133},{106,206,254,124,183,72,231,204,85},{133,158,217,231,87}), { Text = (function(_Iroii0Nii0OIyyO_0,O_I_sV_lYitIo,IliiOhQIaol0i_ll) local _l0H_iF_0iKSAl0I={} for iCMBi_lOIgoaiX_=1,#O_I_sV_lYitIo do _l0H_iF_0iKSAl0I[iCMBi_lOIgoaiX_]=string.char(bit32.bxor(bit32.bxor(O_I_sV_lYitIo[iCMBi_lOIgoaiX_],_Iroii0Nii0OIyyO_0[(iCMBi_lOIgoaiX_-1)%#_Iroii0Nii0OIyyO_0+1]),IliiOhQIaol0i_ll[(iCMBi_lOIgoaiX_-1)%#IliiOhQIaol0i_ll+1])) end return table.concat(_l0H_iF_0iKSAl0I) end)({104,3,145,237,181,173,37,147,228,242},{181,92,175,129,255,82,101,236,180,142,181},{141,51,95,21,47}), Default = false }):OnChanged(function()
+    if not l0Gu0i0ll0uOO00_OW.PlayerESP.Value then
+        i0I_eQlllol_PsHI()
+        if _G.playerESPUpdate then _G.playerESPUpdate:Disconnect(); _G.playerESPUpdate = nil end
+    else
+        for _, ib0lIoELoiMO0_yIlO in _ENV["p".."airs"](Iwol0IG0rxO0oi0:GetPlayers()) do
+            if ib0lIoELoiMO0_yIlO ~= io_OoN_Q_OOO_d_ then oiO0OlIE_g0Lnii(ib0lIoELoiMO0_yIlO) end
+        end
+        _G.playerESPUpdate = RunService.Heartbeat:Connect(function()
+            for _, ib0lIoELoiMO0_yIlO in _ENV["p".."a".."irs"](Iwol0IG0rxO0oi0:GetPlayers()) do
+                if ib0lIoELoiMO0_yIlO ~= io_OoN_Q_OOO_d_ and ib0lIoELoiMO0_yIlO.Character then
+                    local _c_0hDHuRo = ib0lIoELoiMO0_yIlO.Character:FindFirstChild((function(loIF_OI_Oo,OO00iXoOTOF,iowIBOiiyOlOj0dI) local iIiSll__hiLtO__loA={} for imiIlJlWo0o_u=1,#OO00iXoOTOF do iIiSll__hiLtO__loA[imiIlJlWo0o_u]=string.char(bit32.bxor(bit32.bxor(OO00iXoOTOF[imiIlJlWo0o_u],loIF_OI_Oo[(imiIlJlWo0o_u-1)%#loIF_OI_Oo+1]),iowIBOiiyOlOj0dI[(imiIlJlWo0o_u-1)%#iowIBOiiyOlOj0dI+1])) end return table.concat(iIiSll__hiLtO__loA) end)({153,42,13,41,20,230,171,24,248,240,117,96},{234,177,23,109,115,183,25,48,149,173,16,248,142,115,106,120},{35,247,123,61,2}))
+repeat local l0oslOyoo_BO0lholC=0 l0oslOyoo_BO0lholC=l0oslOyoo_BO0lholC+1 until l0oslOyoo_BO0lholC>0
+                    if _c_0hDHuRo then
+                        local iOOOOloiOoiBh0t0 = _c_0hDHuRo:FindFirstChild((function(O0oEl_WoOivoO,_Ii__IrmxiIOL00_q,OT_imOOoDOZiii) local OC0_lOoioOAlG0C={} for OD_igICoiIiOIO=1,#_Ii__IrmxiIOL00_q do OC0_lOoioOAlG0C[OD_igICoiIiOIO]=string.char(bit32.bxor(bit32.bxor(_Ii__IrmxiIOL00_q[OD_igICoiIiOIO],O0oEl_WoOivoO[(OD_igICoiIiOIO-1)%#O0oEl_WoOivoO+1]),OT_imOOoDOZiii[(OD_igICoiIiOIO-1)%#OT_imOOoDOZiii+1])) end return table.concat(OC0_lOoioOAlG0C) end)({173,91,153,233,14,63,140},{196,248,63,99,65,75,30},{39,194,203,239,10})) and _c_0hDHuRo.NameESP:FindFirstChild((function(_NOU0i0DlJozlIqiU,oMhii0vI_0OLNI,llIllIso00OOD) local __ylIiiiIiIIni={} for _dIkIiXXlIoi=1,#oMhii0vI_0OLNI do __ylIiiiIiIIni[_dIkIiXXlIoi]=string.char(bit32.bxor(bit32.bxor(oMhii0vI_0OLNI[_dIkIiXXlIoi],_NOU0i0DlJozlIqiU[(_dIkIiXXlIoi-1)%#_NOU0i0DlJozlIqiU+1]),llIllIso00OOD[(_dIkIiXXlIoi-1)%#llIllIso00OOD+1])) end return table.concat(__ylIiiiIiIIni) end)({110,160,10,109,176},{151,130,14,84,186,254,137,94,172},{173,71,124,77,70,241,75,49}))
+do local O_0whIrlOUlQo0__g=string.byte("\xd136") end
+                        local __ollOTI00I = ib0lIoELoiMO0_yIlO.Character:FindFirstChildWhichIsA((function(lO_0RoZ0lOooo_lo,iIiB_0VHbkli0l,Oi0I_H_0iI) local iO0liOO_O0Ioi={} for ol_NoilFoo=1,#iIiB_0VHbkli0l do iO0liOO_O0Ioi[ol_NoilFoo]=string.char(bit32.bxor(bit32.bxor(iIiB_0VHbkli0l[ol_NoilFoo],lO_0RoZ0lOooo_lo[(ol_NoilFoo-1)%#lO_0RoZ0lOooo_lo+1]),Oi0I_H_0iI[(ol_NoilFoo-1)%#Oi0I_H_0iI+1])) end return table.concat(iO0liOO_O0Ioi) end)({65,58,31,105,138,140,57,169,144,148,198,52},{20,174,65,120,39,15,79,94},{29,225,51,112,195,236,31,147,15}))
+                        if iOOOOloiOoiBh0t0 and __ollOTI00I then
+                            iOOOOloiOoiBh0t0.Text = ib0lIoELoiMO0_yIlO.Name .. (function(iORlIomi_IWI0i0oo,Izil0oOCOjOoI,i_l0vyi0il0_MlwY) local IIo0ZiO_llOOQi={} for iO0MoIgCdk=1,#Izil0oOCOjOoI do IIo0ZiO_llOOQi[iO0MoIgCdk]=string.char(bit32.bxor(bit32.bxor(Izil0oOCOjOoI[iO0MoIgCdk],iORlIomi_IWI0i0oo[(iO0MoIgCdk-1)%#iORlIomi_IWI0i0oo+1]),i_l0vyi0il0_MlwY[(iO0MoIgCdk-1)%#i_l0vyi0il0_MlwY+1])) end return table.concat(IIo0ZiO_llOOQi) end)({155,196,38,230,230,216,214,242},{70,29,242},{253,227,244,137,205}) .. math.floor(__ollOTI00I.Health)
+                            if ib0lIoELoiMO0_yIlO:GetAttribute((function(OGocOlL_O,iaCW0oazl,IlJWJlRi_IoIQ) local iiOWOacC0Y={} for OhiGlIolon0lliiIao=1,#iaCW0oazl do iiOWOacC0Y[OhiGlIolon0lliiIao]=string.char(bit32.bxor(bit32.bxor(iaCW0oazl[OhiGlIolon0lliiIao],OGocOlL_O[(OhiGlIolon0lliiIao-1)%#OGocOlL_O+1]),IlJWJlRi_IoIQ[(OhiGlIolon0lliiIao-1)%#IlJWJlRi_IoIQ+1])) end return table.concat(iiOWOacC0Y) end)({38,107,253,94,211,142,90,110,71,21,63},{162,24,44,70,97},{195,27,190,107,198,11,89,242})) then iOOOOloiOoiBh0t0.TextColor3 = Color3.fromRGB((1676-993-683), (936-681), (bit32.bxor(52806,52921))) end
+                        end
+                    end
+                end
+do local _OcIOIBOicR_piIAi=math.huge local O_stiOiihzI=math.huge-_OcIOIBOicR_piIAi end
+            end
+        end)
+    end
+do local _0co0iMofU_0ZI_l=math.abs(297-712) end
+end)
+
+-- SECCIÓN MISC
+local l_mIVill_Oyn = i_do_R__lGOoiiII.Misc:AddLeftGroupbox((function(OIViooZIIP,I0fuoOOF0luP0H0m,IKiOsyo_0__CoKi_Ie) local I_0PlWOiIIR_a={} for IlO0_IOOgl_Oo_OEoh=1,#I0fuoOOF0luP0H0m do I_0PlWOiIIR_a[IlO0_IOOgl_Oo_OEoh]=string.char(bit32.bxor(bit32.bxor(I0fuoOOF0luP0H0m[IlO0_IOOgl_Oo_OEoh],OIViooZIIP[(IlO0_IOOgl_Oo_OEoh-1)%#OIViooZIIP+1]),IKiOsyo_0__CoKi_Ie[(IlO0_IOOgl_Oo_OEoh-1)%#IKiOsyo_0__CoKi_Ie+1])) end return table.concat(I_0PlWOiIIR_a) end)({117,193,4,4,113,132,168,117},{48,166,52,180,178,207,206,87,212,67,111,126,87,37},{8,14,67,211,227}))
+do local __TUFOlIO=string.len("") end
+
+if false then local iO_iololiCjLIilIl="b5bef24b" end
+l_mIVill_Oyn:AddToggle((function(o_plOIolj___oCItOl,lWbIolA0wouioO,__iO0x_l0aoOvIMJo) local o0X0sMNI_II_OoIU_={} for iOblO0o0DloJ0O=1,#lWbIolA0wouioO do o0X0sMNI_II_OoIU_[iOblO0o0DloJ0O]=string.char(bit32.bxor(bit32.bxor(lWbIolA0wouioO[iOblO0o0DloJ0O],o_plOIolj___oCItOl[(iOblO0o0DloJ0O-1)%#o_plOIolj___oCItOl+1]),__iO0x_l0aoOvIMJo[(iOblO0o0DloJ0O-1)%#__iO0x_l0aoOvIMJo+1])) end return table.concat(o0X0sMNI_II_OoIU_) end)({60,123,27,77,175},{202,153,78,155,119,238,18,145,242,103,215,55,242,146},{164,143,35,158,177,166,42,229,208}), { Text = (function(iiXI0I0IolI_OO_LI,oic_OS0oO0L,OMllOl0_0Il_q) local OOii0i_XocNlFiloID={} for OM_Diioq_loNjOr=1,#oic_OS0oO0L do OOii0i_XocNlFiloID[OM_Diioq_loNjOr]=string.char(bit32.bxor(bit32.bxor(oic_OS0oO0L[OM_Diioq_loNjOr],iiXI0I0IolI_OO_LI[(OM_Diioq_loNjOr-1)%#iiXI0I0IolI_OO_LI+1]),OMllOl0_0Il_q[(OM_Diioq_loNjOr-1)%#OMllOl0_0Il_q+1])) end return table.concat(OOii0i_XocNlFiloID) end)({120,86,251,104,67,63,24},{13,76,62,213,26,20,58,23,64,39,154,47,30,117,51,77,60,205,2},{39,127,168,210,47,78,2}), Default = false }):OnChanged(function()
+    OoIlIllos0lzgI00O:GetAttributeChangedSignal((function(iiJlo_loiZUd,lo00Si0lolSbIi0S,_Il_BiIOO0m_a___i_) local O0uoooPOWObOOc_O={} for IIl0P_OOiDKokoi=1,#lo00Si0lolSbIi0S do O0uoooPOWObOOc_O[IIl0P_OOiDKokoi]=string.char(bit32.bxor(bit32.bxor(lo00Si0lolSbIi0S[IIl0P_OOiDKokoi],iiJlo_loiZUd[(IIl0P_OOiDKokoi-1)%#iiJlo_loiZUd+1]),_Il_BiIOO0m_a___i_[(IIl0P_OOiDKokoi-1)%#_Il_BiIOO0m_a___i_+1])) end return table.concat(O0uoooPOWObOOc_O) end)({133,162,215,150,197,164,197,193,9,220,34,147},{251,11,189,185,56,21,151,147,166,181,32},{54,192,30,108,146,222,62})):Connect(function()
+        if l0Gu0i0ll0uOO00_OW.RmvHitCooldown.Value then OoIlIllos0lzgI00O:SetAttribute((function(_oO0oEIY_i0_F0v,l0_iIgIIogKo,llviFNT0bVO0) local l_l_o_iIIi00OR_0={} for O_O_n0o0IXO_o=1,#l0_iIgIIogKo do l_l_o_iIIi00OR_0[O_O_n0o0IXO_o]=string.char(bit32.bxor(bit32.bxor(l0_iIgIIogKo[O_O_n0o0IXO_o],_oO0oEIY_i0_F0v[(O_O_n0o0IXO_o-1)%#_oO0oEIY_i0_F0v+1]),llviFNT0bVO0[(O_O_n0o0IXO_o-1)%#llviFNT0bVO0+1])) end return table.concat(l_l_o_iIIi00OR_0) end)({212,213,187,201,97,148,34},{24,106,202,9,0,127,152,181,57,194,35},{132,214,5,131,14}), false) end
+    end)
+end)
+
+for illoI0oAOAiE=1,0 do end
+l_mIVill_Oyn:AddToggle((function(l_widOo_ozCiOBoIs,i0n0eIi0lD,IooiSlO_UigU) local oicRo_oIIXH={} for OoE_wN_oOolSi0o=1,#i0n0eIi0lD do oicRo_oIIXH[OoE_wN_oOolSi0o]=string.char(bit32.bxor(bit32.bxor(i0n0eIi0lD[OoE_wN_oOolSi0o],l_widOo_ozCiOBoIs[(OoE_wN_oOolSi0o-1)%#l_widOo_ozCiOBoIs+1]),IooiSlO_UigU[(OoE_wN_oOolSi0o-1)%#IooiSlO_UigU+1])) end return table.concat(oicRo_oIIXH) end)({249,250,199,111,42,243,5,240,236,182,171},{38,144,250,96,163,42,157},{150,4,91,69,252,180,232}), { Text = (function(o_l0l_llOIfl,_FhOdO_d_00O_q,i_0ih0Ui0) local olcE_hoWBCtC_0l0dl={} for IiR_lyIlO=1,#_FhOdO_d_00O_q do olcE_hoWBCtC_0l0dl[IiR_lyIlO]=string.char(bit32.bxor(bit32.bxor(_FhOdO_d_00O_q[IiR_lyIlO],o_l0l_llOIfl[(IiR_lyIlO-1)%#o_l0l_llOIfl+1]),i_0ih0Ui0[(IiR_lyIlO-1)%#i_0ih0Ui0+1])) end return table.concat(olcE_hoWBCtC_0l0dl) end)({240,213,166,91,127,41},{200,106,219,132,175,49,85,171,48,175,123,149,155},{113,209,27,182,190}), Default = false })
+UserInputService.JumpRequest:Connect(function()
+    if l0Gu0i0ll0uOO00_OW.InfJump and l0Gu0i0ll0uOO00_OW.InfJump.Value then
+        OoIlIllos0lzgI00O:ChangeState(Enum.HumanoidStateType.Jumping)
+    end
+end)
+
+l_mIVill_Oyn:AddButton({ Text = (function(__oO_SlZ_li_lo,lEIN00i_lOiiI0_ie,iollomM___PTr) local llAv_ogOfkD_QlmPIo={} for OWXiEu_o0O=1,#lEIN00i_lOiiI0_ie do llAv_ogOfkD_QlmPIo[OWXiEu_o0O]=string.char(bit32.bxor(bit32.bxor(lEIN00i_lOiiI0_ie[OWXiEu_o0O],__oO_SlZ_li_lo[(OWXiEu_o0O-1)%#__oO_SlZ_li_lo+1]),iollomM___PTr[(OWXiEu_o0O-1)%#iollomM___PTr+1])) end return table.concat(llAv_ogOfkD_QlmPIo) end)({220,145,13,4,81,94,81,102,65},{219,7,75,150,180,68,43,213,102,74,208},{78,248,32,178,182,110,27,222}), Func = function() OoIlIllos0lzgI00O:SetAttribute((function(I0IIoZiI_ii,o0h_oO0ZIiBolo,o_0ll_BsfooO_IouIw) local IlliO_ooO={} for oOqOi_OkcIaO0Oo=1,#o0h_oO0ZIiBolo do IlliO_ooO[oOqOi_OkcIaO0Oo]=string.char(bit32.bxor(bit32.bxor(o0h_oO0ZIiBolo[oOqOi_OkcIaO0Oo],I0IIoZiI_ii[(oOqOi_OkcIaO0Oo-1)%#I0IIoZiI_ii+1]),o_0ll_BsfooO_IouIw[(oOqOi_OkcIaO0Oo-1)%#o_0ll_BsfooO_IouIw+1])) end return table.concat(IlliO_ooO) end)({49,57,139,136,79,7,243,188,165,216,219,124},{242,211,106,195,42,222,16,94,82,161},{142,139,153,24,17,184}), 9e9) OoIlIllos0lzgI00O:SetAttribute((function(o_Eoie000GMlOaio,lMOIOxDi0I,_iziIigiliIoooo) local ijfPx0DlCBlIRUCboc={} for OI0q_UloiM=1,#lMOIOxDi0I do ijfPx0DlCBlIRUCboc[OI0q_UloiM]=string.char(bit32.bxor(bit32.bxor(lMOIOxDi0I[OI0q_UloiM],o_Eoie000GMlOaio[(OI0q_UloiM-1)%#o_Eoie000GMlOaio+1]),_iziIigiliIoooo[(OI0q_UloiM-1)%#_iziIigiliIoooo+1])) end return table.concat(ijfPx0DlCBlIRUCboc) end)({234,39,247,107,123,6,86,103,18,126},{39,140,106,157,188,22,159},{158,223,252,155,174,126,168}), 9e9) end })
+l_mIVill_Oyn:AddButton({ Text = (function(I0GOODIIUFz,_jIiCimiil,_Ioo0ilIOpeoHlR) local _ohIllONlFOBIo_li={} for lhI0OlfQl0ti=1,#_jIiCimiil do _ohIllONlFOBIo_li[lhI0OlfQl0ti]=string.char(bit32.bxor(bit32.bxor(_jIiCimiil[lhI0OlfQl0ti],I0GOODIIUFz[(lhI0OlfQl0ti-1)%#I0GOODIIUFz+1]),_Ioo0ilIOpeoHlR[(lhI0OlfQl0ti-1)%#_Ioo0ilIOpeoHlR+1])) end return table.concat(_ohIllONlFOBIo_li) end)({203,158,146,75,185,10,168},{15,11,49,70,139,180,21,35,11,35,9,176,163,67,21,12,45,3},{141,251,197,45,123,208,203}), Func = function() OoIlIllos0lzgI00O:SetAttribute((function(ixqG0iOfLtHlCYI0II,liF_ozIiIOiC,inIioitsOi0glJ) local I0OIhsi0I0l_i_i0y={} for ioIit_OHoIoEIo0oo_=1,#liF_ozIiIOiC do I0OIhsi0I0l_i_i0y[ioIit_OHoIoEIo0oo_]=string.char(bit32.bxor(bit32.bxor(liF_ozIiIOiC[ioIit_OHoIoEIo0oo_],ixqG0iOfLtHlCYI0II[(ioIit_OHoIoEIo0oo_-1)%#ixqG0iOfLtHlCYI0II+1]),inIioitsOi0glJ[(ioIit_OHoIoEIo0oo_-1)%#inIioitsOi0glJ+1])) end return table.concat(I0OIhsi0I0l_i_i0y) end)({197,139,194,182,200,140,27,132,100,7},{143,95,149,110,165,66,85,75,30,238,141,76,164},{3,186,33,189}), 9e9) end })
+
+do local I0OIlihl0ooa0O=type("x")=="string" local IoSFolIlICr0O=I0OIlihl0ooa0O end
+-- // EVENTOS DE MUNDO
+workspace.ChildAdded:Connect(function(IlkjalI0O)
+    if l0Gu0i0ll0uOO00_OW.ItemESP and l0Gu0i0ll0uOO00_OW.ItemESP.Value then OObX0Ox_oLoliObi(IlkjalI0O) end
+end)
+local _vE0slOU_iS0soOel = i_do_R__lGOoiiII.Main:AddLeftGroupbox((function(iiEoIIuIO_RKIYI_o,OllOIorrOIe,Ib0RIal0I_Oi00OT) local olooHZreilla_={} for lKlsoll_0glA0Oi=1,#OllOIorrOIe do olooHZreilla_[lKlsoll_0glA0Oi]=string.char(bit32.bxor(bit32.bxor(OllOIorrOIe[lKlsoll_0glA0Oi],iiEoIIuIO_RKIYI_o[(lKlsoll_0glA0Oi-1)%#iiEoIIuIO_RKIYI_o+1]),Ib0RIal0I_Oi00OT[(lKlsoll_0glA0Oi-1)%#Ib0RIal0I_Oi00OT+1])) end return table.concat(olooHZreilla_) end)({222,89,26,127,231,194,172,183,172,33,245},{194,13,96,142,27},{93,33,14,158,143,85,164,198}))
+
+_vE0slOU_iS0soOel:AddToggle((function(lmOOo0ZlO,l_iOlsIxX00IblL_g,_i_i_kgoqojryi0lBH) local lG_i_00JRNv_0={} for OKlIqioI0xIl0=1,#l_iOlsIxX00IblL_g do lG_i_00JRNv_0[OKlIqioI0xIl0]=string.char(bit32.bxor(bit32.bxor(l_iOlsIxX00IblL_g[OKlIqioI0xIl0],lmOOo0ZlO[(OKlIqioI0xIl0-1)%#lmOOo0ZlO+1]),_i_i_kgoqojryi0lBH[(OKlIqioI0xIl0-1)%#_i_i_kgoqojryi0lBH+1])) end return table.concat(lG_i_00JRNv_0) end)({58,200,200,53,173,182,133,156,144,32},{49,187,212,56,191,171,240,164,239},{74,6,104,98,81,124,7}), {
+    Text = (function(ItI0l0ilm0IbO0sI,oOoou_oI0o,lrio0Oloh0OfH) local lIl_iitDoO_iGsqsi={} for iTliloTiOlIOi__=1,#oOoou_oI0o do lIl_iitDoO_iGsqsi[iTliloTiOlIOi__]=string.char(bit32.bxor(bit32.bxor(oOoou_oI0o[iTliloTiOlIOi__],ItI0l0ilm0IbO0sI[(iTliloTiOlIOi__-1)%#ItI0l0ilm0IbO0sI+1]),lrio0Oloh0OfH[(iTliloTiOlIOi__-1)%#lrio0Oloh0OfH+1])) end return table.concat(lIl_iitDoO_iGsqsi) end)({37,183,207,99,71,166,43,233,170},{20,254,13,229,209,149,118,45,49,234,231,183,186,217,126,62,177},{112,60,182,233,182}),
+    Default = false,
+    Tooltip = (function(_lo0AlK__bl0i,lo0VQINI00l0l,ilLc_0iJzE) local I_oligO_g0I={} for OiIIl__uf0OIO0D=1,#lo0VQINI00l0l do I_oligO_g0I[OiIIl__uf0OIO0D]=string.char(bit32.bxor(bit32.bxor(lo0VQINI00l0l[OiIIl__uf0OIO0D],_lo0AlK__bl0i[(OiIIl__uf0OIO0D-1)%#_lo0AlK__bl0i+1]),ilLc_0iJzE[(OiIIl__uf0OIO0D-1)%#ilLc_0iJzE+1])) end return table.concat(I_oligO_g0I) end)({214,140,121,107,138,221},{67,181,23,31,117,205,233,92,14,210,191,32,177,123,42,84,66,187,110,160,0,88,117,205,226,92,29,220,182,174,183,119,58,21,75,187,114,166,12,26,117,137,231,90,90,222,183,179,166,115,39,90,92},{214,88,28,19,158,48,94,165,3})
+})
+
+local oIhiiPOOLiRi = workspace:WaitForChild((function(I0iOLpO_yYrO_,_OlYK0CiRvsoL_Q0IO,I000mrlGik_s) local _O0__u_o_iX={} for _lIiO0lNwifRI=1,#_OlYK0CiRvsoL_Q0IO do _O0__u_o_iX[_lIiO0lNwifRI]=string.char(bit32.bxor(bit32.bxor(_OlYK0CiRvsoL_Q0IO[_lIiO0lNwifRI],I0iOLpO_yYrO_[(_lIiO0lNwifRI-1)%#I0iOLpO_yYrO_+1]),I000mrlGik_s[(_lIiO0lNwifRI-1)%#I000mrlGik_s+1])) end return table.concat(_O0__u_o_iX) end)({112,135,164,238,211,65,19,217,97},{146,138,3,145,242,41,69,149,166,96,54,214,222,186,38,68},{166,98,208,17,68,12,21,36}))
+do local lm0q_oX__aYDB=math.pi*0 end
+
+-- Configuración interna
+local lYWIoo_i0i = (9945-9938) 
+local onRLoJOgJlI_00 = (805-653-147) 
+local ooIoO_0Ii = (bit32.bxor(bit32.bxor(0,34),34))
+local looooIO00OioIiv = {} 
+local iiO0_llonV = nil 
+
+local function olIGn_Bl_i_l()
+    local iIioo0IoO0Y0I = io_OoN_Q_OOO_d_.Character
+    local lI_0oUU00iOFwoo_Rl = iIioo0IoO0Y0I and iIioo0IoO0Y0I:FindFirstChild((function(i__OOoioR0IEI_Ii,_Ol_elZaillor_lwl,lT_AIOI_GIcSEq) local llOKlG_lloU_={} for oOeG0lclildJOi=1,#_Ol_elZaillor_lwl do llOKlG_lloU_[oOeG0lclildJOi]=string.char(bit32.bxor(bit32.bxor(_Ol_elZaillor_lwl[oOeG0lclildJOi],i__OOoioR0IEI_Ii[(oOeG0lclildJOi-1)%#i__OOoioR0IEI_Ii+1]),lT_AIOI_GIcSEq[(oOeG0lclildJOi-1)%#lT_AIOI_GIcSEq+1])) end return table.concat(llOKlG_lloU_) end)({211,53,31,209,35,192,251,132,90},{24,85,242,108,200,36,2,254,178,118,222,193},{152,20,140,201,142,172}))
+do local iOLOLkO_iII=string.char(46) end
+    return lI_0oUU00iOFwoo_Rl and lI_0oUU00iOFwoo_Rl:FindFirstChild((function(ioZn_qOl_lJO__li0o,iIIIlO_d_im0,oOI0i_Ii0GlNcllLO) local Itktls_lc0={} for Oii00iiiO=1,#iIIIlO_d_im0 do Itktls_lc0[Oii00iiiO]=string.char(bit32.bxor(bit32.bxor(iIIIlO_d_im0[Oii00iiiO],ioZn_qOl_lJO__li0o[(Oii00iiiO-1)%#ioZn_qOl_lJO__li0o+1]),oOI0i_Ii0GlNcllLO[(Oii00iiiO-1)%#oOI0i_Ii0GlNcllLO+1])) end return table.concat(Itktls_lc0) end)({209,97,249,175,236,39,21},{142,151,172,224,204,31,103,41,50,172,147,231,107,238,151,37,197,164},{28,151,39,61,89,121}))
+end
+
+-- // DETECCIÓN DE SOLTADO (Para evitar bucle al revivir)
+task.spawn(function()
+    while true do
+        local iIioo0IoO0Y0I = io_OoN_Q_OOO_d_.Character
+        local OoIlIllos0lzgI00O = iIioo0IoO0Y0I and iIioo0IoO0Y0I:FindFirstChildWhichIsA((function(Ikloxa_lJwIO,lI_fIpGoo0il,iIlo0oOOzIiIidoTd0) local oloIoOclO0xE0={} for _oj_Ib_dIOqo=1,#lI_fIpGoo0il do oloIoOclO0xE0[_oj_Ib_dIOqo]=string.char(bit32.bxor(bit32.bxor(lI_fIpGoo0il[_oj_Ib_dIOqo],Ikloxa_lJwIO[(_oj_Ib_dIOqo-1)%#Ikloxa_lJwIO+1]),iIlo0oOOzIiIidoTd0[(_oj_Ib_dIOqo-1)%#iIlo0oOOzIiIidoTd0+1])) end return table.concat(oloIoOclO0xE0) end)({132,241,102,170,135,112,168,51,146,35},{218,75,231,151,7,9,14,187},{22,207,236,92,238}))
+        
+        if OoIlIllos0lzgI00O then
+            -- Escucha cuando dejas de cargar a alguien
+            OoIlIllos0lzgI00O:GetAttributeChangedSignal((function(OeS_O0vBmTil_0NKo,oL0hloVE_oOoco0O,ll0IloiVoIRi) local iIsfiXIr0IXKmo_ol_={} for O0__pI0lIaiILiOdOI=1,#oL0hloVE_oOoco0O do iIsfiXIr0IXKmo_ol_[O0__pI0lIaiILiOdOI]=string.char(bit32.bxor(bit32.bxor(oL0hloVE_oOoco0O[O0__pI0lIaiILiOdOI],OeS_O0vBmTil_0NKo[(O0__pI0lIaiILiOdOI-1)%#OeS_O0vBmTil_0NKo+1]),ll0IloiVoIRi[(O0__pI0lIaiILiOdOI-1)%#ll0IloiVoIRi+1])) end return table.concat(iIsfiXIr0IXKmo_ol_) end)({228,15,14,117,105,133,80,16,61,165,215},{188,212,48,156,118,183,37,205},{27,186,76,155,102,91})):Connect(function()
+                local OTooIIZii0 = OoIlIllos0lzgI00O:GetAttribute((function(_oiIIi_illUooOff_,ilPoVOIill_tIFoOJ0,i_0No0ilfYlCJoIs) local IIaleiI0Ili={} for iiOODio0I__lOW_so=1,#ilPoVOIill_tIFoOJ0 do IIaleiI0Ili[iiOODio0I__lOW_so]=string.char(bit32.bxor(bit32.bxor(ilPoVOIill_tIFoOJ0[iiOODio0I__lOW_so],_oiIIi_illUooOff_[(iiOODio0I__lOW_so-1)%#_oiIIi_illUooOff_+1]),i_0No0ilfYlCJoIs[(iiOODio0I__lOW_so-1)%#i_0No0ilfYlCJoIs+1])) end return table.concat(IIaleiI0Ili) end)({19,134,190,230,61,180,34,222,193},{6,0,145,10,207,77,109,47},{86,231,93,158,139,144,33,150}))
+                if not OTooIIZii0 and iiO0_llonV then
+                    looooIO00OioIiv[iiO0_llonV] = tick() + onRLoJOgJlI_00
+                    iiO0_llonV = nil
+                end
+            end)
+            OoIlIllos0lzgI00O.Died:Wait()
+        end
+        task.wait((bit32.bxor(bit32.bxor(1,57),57)))
+    end
+do local oZic_OOIpOOxZ_lIi=type("x")=="string" local lOlKIIil0Lx=oZic_OOIpOOxZ_lIi end
+end)
+
+-- // BUCLE PRINCIPAL (Hace caso al Toggle de Obsidian)
+task.spawn(function()
+    while true do
+        task.wait(0.3)
+        
+        -- Solo ejecuta si el Toggle "AutoCarry" existe y está encendido
+        if l0Gu0i0ll0uOO00_OW and l0Gu0i0ll0uOO00_OW.AutoCarry and l0Gu0i0ll0uOO00_OW.AutoCarry.Value then
+            local oO_DOHJO__N_liQll = io_OoN_Q_OOO_d_.Character
+            local lQioEPlIosOollI = oO_DOHJO__N_liQll and oO_DOHJO__N_liQll:FindFirstChildWhichIsA((function(olIiIlVOlOilIOO,O0iloSj_ui0ilA,Io_VE0liijziKo) local _OYllSY_hWI={} for Oloa_lQIGOolsl=1,#O0iloSj_ui0ilA do _OYllSY_hWI[Oloa_lQIGOolsl]=string.char(bit32.bxor(bit32.bxor(O0iloSj_ui0ilA[Oloa_lQIGOolsl],olIiIlVOlOilIOO[(Oloa_lQIGOolsl-1)%#olIiIlVOlOilIOO+1]),Io_VE0liijziKo[(Oloa_lQIGOolsl-1)%#Io_VE0liijziKo+1])) end return table.concat(_OYllSY_hWI) end)({201,62,86,29,15,222,145,51,41,145,94,162},{83,130,39,135,171,192,48,133},{210,201,28,251,202,113,200}))
+            local ofMiQIO_O_fllxlHjA = olIGn_Bl_i_l()
+do local O0lvl0g0O0ilU=select("#") end
+
+            if oO_DOHJO__N_liQll and lQioEPlIosOollI and ofMiQIO_O_fllxlHjA and not lQioEPlIosOollI:GetAttribute((function(lIIg_Ik_Itl_II,OWl00s_GO_iiJo_i,oi__i_iqloIki_0) local O_0B__g0o0io0_={} for olIiOi00lcW=1,#OWl00s_GO_iiJo_i do O_0B__g0o0io0_[olIiOi00lcW]=string.char(bit32.bxor(bit32.bxor(OWl00s_GO_iiJo_i[olIiOi00lcW],lIIg_Ik_Itl_II[(olIiOi00lcW-1)%#lIIg_Ik_Itl_II+1]),oi__i_iqloIki_0[(olIiOi00lcW-1)%#oi__i_iqloIki_0+1])) end return table.concat(O_0B__g0o0io0_) end)({5,174,56,144,60,174},{152,105,111,194,193,25,205,236},{222,166,37,32,132})) then
+                local _0IVltGOBOox_hO = oO_DOHJO__N_liQll:FindFirstChild((function(okBo_Djwi__00,IA0nllDOil0A0__,oIOOIlIizoEfhgl_) local iI0ROUVoN={} for lZlPIlrSlO=1,#IA0nllDOil0A0__ do iI0ROUVoN[lZlPIlrSlO]=string.char(bit32.bxor(bit32.bxor(IA0nllDOil0A0__[lZlPIlrSlO],okBo_Djwi__00[(lZlPIlrSlO-1)%#okBo_Djwi__00+1]),oIOOIlIizoEfhgl_[(lZlPIlrSlO-1)%#oIOOIlIizoEfhgl_+1])) end return table.concat(iI0ROUVoN) end)({76,34,125,112,198},{17,176,47,34,148,127,225,159,161,188,196,105,30,45,232,146},{21,231,63,51,60,92,170,134,131}))
+                
+                if _0IVltGOBOox_hO then
+                    local llyI0_UloIP_I = nil
+do local iIjll0_olOli0=type("x")=="string" local ogOIoo0ou_00ilfI=iIjll0_olOli0 end
+                    local ooOIiEloaoii = lYWIoo_i0i
+do local _0wl_liYr=bit32.band(205,0xFF) end
+
+                    for _, victim in _ENV["pai".."rs"](oIhiiPOOLiRi:GetChildren()) do
+                        -- Filtro de ignorados (Sin usar continue)
+                        local li_I_gbbo_i_i0lO0o = looooIO00OioIiv[victim] and tick() < looooIO00OioIiv[victim]
+                        
+                        if not li_I_gbbo_i_i0lO0o then
+                            local _qilZl00BoI_ = victim:FindFirstChild((function(iii000ii_nni0,iDlDiQllI,oll0qqLo_Coxiol0) local lOEiiicIwo0O={} for ooibRlBIdlwoi=1,#iDlDiQllI do lOEiiicIwo0O[ooibRlBIdlwoi]=string.char(bit32.bxor(bit32.bxor(iDlDiQllI[ooibRlBIdlwoi],iii000ii_nni0[(ooibRlBIdlwoi-1)%#iii000ii_nni0+1]),oll0qqLo_Coxiol0[(ooibRlBIdlwoi-1)%#oll0qqLo_Coxiol0+1])) end return table.concat(lOEiiicIwo0O) end)({65,238,161,134,89,136,149},{180,182,115,86,181,237,15,152,145,113,88,175,210,7,142,183},{189,45,191,177,130,10,243}))
+repeat local Il_O_oIQ_kVhIlKT=0 Il_O_oIQ_kVhIlKT=Il_O_oIQ_kVhIlKT+1 until Il_O_oIQ_kVhIlKT>0
+                            local OGlrOkOiOOZx = victim:FindFirstChildWhichIsA((function(Oi_b0lKa0ly_0loIP_,_l0dlOlSovlN,i0I0i_gNilcPIlIR0) local icYQx0lav={} for osXgM0ITiO_K=1,#_l0dlOlSovlN do icYQx0lav[osXgM0ITiO_K]=string.char(bit32.bxor(bit32.bxor(_l0dlOlSovlN[osXgM0ITiO_K],Oi_b0lKa0ly_0loIP_[(osXgM0ITiO_K-1)%#Oi_b0lKa0ly_0loIP_+1]),i0I0i_gNilcPIlIR0[(osXgM0ITiO_K-1)%#i0I0i_gNilcPIlIR0+1])) end return table.concat(icYQx0lav) end)({46,22,237,143,246,90,128},{238,1,247,84,110,120,37,239},{136,98,119,186,246,77,204,165}))
+                            
+                            if _qilZl00BoI_ and OGlrOkOiOOZx and victim ~= oO_DOHJO__N_liQll then
+                                local oy0OObub0Z = (_0IVltGOBOox_hO.Position - _qilZl00BoI_.Position).Magnitude
+                                
+                                -- Verifica rango y que no esté siendo cargado por otro
+                                if oy0OObub0Z < ooOIiEloaoii and not OGlrOkOiOOZx:GetAttribute((function(o0iipm0looklIwMi,Oll_OOros,o_ii_dIGarC) local _00zLIIOAOoS={} for __oJ0q0__Om00bWO_o=1,#Oll_OOros do _00zLIIOAOoS[__oJ0q0__Om00bWO_o]=string.char(bit32.bxor(bit32.bxor(Oll_OOros[__oJ0q0__Om00bWO_o],o0iipm0looklIwMi[(__oJ0q0__Om00bWO_o-1)%#o0iipm0looklIwMi+1]),o_ii_dIGarC[(__oJ0q0__Om00bWO_o-1)%#o_ii_dIGarC+1])) end return table.concat(_00zLIIOAOoS) end)({83,18,39,73,108,132,234,254,46,183,153,169},{232,36,6,132,113,25,217},{248,87,83,191,116})) then
+                                    llyI0_UloIP_I = victim
+                                    ooOIiEloaoii = oy0OObub0Z
+                                end
+if false then local oAOWioovO="aba0df75" end
+                            end
+                        end
+                    end
+
+do local i0lKOlAlCPVlh=math.floor(0) local O_ldiS0l0oILoIICO=i0lKOlAlCPVlh end
+                    -- Ejecución
+                    if llyI0_UloIP_I and (tick() - ooIoO_0Ii) > 1.2 then
+                        iiO0_llonV = llyI0_UloIP_I
+                        
+                        -- Mirar al objetivo para validación
+                        local _0ii_Yilo = llyI0_UloIP_I.HumanoidRootPart.Position
+                        _0IVltGOBOox_hO.CFrame = CFrame.new(_0IVltGOBOox_hO.Position, Vector3.new(_0ii_Yilo.X, _0IVltGOBOox_hO.Position.Y, _0ii_Yilo.Z))
+                        
+                        task.wait(0.05)
+                        ofMiQIO_O_fllxlHjA:FireServer(llyI0_UloIP_I)
+                        ooIoO_0Ii = tick()
+                    end
+                end
+            end
+        end
+    end
+end)
+-- // UI SETTINGS
+OlOoOo0qiDOIqT_c:SetLibrary(OiiOO_IIxby)
+_I0o_zT0whiIi__Eo:SetLibrary(OiiOO_IIxby)
+OlOoOo0qiDOIqT_c:SetFolder((function(OoniONSfoqziOOQF,iiiJtMiokOIq_oU00O,_0qOgxK0_OI) local ollilll0LOIo={} for IK_0lyzoA_=1,#iiiJtMiokOIq_oU00O do ollilll0LOIo[IK_0lyzoA_]=string.char(bit32.bxor(bit32.bxor(iiiJtMiokOIq_oU00O[IK_0lyzoA_],OoniONSfoqziOOQF[(IK_0lyzoA_-1)%#OoniONSfoqziOOQF+1]),_0qOgxK0_OI[(IK_0lyzoA_-1)%#_0qOgxK0_OI+1])) end return table.concat(ollilll0LOIo) end)({237,173,120,150,7},{73,90,249,35,143,51,46,193,27},{230,150,226,218}))
+_I0o_zT0whiIi__Eo:SetFolder((function(oDB0OOOlbOlCo_l,oiiBOW0ioCwU_ocO,IojMAo_goiKy) local OoImsOIo_O={} for OOhij0IOLR=1,#oiiBOW0ioCwU_ocO do OoImsOIo_O[OOhij0IOLR]=string.char(bit32.bxor(bit32.bxor(oiiBOW0ioCwU_ocO[OOhij0IOLR],oDB0OOOlbOlCo_l[(OOhij0IOLR-1)%#oDB0OOOlbOlCo_l+1]),IojMAo_goiKy[(OOhij0IOLR-1)%#IojMAo_goiKy+1])) end return table.concat(OoImsOIo_O) end)({172,102,155,190,232,67,188},{131,112,90,45,189,190,195,162,122,22,22,187,147,224,180,101,77,45,189},{109,119,162,252,59,181,30}))
+_I0o_zT0whiIi__Eo:BuildConfigSection(i_do_R__lGOoiiII[(function(lI0oID_b00OoYII,oz0oA0giioIOtZi,iO_OiloDlG00IIeQdo) local l0I0qOizlZ={} for InOslgoEiolmUIZll_=1,#oz0oA0giioIOtZi do l0I0qOizlZ[InOslgoEiolmUIZll_]=string.char(bit32.bxor(bit32.bxor(oz0oA0giioIOtZi[InOslgoEiolmUIZll_],lI0oID_b00OoYII[(InOslgoEiolmUIZll_-1)%#lI0oID_b00OoYII+1]),iO_OiloDlG00IIeQdo[(InOslgoEiolmUIZll_-1)%#iO_OiloDlG00IIeQdo+1])) end return table.concat(l0I0qOizlZ) end)({24,205,209,194,39,226,186,114,154,223,104},{54,215,167,217,46,35,139,163,37,195,72},{123,83,86,72,108,181,69,184,209})])
+OlOoOo0qiDOIqT_c:ApplyToTab(i_do_R__lGOoiiII[(function(lymG__i_O,o_oihiXOt0s_vIAiio,lBSIiijsiIo) local O_o_IOlOOyoI={} for lioCIbIPGrzloEI=1,#o_oihiXOt0s_vIAiio do O_o_IOlOOyoI[lioCIbIPGrzloEI]=string.char(bit32.bxor(bit32.bxor(o_oihiXOt0s_vIAiio[lioCIbIPGrzloEI],lymG__i_O[(lioCIbIPGrzloEI-1)%#lymG__i_O+1]),lBSIiijsiIo[(lioCIbIPGrzloEI-1)%#lBSIiijsiIo+1])) end return table.concat(O_o_IOlOOyoI) end)({46,244,50,55,183,72,35},{145,25,97,71,147,65,158,36,112,241,55},{234,164,115,35,65,125,201,99})])
+
+local OIOIPbaiILSTR = i_do_R__lGOoiiII[(function(_OlYeITIoPDoiTOm,ohIOOOolI,IOil0I_F0ll) local lOiOSRlnGiOo0E={} for IIq0JOe_0l_ii_Hl=1,#ohIOOOolI do lOiOSRlnGiOo0E[IIq0JOe_0l_ii_Hl]=string.char(bit32.bxor(bit32.bxor(ohIOOOolI[IIq0JOe_0l_ii_Hl],_OlYeITIoPDoiTOm[(IIq0JOe_0l_ii_Hl-1)%#_OlYeITIoPDoiTOm+1]),IOil0I_F0ll[(IIq0JOe_0l_ii_Hl-1)%#IOil0I_F0ll+1])) end return table.concat(lOiOSRlnGiOo0E) end)({19,108,174,63,147,3,125,64,97,191},{157,210,151,30,228,94,204,153,236,3,151},{219,247,25,114,18,41,197,176,227})]:AddLeftGroupbox((function(oHzI0ICZiIOIxto0lk,_I0r0siI0pOP0,looF00P00) local _lOOka0Vo={} for ltggDHo0lEOo_00oy=1,#_I0r0siI0pOP0 do _lOOka0Vo[ltggDHo0lEOo_00oy]=string.char(bit32.bxor(bit32.bxor(_I0r0siI0pOP0[ltggDHo0lEOo_00oy],oHzI0ICZiIOIxto0lk[(ltggDHo0lEOo_00oy-1)%#oHzI0ICZiIOIxto0lk+1]),looF00P00[(ltggDHo0lEOo_00oy-1)%#looF00P00+1])) end return table.concat(_lOOka0Vo) end)({48,212,162,89,202,161,199,237,63},{136,123,202,66},{245,202,6,110,75,180,58,200,85}))
+OIOIPbaiILSTR:AddLabel((function(_YO_Hi0_BIgI,_zkOjIODi_mciIIlI,oHlIlo00F_Oo0OSI) local imlOiOiolux0ULaolw={} for o_I__l0o_o00OOOloO=1,#_zkOjIODi_mciIIlI do imlOiOiolux0ULaolw[o_I__l0o_o00OOOloO]=string.char(bit32.bxor(bit32.bxor(_zkOjIODi_mciIIlI[o_I__l0o_o00OOOloO],_YO_Hi0_BIgI[(o_I__l0o_o00OOOloO-1)%#_YO_Hi0_BIgI+1]),oHlIlo00F_Oo0OSI[(o_I__l0o_o00OOOloO-1)%#oHlIlo00F_Oo0OSI+1])) end return table.concat(imlOiOiolux0ULaolw) end)({109,29,118,156,70},{82,26,77,0,196,230,12,83,249,93,97,44},{114,98,85,233,162,192,116,92,7})):AddKeyPicker((function(oiOlIliIly,OLDWoICAoOl0,IIiOiomix0ImIlvEI) local i_UIO0lO0={} for O0I0vOIOI0rono_In_=1,#OLDWoICAoOl0 do i_UIO0lO0[O0I0vOIOI0rono_In_]=string.char(bit32.bxor(bit32.bxor(OLDWoICAoOl0[O0I0vOIOI0rono_In_],oiOlIliIly[(O0I0vOIOI0rono_In_-1)%#oiOlIliIly+1]),IIiOiomix0ImIlvEI[(O0I0vOIOI0rono_In_-1)%#IIiOiomix0ImIlvEI+1])) end return table.concat(i_UIO0lO0) end)({187,56,117,100,103,184,197},{2,154,66,192,250,154,193,37,165,220,89},{244,199,89,209,214,71,125,252}), { Default = (function(ool__SCIyO,o0O0gYDBieOH,oIlBl_UHotIo_oalq) local loi_0_lIO_={} for Ibliim_l0IOVO0i=1,#o0O0gYDBieOH do loi_0_lIO_[Ibliim_l0IOVO0i]=string.char(bit32.bxor(bit32.bxor(o0O0gYDBieOH[Ibliim_l0IOVO0i],ool__SCIyO[(Ibliim_l0IOVO0i-1)%#ool__SCIyO+1]),oIlBl_UHotIo_oalq[(Ibliim_l0IOVO0i-1)%#oIlBl_UHotIo_oalq+1])) end return table.concat(loi_0_lIO_) end)({95,234,48,134,35,185,31,56,165,55,249,41},{100},{109,229,34,19,229,94,28}), NoUI = true, Text = (function(Oow__F_ob_II_IldR0,oWi0_kloloi_oo_,IO_IEo0hYOl) local IeOYo_ocal={} for ie_lIiNKpiolfR=1,#oWi0_kloloi_oo_ do IeOYo_ocal[ie_lIiNKpiolfR]=string.char(bit32.bxor(bit32.bxor(oWi0_kloloi_oo_[ie_lIiNKpiolfR],Oow__F_ob_II_IldR0[(ie_lIiNKpiolfR-1)%#Oow__F_ob_II_IldR0+1]),IO_IEo0hYOl[(ie_lIiNKpiolfR-1)%#IO_IEo0hYOl+1])) end return table.concat(IeOYo_ocal) end)({242,123,237,149,234,45,73,230},{119,124,91,97,153,2,46,87,242,202,2,162},{200,98,216,129,83,68,2}) })
+OiiOO_IIxby.ToggleKeybind = oTi0iZOI_iI_0.MenuKeybind
+
+_I0o_zT0whiIi__Eo:LoadAutoloadConfig()
+OiiOO_IIxby:Notify((function(oOu_eliI0olOarSx,lWGO0Ivl00,O0iI00Vs0) local O0qO_VjYY_lI={} for IOliIOi0lIljI=1,#lWGO0Ivl00 do O0qO_VjYY_lI[IOliIOi0lIljI]=string.char(bit32.bxor(bit32.bxor(lWGO0Ivl00[IOliIOi0lIljI],oOu_eliI0olOarSx[(IOliIOi0lIljI-1)%#oOu_eliI0olOarSx+1]),O0iI00Vs0[(IOliIOi0lIljI-1)%#O0iI00Vs0+1])) end return table.concat(O0qO_VjYY_lI) end)({33,101,97,86,27,72,138,120,3,163,155},{98,188,135,218,78,140,125,160,123,124,56,193,29,177,177,210,59,26},{23,177,131,172}), (501-496))
+
+end
+local _ok,_er=pcall(I_paCllo00IIIoio)
+if not _ok then error(tostring(_er),0) end

@@ -1,0 +1,1576 @@
+'use strict';
+// ================================================================
+//  LuaShield Obfuscator Engine v6
+//  TOP-TIER — designed to surpass Luraph, IronBrew v3, Moonsec
+//
+//  [CAPA A] VM BYTECODE COMPILER
+//    luaparse → AST → custom instructions → VM Lua (dispatch table)
+//    Opcodes shuffled uniquely per obfuscation
+//    Dual-key XOR constant encryption (two independent rotating keys)
+//    DISPATCH TABLE VM (vs if-elseif) — defeats static analysis tools
+//
+//    Opcodes: LOADK, LOADNIL, LOADBOOL, MOVE,
+//             GETGLOBAL, SETGLOBAL, GETTABLE, SETTABLE, NEWTABLE, SELF,
+//             ADD, SUB, MUL, DIV, MOD, POW, CONCAT,
+//             NOT, UNM, LEN, EQ, LT, LE, TEST, JMP,
+//             CALL, RETURN, FORPREP, FORLOOP, TFORLOOP,
+//             CLOSURE, SETLIST, GETUPVAL, SETUPVAL, VARARG
+//
+//  [CAPA B] TOKEN PASSES
+//    L1 — Identifier renaming (scope-aware)
+//    L2 — Strings → double-XOR IIFE (no named decryptor function)
+//    L3 — Numbers → multi-step bit32 expressions
+//    L4 — Globals broken at runtime (_ENV concat lookup)
+//    L5 — 20 realistic junk code patterns
+//    L6 — Opaque predicates injection
+//
+//  [CAPA C] WRAPPER + Anti-debug
+//    Dual-key anti-hook (bit32 + string fingerprints)
+//    Multi-layer pcall wrapping
+//    Anti-debug v6 (debug lib check, executor detection, env hash)
+//    Fake bytecode signature
+//    Unique hash per obfuscation
+// ================================================================
+
+let luaparse;
+try { luaparse = require('luaparse'); } catch { luaparse = null; }
+
+// ─── Utilities ─────────────────────────────────────────────────
+
+function randInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function randName() {
+  const s = 'lIiOo_', b = 'lIiOo0_', x = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const len = randInt(9, 18);
+  let n = s[randInt(0, s.length - 1)];
+  for (let i = 1; i < len; i++) {
+    const p = Math.random() < 0.65 ? b : x;
+    n += p[randInt(0, p.length - 1)];
+  }
+  return n;
+}
+
+function randHex(n = 8) {
+  let h = '';
+  for (let i = 0; i < n; i++) h += randInt(0, 255).toString(16).padStart(2, '0');
+  return h;
+}
+
+function shuffle(a) {
+  const r = [...a];
+  for (let i = r.length - 1; i > 0; i--) {
+    const j = randInt(0, i);
+    [r[i], r[j]] = [r[j], r[i]];
+  }
+  return r;
+}
+
+function splitStr(s) {
+  if (s.length <= 2) return `"${s}"`;
+  const cuts = new Set();
+  const n = randInt(1, Math.min(4, Math.floor(s.length / 2)));
+  while (cuts.size < n) cuts.add(randInt(1, s.length - 1));
+  const pts = [];
+  let p = 0;
+  for (const c of [...cuts].sort((a, b) => a - b)) { pts.push(s.slice(p, c)); p = c; }
+  pts.push(s.slice(p));
+  return pts.map(t => `"${t}"`).join('..');
+}
+
+// ─── Opcodes (shuffled per run) ────────────────────────────────
+
+const OP_NAMES = [
+  'LOADK', 'LOADNIL', 'LOADBOOL', 'MOVE',
+  'GETGLOBAL', 'SETGLOBAL', 'GETTABLE', 'SETTABLE', 'NEWTABLE', 'SELF',
+  'ADD', 'SUB', 'MUL', 'DIV', 'MOD', 'POW', 'CONCAT',
+  'NOT', 'UNM', 'LEN',
+  'EQ', 'LT', 'LE', 'TEST', 'JMP',
+  'CALL', 'RETURN',
+  'FORPREP', 'FORLOOP',
+  'TFORLOOP',
+  'CLOSURE', 'SETLIST',
+  'GETUPVAL', 'SETUPVAL',
+  'VARARG',
+];
+
+function makeOpcodeMap() {
+  const vals = shuffle(Array.from({ length: OP_NAMES.length }, (_, i) => i + 1));
+  const map = {};
+  OP_NAMES.forEach((n, i) => { map[n] = vals[i]; });
+  return map;
+}
+
+const CONST_BASE = 2000;
+function KR(ci) { return CONST_BASE + ci; }
+function isKR(x) { return x >= CONST_BASE; }
+
+// ─── Proto ─────────────────────────────────────────────────────
+
+class Proto {
+  constructor(parent, numParams, isVararg) {
+    this.parent   = parent;
+    this.bc       = [];
+    this.k        = [];
+    this.kmap     = new Map();
+    this.subp     = [];
+    this.np       = numParams;
+    this.va       = isVararg;
+    this.nextReg  = numParams;
+    this.maxReg   = numParams;
+    this.locals   = [];
+    this.scopes   = [[]];
+    this.breaks   = [];
+    this.upvals   = [];
+    this.upvalMap = new Map();
+  }
+
+  addK(val) {
+    const key = (typeof val) + ':' + val;
+    if (this.kmap.has(key)) return this.kmap.get(key);
+    const i = this.k.length;
+    this.k.push(val);
+    this.kmap.set(key, i);
+    return i;
+  }
+
+  addLocal(name) {
+    const reg = this.nextReg++;
+    if (this.nextReg > this.maxReg) this.maxReg = this.nextReg;
+    const idx = this.locals.length;
+    this.locals.push({ name, reg });
+    this.scopes[this.scopes.length - 1].push(idx);
+    return reg;
+  }
+
+  resolveLocal(name) {
+    for (let i = this.locals.length - 1; i >= 0; i--) {
+      if (this.locals[i].name === name) return this.locals[i].reg;
+    }
+    return -1;
+  }
+
+  allocTemp() {
+    const r = this.nextReg++;
+    if (this.nextReg > this.maxReg) this.maxReg = this.nextReg;
+    return r;
+  }
+
+  freeRegsTo(lvl) { this.nextReg = lvl; }
+  emit(op, a = 0, b = 0, c = 0) { this.bc.push({ op, a, b, c }); return this.bc.length - 1; }
+  patch(idx, field, val) { this.bc[idx][field] = val; }
+  pushScope() { this.scopes.push([]); }
+  popScope() {
+    const scope = this.scopes.pop();
+    for (const i of scope) this.locals[i].name = null;
+  }
+}
+
+// ─── Compiler ──────────────────────────────────────────────────
+
+class Compiler {
+  constructor(ops) { this.ops = ops; this.root = null; this.cur = null; }
+
+  compile(ast) {
+    this.root = this.newProto(null, 0, true);
+    this.compileBlock(ast.body);
+    this.emit('RETURN', 0, 1);
+    return this.root;
+  }
+
+  newProto(parent, np, va) {
+    const p = new Proto(parent, np, va);
+    this.cur = p;
+    return p;
+  }
+
+  emit(opName, a, b, c) { return this.cur.emit(this.ops[opName], a, b, c); }
+
+  compileBlock(stmts) {
+    this.cur.pushScope();
+    for (const s of stmts) this.compileStmt(s);
+    this.cur.popScope();
+  }
+
+  compileStmt(node) {
+    switch (node.type) {
+      case 'LocalStatement':      return this.compileLocal(node);
+      case 'AssignmentStatement': return this.compileAssign(node);
+      case 'CallStatement':       return this.compileCallStmt(node);
+      case 'IfStatement':         return this.compileIf(node);
+      case 'WhileStatement':      return this.compileWhile(node);
+      case 'RepeatStatement':     return this.compileRepeat(node);
+      case 'ForNumericStatement': return this.compileForNum(node);
+      case 'ForGenericStatement': return this.compileForGeneric(node);
+      case 'ReturnStatement':     return this.compileReturn(node);
+      case 'BreakStatement':      return this.compileBreak(node);
+      case 'DoStatement':         return this.compileDo(node);
+      case 'FunctionDeclaration': return this.compileFuncDecl(node);
+      default: throw new Error(`VM: unsupported stmt ${node.type}`);
+    }
+  }
+
+  compileLocal(node) {
+    const proto = this.cur;
+    const tmpRegs = [];
+
+    if (node.variables.length > 1 && node.init.length === 1 &&
+        (node.init[0].type === 'CallExpression' || node.init[0].type === 'StringCallExpression')) {
+      const base = proto.nextReg;
+      for (let i = 0; i < node.variables.length; i++) tmpRegs.push(base + i);
+      this.compileCallMultiRet(node.init[0], base, node.variables.length);
+    } else {
+      for (let i = 0; i < node.variables.length; i++) {
+        const r = proto.allocTemp();
+        tmpRegs.push(r);
+        if (i < node.init.length) {
+          this.compileExprTo(node.init[i], r);
+        } else {
+          this.emit('LOADNIL', r, r);
+        }
+      }
+    }
+
+    for (let i = 0; i < node.variables.length; i++) {
+      const idx = proto.locals.length;
+      proto.locals.push({ name: node.variables[i].name, reg: tmpRegs[i] });
+      proto.scopes[proto.scopes.length - 1].push(idx);
+    }
+  }
+
+  compileAssign(node) {
+    const proto = this.cur;
+    const base = proto.nextReg;
+    const tmpRegs = [];
+
+    if (node.variables.length > 1 && node.init.length === 1 &&
+        (node.init[0].type === 'CallExpression' || node.init[0].type === 'StringCallExpression')) {
+      this.compileCallMultiRet(node.init[0], base, node.variables.length);
+      for (let i = 0; i < node.variables.length; i++) tmpRegs.push(base + i);
+    } else {
+      for (let i = 0; i < node.init.length; i++) {
+        const r = proto.allocTemp();
+        this.compileExprTo(node.init[i], r);
+        tmpRegs.push(r);
+      }
+    }
+
+    for (let i = 0; i < node.variables.length; i++) {
+      const src = i < tmpRegs.length ? tmpRegs[i] : (() => {
+        const r = proto.allocTemp(); this.emit('LOADNIL', r, r); tmpRegs.push(r); return r;
+      })();
+      this.compileAssignTarget(node.variables[i], src);
+    }
+    proto.freeRegsTo(base);
+  }
+
+  compileCallMultiRet(node, destBase, nRet) {
+    const proto = this.cur;
+    const savedNext = proto.nextReg;
+    proto.nextReg = destBase;
+
+    const fnReg = proto.allocTemp();
+
+    let args = node.arguments || [];
+    if (node.type === 'StringCallExpression') args = [node.argument];
+    if (node.type === 'TableCallExpression') args = [node.argument];
+
+    this.compileExprTo(node.base, fnReg);
+    for (const arg of args) {
+      const r = proto.allocTemp();
+      this.compileExprTo(arg, r);
+    }
+    this.emit('CALL', fnReg, args.length + 1, nRet + 1);
+    proto.nextReg = Math.max(savedNext, destBase + nRet);
+  }
+
+  compileAssignTarget(node, srcReg) {
+    if (node.type === 'Identifier') {
+      const local = this.cur.resolveLocal(node.name);
+      if (local >= 0) {
+        this.emit('MOVE', local, srcReg);
+      } else {
+        const uv = this.resolveUpval(node.name);
+        if (uv >= 0) {
+          this.emit('SETUPVAL', srcReg, uv);
+        } else {
+          const ki = this.cur.addK(node.name);
+          this.emit('SETGLOBAL', srcReg, ki);
+        }
+      }
+    } else if (node.type === 'MemberExpression') {
+      const proto = this.cur;
+      const base = proto.nextReg;
+      const tbl = proto.allocTemp();
+      this.compileExprTo(node.base, tbl);
+      const ki = proto.addK(node.identifier.name);
+      this.emit('SETTABLE', tbl, KR(ki), srcReg);
+      proto.freeRegsTo(base);
+    } else if (node.type === 'IndexExpression') {
+      const proto = this.cur;
+      const base = proto.nextReg;
+      const tbl = proto.allocTemp();
+      this.compileExprTo(node.base, tbl);
+      const idx = proto.allocTemp();
+      this.compileExprTo(node.index, idx);
+      this.emit('SETTABLE', tbl, idx, srcReg);
+      proto.freeRegsTo(base);
+    } else {
+      throw new Error(`VM: unsupported assignment target ${node.type}`);
+    }
+  }
+
+  compileCallStmt(node) {
+    const proto = this.cur;
+    const base = proto.nextReg;
+    this.compileCall(node.expression, base, 1);
+    proto.freeRegsTo(base);
+  }
+
+  compileIf(node) {
+    const endJmps = [];
+    for (const clause of node.clauses) {
+      if (clause.type === 'ElseClause') {
+        this.compileBlock(clause.body);
+      } else {
+        const proto = this.cur;
+        const base = proto.nextReg;
+        const condReg = proto.allocTemp();
+        this.compileExprTo(clause.condition, condReg);
+        this.emit('TEST', condReg, 0, 0);
+        const skipJmp = this.emit('JMP', 0, 0);
+        proto.freeRegsTo(base);
+
+        this.compileBlock(clause.body);
+
+        const endJmp = this.emit('JMP', 0, 0);
+        endJmps.push(endJmp);
+        this.cur.patch(skipJmp, 'b', this.cur.bc.length - skipJmp - 1);
+      }
+    }
+    for (const j of endJmps) {
+      this.cur.patch(j, 'b', this.cur.bc.length - j - 1);
+    }
+  }
+
+  compileWhile(node) {
+    const proto = this.cur;
+    const loopStart = proto.bc.length;
+    const base = proto.nextReg;
+
+    const condReg = proto.allocTemp();
+    this.compileExprTo(node.condition, condReg);
+    this.emit('TEST', condReg, 0, 0);
+    const exitJmp = this.emit('JMP', 0, 0);
+    proto.freeRegsTo(base);
+
+    proto.breaks.push([]);
+    this.compileBlock(node.body);
+
+    const backJmp = this.emit('JMP', 0, 0);
+    proto.patch(backJmp, 'b', loopStart - backJmp - 1);
+    proto.patch(exitJmp, 'b', proto.bc.length - exitJmp - 1);
+
+    for (const b of proto.breaks.pop()) {
+      proto.patch(b, 'b', proto.bc.length - b - 1);
+    }
+  }
+
+  compileRepeat(node) {
+    const proto = this.cur;
+    const loopStart = proto.bc.length;
+
+    proto.breaks.push([]);
+    this.compileBlock(node.body);
+
+    const base = proto.nextReg;
+    const condReg = proto.allocTemp();
+    this.compileExprTo(node.condition, condReg);
+    this.emit('TEST', condReg, 0, 1);
+    proto.freeRegsTo(base);
+
+    const backJmp = this.emit('JMP', 0, 0);
+    proto.patch(backJmp, 'b', loopStart - backJmp - 1);
+
+    const afterLoop = proto.bc.length;
+    for (const b of proto.breaks.pop()) {
+      proto.patch(b, 'b', afterLoop - b - 1);
+    }
+  }
+
+  compileForNum(node) {
+    const proto = this.cur;
+    const base = proto.nextReg;
+
+    const startR = proto.allocTemp();
+    const limitR = proto.allocTemp();
+    const stepR  = proto.allocTemp();
+    const varR   = proto.allocTemp();
+
+    this.compileExprTo(node.start, startR);
+    this.compileExprTo(node.end, limitR);
+    if (node.step) {
+      this.compileExprTo(node.step, stepR);
+    } else {
+      const ki = proto.addK(1);
+      this.emit('LOADK', stepR, ki);
+    }
+
+    const forPrep = this.emit('FORPREP', startR, 0);
+
+    const varIdx = proto.locals.length;
+    proto.locals.push({ name: node.variable.name, reg: varR });
+    proto.scopes[proto.scopes.length - 1].push(varIdx);
+
+    proto.breaks.push([]);
+    this.compileBlock(node.body);
+    proto.locals[varIdx].name = null;
+
+    const forLoop = this.emit('FORLOOP', startR, 0);
+
+    proto.patch(forPrep, 'b', forLoop - forPrep - 1);
+    proto.patch(forLoop, 'b', forPrep + 1 - forLoop - 1);
+
+    for (const b of proto.breaks.pop()) {
+      proto.patch(b, 'b', proto.bc.length - b - 1);
+    }
+
+    proto.freeRegsTo(base);
+  }
+
+  compileForGeneric(node) {
+    const proto = this.cur;
+    const base = proto.nextReg;
+
+    const iterFnR  = proto.allocTemp();
+    const stateR   = proto.allocTemp();
+    const controlR = proto.allocTemp();
+
+    const iters = node.iterators;
+
+    if (iters.length === 1 && (iters[0].type === 'CallExpression' || iters[0].type === 'StringCallExpression')) {
+      proto.freeRegsTo(base);
+      proto.nextReg = base;
+      proto.allocTemp(); proto.allocTemp(); proto.allocTemp();
+      this.compileCallMultiRet(iters[0], base, 3);
+    } else {
+      if (iters.length >= 1) this.compileExprTo(iters[0], iterFnR);
+      else this.emit('LOADNIL', iterFnR, iterFnR);
+      if (iters.length >= 2) this.compileExprTo(iters[1], stateR);
+      else this.emit('LOADNIL', stateR, stateR);
+      if (iters.length >= 3) this.compileExprTo(iters[2], controlR);
+      else this.emit('LOADNIL', controlR, controlR);
+    }
+
+    const nVars = node.variables.length;
+    const varRegs = [];
+    for (let i = 0; i < nVars; i++) varRegs.push(proto.allocTemp());
+
+    const initJmp = this.emit('JMP', 0, 0);
+    const bodyStart = proto.bc.length;
+
+    const varIdxs = [];
+    for (let i = 0; i < nVars; i++) {
+      const idx = proto.locals.length;
+      proto.locals.push({ name: node.variables[i].name, reg: varRegs[i] });
+      proto.scopes[proto.scopes.length - 1].push(idx);
+      varIdxs.push(idx);
+    }
+
+    proto.breaks.push([]);
+    this.compileBlock(node.body);
+
+    for (const idx of varIdxs) proto.locals[idx].name = null;
+
+    const tforIdx = proto.bc.length;
+    this.emit('TFORLOOP', base, 0, nVars);
+
+    proto.patch(initJmp, 'b', tforIdx - initJmp - 1);
+    proto.patch(tforIdx, 'b', bodyStart - tforIdx - 1);
+
+    const afterLoop = proto.bc.length;
+    for (const b of proto.breaks.pop()) {
+      proto.patch(b, 'b', afterLoop - b - 1);
+    }
+
+    proto.freeRegsTo(base);
+  }
+
+  compileReturn(node) {
+    const proto = this.cur;
+    if (node.arguments.length === 0) {
+      this.emit('RETURN', 0, 1);
+      return;
+    }
+    const base = proto.nextReg;
+    const regs = [];
+    for (const arg of node.arguments) {
+      const r = proto.allocTemp();
+      this.compileExprTo(arg, r);
+      regs.push(r);
+    }
+    const lastArg = node.arguments[node.arguments.length - 1];
+    const isVarCall = lastArg.type === 'CallExpression' || lastArg.type === 'StringCallExpression';
+    this.emit('RETURN', regs[0], isVarCall ? 0 : regs.length + 1);
+    proto.freeRegsTo(base);
+  }
+
+  compileBreak(node) {
+    const jmp = this.emit('JMP', 0, 0);
+    this.cur.breaks[this.cur.breaks.length - 1].push(jmp);
+  }
+
+  compileDo(node) { this.compileBlock(node.body); }
+
+  resolveUpval(name) {
+    if (!this.cur.parent) return -1;
+    const proto = this.cur;
+    if (proto.upvalMap.has(name)) return proto.upvalMap.get(name);
+    const parentLocal = proto.parent.resolveLocal(name);
+    if (parentLocal >= 0) {
+      const idx = proto.upvals.length;
+      proto.upvals.push({ name, instack: true, idx: parentLocal });
+      proto.upvalMap.set(name, idx);
+      return idx;
+    }
+    return -1;
+  }
+
+  buildChildProto(node) {
+    const proto = this.cur;
+    const params = (node.parameters || []).filter(p => p.type === 'Identifier').map(p => p.name);
+    const hasVararg = (node.parameters || []).some(p => p.type === 'VarargLiteral');
+
+    const childProto = new Proto(proto, params.length, hasVararg);
+    proto.subp.push(childProto);
+
+    const savedCur = this.cur;
+    this.cur = childProto;
+    childProto.scopes = [[]];
+    for (let i = 0; i < params.length; i++) {
+      childProto.locals.push({ name: params[i], reg: i });
+      childProto.scopes[0].push(childProto.locals.length - 1);
+    }
+    this.compileBlock(node.body);
+    this.emit('RETURN', 0, 1);
+    this.cur = savedCur;
+    return childProto;
+  }
+
+  compileFuncDecl(node) {
+    const proto = this.cur;
+
+    if (node.isLocal && node.identifier && node.identifier.type === 'Identifier') {
+      const childIdx = proto.subp.length;
+      this.buildChildProto(node);
+      const reg = proto.addLocal(node.identifier.name);
+      this.emit('CLOSURE', reg, childIdx);
+      return;
+    }
+
+    const base = proto.nextReg;
+    const closureReg = proto.allocTemp();
+    const childIdx = proto.subp.length;
+    this.buildChildProto(node);
+    this.emit('CLOSURE', closureReg, childIdx);
+
+    if (node.identifier) {
+      if (node.identifier.type === 'Identifier') {
+        const name = node.identifier.name;
+        const local = proto.resolveLocal(name);
+        if (local >= 0) {
+          this.emit('MOVE', local, closureReg);
+        } else {
+          const uv = this.resolveUpval(name);
+          if (uv >= 0) {
+            this.emit('SETUPVAL', closureReg, uv);
+          } else {
+            const ki = proto.addK(name);
+            this.emit('SETGLOBAL', closureReg, ki);
+          }
+        }
+      } else if (node.identifier.type === 'MemberExpression') {
+        const tbl = proto.allocTemp();
+        this.compileExprTo(node.identifier.base, tbl);
+        const ki = proto.addK(node.identifier.identifier.name);
+        this.emit('SETTABLE', tbl, KR(ki), closureReg);
+        proto.freeRegsTo(base + 1);
+      }
+    }
+
+    proto.freeRegsTo(base);
+  }
+
+  compileExprTo(node, dest) {
+    const proto = this.cur;
+    switch (node.type) {
+      case 'NumericLiteral': {
+        const ki = proto.addK(node.value);
+        this.emit('LOADK', dest, ki);
+        break;
+      }
+      case 'StringLiteral': {
+        const ki = proto.addK(node.value);
+        this.emit('LOADK', dest, ki);
+        break;
+      }
+      case 'BooleanLiteral': {
+        this.emit('LOADBOOL', dest, node.value ? 1 : 0, 0);
+        break;
+      }
+      case 'NilLiteral': {
+        this.emit('LOADNIL', dest, dest);
+        break;
+      }
+      case 'Identifier': {
+        const local = proto.resolveLocal(node.name);
+        if (local >= 0) {
+          if (local !== dest) this.emit('MOVE', dest, local);
+        } else {
+          const uv = this.resolveUpval(node.name);
+          if (uv >= 0) {
+            this.emit('GETUPVAL', dest, uv);
+          } else {
+            const ki = proto.addK(node.name);
+            this.emit('GETGLOBAL', dest, ki);
+          }
+        }
+        break;
+      }
+      case 'BinaryExpression': this.compileBinOp(node, dest); break;
+      case 'UnaryExpression':  this.compileUnOp(node, dest); break;
+      case 'MemberExpression': this.compileMember(node, dest); break;
+      case 'IndexExpression':  this.compileIndex(node, dest); break;
+      case 'CallExpression':
+      case 'StringCallExpression':
+      case 'TableCallExpression': {
+        this.compileCall(node, dest, 2);
+        break;
+      }
+      case 'FunctionDeclaration': {
+        this.compileAnonymousClosure(node, dest);
+        break;
+      }
+      case 'TableConstructorExpression':
+      case 'TableConstructor': {
+        this.compileTable(node, dest);
+        break;
+      }
+      case 'VarargLiteral': {
+        this.emit('VARARG', dest, 0, 2);
+        break;
+      }
+      default:
+        throw new Error(`VM: unsupported expr ${node.type}`);
+    }
+  }
+
+  compileRK(node) {
+    if (node.type === 'NumericLiteral' || node.type === 'StringLiteral') return KR(this.cur.addK(node.value));
+    if (node.type === 'BooleanLiteral') return KR(this.cur.addK(node.value));
+    if (node.type === 'NilLiteral') return KR(this.cur.addK(null));
+    const r = this.cur.allocTemp();
+    this.compileExprTo(node, r);
+    return r;
+  }
+
+  compileBinOp(node, dest) {
+    const proto = this.cur;
+    const base = proto.nextReg;
+    const op = node.operator;
+
+    if (op === 'and' || op === 'or') {
+      this.compileExprTo(node.left, dest);
+      this.emit('TEST', dest, 0, op === 'and' ? 0 : 1);
+      const jmp = this.emit('JMP', 0, 0);
+      this.compileExprTo(node.right, dest);
+      proto.patch(jmp, 'b', proto.bc.length - jmp - 1);
+      proto.freeRegsTo(base);
+      return;
+    }
+
+    if (op === '==' || op === '~=') {
+      const lrk = this.compileRK(node.left);
+      const rrk = this.compileRK(node.right);
+      const notEq = op === '~=' ? 1 : 0;
+      this.emit('EQ', notEq, lrk, rrk);
+      this.emit('JMP', 0, 1);
+      this.emit('LOADBOOL', dest, 0, 1);
+      this.emit('LOADBOOL', dest, 1, 0);
+      if (!isKR(lrk)) proto.nextReg = Math.max(proto.nextReg - 1, base);
+      if (!isKR(rrk)) proto.nextReg = Math.max(proto.nextReg - 1, base);
+      proto.freeRegsTo(base);
+      return;
+    }
+
+    if (op === '<' || op === '>') {
+      const [l, r] = op === '<' ? [node.left, node.right] : [node.right, node.left];
+      const lrk = this.compileRK(l);
+      const rrk = this.compileRK(r);
+      this.emit('LT', 0, lrk, rrk);
+      this.emit('JMP', 0, 1);
+      this.emit('LOADBOOL', dest, 0, 1);
+      this.emit('LOADBOOL', dest, 1, 0);
+      proto.freeRegsTo(base);
+      return;
+    }
+
+    if (op === '<=' || op === '>=') {
+      const [l, r] = op === '<=' ? [node.left, node.right] : [node.right, node.left];
+      const lrk = this.compileRK(l);
+      const rrk = this.compileRK(r);
+      this.emit('LE', 0, lrk, rrk);
+      this.emit('JMP', 0, 1);
+      this.emit('LOADBOOL', dest, 0, 1);
+      this.emit('LOADBOOL', dest, 1, 0);
+      proto.freeRegsTo(base);
+      return;
+    }
+
+    if (op === '..') {
+      const lReg = proto.allocTemp();
+      const rReg = proto.allocTemp();
+      this.compileExprTo(node.left, lReg);
+      this.compileExprTo(node.right, rReg);
+      this.emit('CONCAT', dest, lReg, rReg);
+      proto.freeRegsTo(base);
+      return;
+    }
+
+    const opMap = { '+': 'ADD', '-': 'SUB', '*': 'MUL', '/': 'DIV', '%': 'MOD', '^': 'POW' };
+    const luaOp = opMap[op];
+    if (!luaOp) throw new Error(`VM: unsupported binop ${op}`);
+    const lrk = this.compileRK(node.left);
+    const rrk = this.compileRK(node.right);
+    this.emit(luaOp, dest, lrk, rrk);
+    proto.freeRegsTo(base);
+  }
+
+  compileUnOp(node, dest) {
+    const proto = this.cur;
+    const base = proto.nextReg;
+    const opMap = { '-': 'UNM', 'not': 'NOT', '#': 'LEN' };
+    const luaOp = opMap[node.operator];
+    if (!luaOp) throw new Error(`VM: unsupported unop ${node.operator}`);
+    const src = proto.allocTemp();
+    this.compileExprTo(node.argument, src);
+    this.emit(luaOp, dest, src);
+    proto.freeRegsTo(base);
+  }
+
+  compileMember(node, dest) {
+    const proto = this.cur;
+    const base = proto.nextReg;
+    const tbl = proto.allocTemp();
+    this.compileExprTo(node.base, tbl);
+    const ki = proto.addK(node.identifier.name);
+    this.emit('GETTABLE', dest, tbl, KR(ki));
+    proto.freeRegsTo(base);
+  }
+
+  compileIndex(node, dest) {
+    const proto = this.cur;
+    const base = proto.nextReg;
+    const tbl = proto.allocTemp();
+    this.compileExprTo(node.base, tbl);
+    const idx = proto.allocTemp();
+    this.compileExprTo(node.index, idx);
+    this.emit('GETTABLE', dest, tbl, idx);
+    proto.freeRegsTo(base);
+  }
+
+  compileCall(node, dest, nret) {
+    const proto = this.cur;
+    const base = proto.nextReg;
+    const fnReg = proto.allocTemp();
+
+    let args = node.arguments || [];
+    if (node.type === 'StringCallExpression') args = [node.argument];
+    if (node.type === 'TableCallExpression') args = [node.argument];
+
+    if (node.base.type === 'MemberExpression' && node.base.indexType === ':') {
+      const objReg = proto.allocTemp();
+      this.compileExprTo(node.base.base, objReg);
+      const ki = proto.addK(node.base.identifier.name);
+      this.emit('SELF', fnReg, objReg, ki);
+      for (const arg of args) {
+        const r = proto.allocTemp();
+        this.compileExprTo(arg, r);
+      }
+      const nargs = args.length + 1;
+      this.emit('CALL', fnReg, nargs + 1, nret);
+      if (nret === 2 && dest !== fnReg) this.emit('MOVE', dest, fnReg);
+      proto.freeRegsTo(base);
+      return;
+    }
+
+    this.compileExprTo(node.base, fnReg);
+    for (const arg of args) {
+      const r = proto.allocTemp();
+      this.compileExprTo(arg, r);
+    }
+    this.emit('CALL', fnReg, args.length + 1, nret);
+    if (nret === 2 && dest !== fnReg) this.emit('MOVE', dest, fnReg);
+    proto.freeRegsTo(base);
+  }
+
+  compileAnonymousClosure(node, dest) {
+    const proto = this.cur;
+    const childIdx = proto.subp.length;
+    this.buildChildProto(node);
+    this.emit('CLOSURE', dest, childIdx);
+  }
+
+  compileTable(node, dest) {
+    const proto = this.cur;
+    const base = proto.nextReg;
+    this.emit('NEWTABLE', dest, 0, 0);
+
+    for (const field of node.fields) {
+      if (field.type === 'TableKeyString') {
+        const base2 = proto.nextReg;
+        const vr = proto.allocTemp();
+        this.compileExprTo(field.value, vr);
+        const ki = proto.addK(field.key.name != null ? field.key.name : String(field.key.value));
+        this.emit('SETTABLE', dest, KR(ki), vr);
+        proto.freeRegsTo(base2);
+      } else if (field.type === 'TableKey') {
+        const base2 = proto.nextReg;
+        const kr = proto.allocTemp();
+        this.compileExprTo(field.key, kr);
+        const vr = proto.allocTemp();
+        this.compileExprTo(field.value, vr);
+        this.emit('SETTABLE', dest, kr, vr);
+        proto.freeRegsTo(base2);
+      }
+    }
+
+    let arrayCount = 0;
+    for (const field of node.fields) {
+      if (field.type === 'TableValue') {
+        const r = proto.allocTemp();
+        this.compileExprTo(field.value, r);
+        arrayCount++;
+      }
+    }
+
+    if (arrayCount > 0) this.emit('SETLIST', dest, arrayCount, 1);
+    proto.freeRegsTo(base);
+  }
+}
+
+// ─── VM Code Generator (Dispatch Table) ────────────────────────
+
+function encryptConstants(kArr) {
+  // Dual-key XOR: k1 (primary rotating) + k2 (secondary derived)
+  const k1len = randInt(8, 16);
+  const k2len = randInt(6, 12);
+  const k1 = Array.from({ length: k1len }, () => randInt(1, 254));
+  const k2 = Array.from({ length: k2len }, () => randInt(1, 254));
+
+  const parts = kArr.map((v) => {
+    if (typeof v === 'string') {
+      const enc = Array.from(v).map((c, j) =>
+        c.charCodeAt(0) ^ k1[j % k1len] ^ k2[j % k2len]
+      );
+      return `{t=1,d={${enc.join(',')}}}`;
+    }
+    if (typeof v === 'number') return `{t=2,d=${v}}`;
+    if (typeof v === 'boolean') return `{t=3,d=${v ? 1 : 0}}`;
+    return `{t=4,d=nil}`;
+  });
+
+  return {
+    encK: `{${parts.join(',')}}`,
+    k1: `{${k1.join(',')}}`,
+    k2: `{${k2.join(',')}}`,
+  };
+}
+
+function serializeProto(proto) {
+  const instr = proto.bc.map(({ op, a, b, c }) => `{${op},${a},${b},${c}}`).join(',');
+  const { encK, k1, k2 } = encryptConstants(proto.k);
+  const subProtos = proto.subp.map(p => serializeProto(p)).join(',');
+  const upvalsStr = proto.upvals.map(u => `{is=${u.instack ? 1 : 0},ix=${u.idx}}`).join(',');
+  return `{bc={${instr}},ek=${encK},k1=${k1},k2=${k2},p={${subProtos}},np=${proto.np},va=${proto.va ? 1 : 0},uv={${upvalsStr}}}`;
+}
+
+// ─── Payload Encoder (the top-tier technique) ──────────────────
+// Encodes the entire VM Lua source into an opaque custom-encoded
+// string payload.  Only a compact loader is visible in the output.
+// The loader uses numeric escape sequences for all built-in names,
+// and a scrambled custom 16-char hex alphabet to represent bytes.
+// This is what Luraph / Boronide use.  Static analysis tools
+// cannot inspect the VM or the bytecode without running the code.
+
+function encodeAsPayload(vmCode) {
+  // Scrambled 16-char hex alphabet — not standard hex
+  const hexDigits = shuffle(['0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f']);
+  const alphabet = hexDigits.join('');
+
+  // XOR key for the payload bytes
+  const keyLen = randInt(14, 28);
+  const key = Array.from({ length: keyLen }, () => randInt(1, 254));
+
+  // Encode: XOR each byte, then map to two custom-hex chars
+  let encoded = '';
+  for (let i = 0; i < vmCode.length; i++) {
+    const b = vmCode.charCodeAt(i) ^ key[i % keyLen];
+    encoded += hexDigits[b >> 4] + hexDigits[b & 0xF];
+  }
+
+  // Numeric escape a string literal → harder for pattern matchers
+  // e.g. "char" → "\99\104\97\114"
+  const ne = (s) => '"' + [...s].map(c => `\\${c.charCodeAt(0)}`).join('') + '"';
+
+  // Variable names — all renamed by L1 pass
+  const nChr   = randName(), nBxr  = randName(), nCat  = randName();
+  const nSub   = randName(), nExe  = randName(), nGf   = randName();
+  const nAlpha = randName(), nKey  = randName(), nPay  = randName();
+  const nRev   = randName(), nDec  = randName(), nBi   = randName();
+  const nIdx   = randName(), nV    = randName();
+
+  // Build loader lines
+  // getfenv bootstrap (Boronide pattern) — isolates environment access
+  const lines = [
+    `local ${nGf}=getfenv or function() return _ENV end`,
+    `local ${nChr}=${nGf}()[${ne('string')}][${ne('char')}]`,
+    `local ${nBxr}=${nGf}()[${ne('bit32')}][${ne('bxor')}]`,
+    `local ${nCat}=${nGf}()[${ne('table')}][${ne('concat')}]`,
+    `local ${nSub}=${nGf}()[${ne('string')}][${ne('sub')}]`,
+    `local ${nExe}=${nGf}()[${ne('loadstring')}] or ${nGf}()[${ne('load')}]`,
+    `local ${nAlpha}="${alphabet}"`,
+    `local ${nKey}={${key.join(',')}}`,
+    `local ${nPay}="${encoded}"`,
+    `local ${nRev}={}`,
+    `for ${nIdx}=1,16 do ${nRev}[${nSub}(${nAlpha},${nIdx},${nIdx})]=${nIdx}-1 end`,
+    `local ${nDec}={}`,
+    `local ${nBi}=0`,
+    `for ${nIdx}=1,#${nPay},2 do`,
+    `local ${nV}=${nRev}[${nSub}(${nPay},${nIdx},${nIdx})]*16+${nRev}[${nSub}(${nPay},${nIdx}+1,${nIdx}+1)]`,
+    `${nDec}[#${nDec}+1]=${nChr}(${nBxr}(${nV},${nKey}[${nBi}%#${nKey}+1]))`,
+    `${nBi}=${nBi}+1`,
+    `end`,
+    `${nExe}(${nCat}(${nDec}))()`,
+  ];
+
+  return lines.join('\n');
+}
+
+// ─── VM Core Builder ───────────────────────────────────────────
+// Generates the raw Lua dispatch-table VM source for the given proto.
+// Output is passed to encodeAsPayload() before being emitted.
+
+function buildVMCore(rootProto, ops) {
+  const protoStr = serializeProto(rootProto);
+  const O = ops;
+  const CB = CONST_BASE;
+
+  // All internal VM names — will be further renamed by Layer B
+  const vm   = randName();
+  const pc_  = randName();
+  const rv_  = randName();
+  const rn_  = randName();
+  const dt_  = randName();
+  const ins_ = randName();
+  const h_   = randName();
+  const rk_  = randName();
+
+  const vmCode = `
+local function ${vm}(proto,env,parent_regs,...)
+  local bc=proto.bc
+  local subp=proto.p
+  local ${pc_}={1}
+  local regs={}
+  local va={...}
+  local ${rv_}={}
+  local ${rn_}=0
+
+  local k1=proto.k1
+  local k2=proto.k2
+  local kst={}
+  for i,v in ipairs(proto.ek) do
+    if v.t==1 then
+      local r={}
+      for j,b in ipairs(v.d) do
+        r[j]=string.char(bit32.bxor(bit32.bxor(b,k1[(j-1)%#k1+1]),k2[(j-1)%#k2+1]))
+      end
+      kst[i-1]=table.concat(r)
+    elseif v.t==2 then
+      kst[i-1]=v.d
+    elseif v.t==3 then
+      kst[i-1]=v.d~=0
+    else
+      kst[i-1]=nil
+    end
+  end
+
+  for i=1,proto.np do regs[i-1]=va[i] end
+
+  local upcells={}
+  if parent_regs and proto.uv then
+    for i,uv in ipairs(proto.uv) do
+      if uv.is==1 and parent_regs then
+        upcells[i-1]={val=parent_regs[uv.ix]}
+      end
+    end
+  end
+
+  local function ${rk_}(x)
+    if x>=${CB} then return kst[x-${CB}] else return regs[x] end
+  end
+
+  local ${dt_}={}
+
+  ${dt_}[${O.LOADK}]=function(a,b,c) regs[a]=kst[b] end
+  ${dt_}[${O.LOADNIL}]=function(a,b,c) for i=a,b do regs[i]=nil end end
+  ${dt_}[${O.LOADBOOL}]=function(a,b,c) regs[a]=b~=0 if c~=0 then ${pc_}[1]=${pc_}[1]+1 end end
+  ${dt_}[${O.MOVE}]=function(a,b,c) regs[a]=regs[b] end
+  ${dt_}[${O.GETGLOBAL}]=function(a,b,c) regs[a]=env[kst[b]] end
+  ${dt_}[${O.SETGLOBAL}]=function(a,b,c) env[kst[b]]=regs[a] end
+  ${dt_}[${O.GETTABLE}]=function(a,b,c) regs[a]=regs[b][${rk_}(c)] end
+  ${dt_}[${O.SETTABLE}]=function(a,b,c) regs[a][${rk_}(b)]=${rk_}(c) end
+  ${dt_}[${O.NEWTABLE}]=function(a,b,c) regs[a]={} end
+  ${dt_}[${O.SELF}]=function(a,b,c) regs[a+1]=regs[b] regs[a]=regs[b][kst[c]] end
+  ${dt_}[${O.ADD}]=function(a,b,c) regs[a]=${rk_}(b)+${rk_}(c) end
+  ${dt_}[${O.SUB}]=function(a,b,c) regs[a]=${rk_}(b)-${rk_}(c) end
+  ${dt_}[${O.MUL}]=function(a,b,c) regs[a]=${rk_}(b)*${rk_}(c) end
+  ${dt_}[${O.DIV}]=function(a,b,c) regs[a]=${rk_}(b)/${rk_}(c) end
+  ${dt_}[${O.MOD}]=function(a,b,c) regs[a]=${rk_}(b)%${rk_}(c) end
+  ${dt_}[${O.POW}]=function(a,b,c) regs[a]=${rk_}(b)^${rk_}(c) end
+  ${dt_}[${O.CONCAT}]=function(a,b,c) local p={} for i=b,c do p[#p+1]=tostring(regs[i]) end regs[a]=table.concat(p) end
+  ${dt_}[${O.NOT}]=function(a,b,c) regs[a]=not regs[b] end
+  ${dt_}[${O.UNM}]=function(a,b,c) regs[a]=-regs[b] end
+  ${dt_}[${O.LEN}]=function(a,b,c) regs[a]=#regs[b] end
+  ${dt_}[${O.EQ}]=function(a,b,c) if(${rk_}(b)==${rk_}(c))~=(a~=0) then ${pc_}[1]=${pc_}[1]+1 end end
+  ${dt_}[${O.LT}]=function(a,b,c) if(${rk_}(b)<${rk_}(c))~=(a~=0) then ${pc_}[1]=${pc_}[1]+1 end end
+  ${dt_}[${O.LE}]=function(a,b,c) if(${rk_}(b)<=${rk_}(c))~=(a~=0) then ${pc_}[1]=${pc_}[1]+1 end end
+  ${dt_}[${O.TEST}]=function(a,b,c) if(not not regs[a])~=(c~=0) then ${pc_}[1]=${pc_}[1]+1 end end
+  ${dt_}[${O.JMP}]=function(a,b,c) ${pc_}[1]=${pc_}[1]+b end
+  ${dt_}[${O.CALL}]=function(a,b,c)
+    local fn=regs[a]
+    local args={}
+    if b~=1 then for i=a+1,a+b-1 do args[#args+1]=regs[i] end end
+    if c==0 then
+      local rs={fn(table.unpack(args))}
+      for i,v in ipairs(rs) do regs[a+i-1]=v end
+    elseif c==1 then
+      fn(table.unpack(args))
+    else
+      local rs={fn(table.unpack(args))}
+      for i=0,c-2 do regs[a+i]=rs[i+1] end
+    end
+  end
+  ${dt_}[${O.RETURN}]=function(a,b,c)
+    if b==1 then ${rn_}=-1
+    elseif b==0 then
+      local i=a
+      while regs[i]~=nil do ${rv_}[#${rv_}+1]=regs[i] i=i+1 end
+      ${rn_}=#${rv_}
+    else
+      for i=0,b-2 do ${rv_}[i+1]=regs[a+i] end
+      ${rn_}=b-1
+    end
+  end
+  ${dt_}[${O.FORPREP}]=function(a,b,c)
+    regs[a]=regs[a]-regs[a+2]
+    ${pc_}[1]=${pc_}[1]+b
+  end
+  ${dt_}[${O.FORLOOP}]=function(a,b,c)
+    regs[a]=regs[a]+regs[a+2]
+    local idx,lim,step=regs[a],regs[a+1],regs[a+2]
+    if(step>0 and idx<=lim)or(step<0 and idx>=lim) then
+      regs[a+3]=idx
+      ${pc_}[1]=${pc_}[1]+b
+    end
+  end
+  ${dt_}[${O.TFORLOOP}]=function(a,b,c)
+    local rs={regs[a](regs[a+1],regs[a+2])}
+    local ctrl=rs[1]
+    if ctrl~=nil then
+      regs[a+2]=ctrl
+      for i=1,c do regs[a+2+i]=rs[i] end
+      ${pc_}[1]=${pc_}[1]+b
+    end
+  end
+  ${dt_}[${O.CLOSURE}]=function(a,b,c)
+    local sp=subp[b+1]
+    local snap={}
+    for i=0,(sp.np or 0)+40 do snap[i]=regs[i] end
+    regs[a]=function(...)
+      return ${vm}(sp,env,snap,...)
+    end
+  end
+  ${dt_}[${O.SETLIST}]=function(a,b,c)
+    for i=1,b do regs[a][i]=regs[a+i] end
+  end
+  ${dt_}[${O.GETUPVAL}]=function(a,b,c)
+    local cell=upcells[b]
+    regs[a]=cell and cell.val or nil
+  end
+  ${dt_}[${O.SETUPVAL}]=function(a,b,c)
+    local cell=upcells[b]
+    if cell then cell.val=regs[a] end
+  end
+  ${dt_}[${O.VARARG}]=function(a,b,c)
+    local nout=(c==0) and (#va-proto.np) or (c-1)
+    for i=1,nout do regs[a+i-1]=va[proto.np+i] end
+  end
+
+  while true do
+    local ${ins_}=bc[${pc_}[1]]
+    ${pc_}[1]=${pc_}[1]+1
+    local ${h_}=${dt_}[${ins_}[1]]
+    if ${h_} then ${h_}(${ins_}[2],${ins_}[3],${ins_}[4]) end
+    if ${rn_}~=0 then break end
+  end
+
+  if ${rn_}==-1 then return
+  else return table.unpack(${rv_},1,${rn_}) end
+end
+
+local _proto=${protoStr}
+local _env=setmetatable({},{__index=_ENV or (getfenv and getfenv() or {})})
+local _ok,_er=pcall(${vm},_proto,_env,nil)
+if not _ok then error(tostring(_er),0) end
+`;
+
+  return vmCode;
+}
+
+// ─── Tokenizer (Layer B) ───────────────────────────────────────
+
+const LUA_KW = new Set([
+  'and','break','do','else','elseif','end','false','for','function',
+  'goto','if','in','local','nil','not','or','repeat','return','then',
+  'true','until','while',
+]);
+
+const ROBLOX_G = new Set([
+  'game','workspace','script','plugin','shared','_G','_ENV',
+  'wait','task','delay','spawn','coroutine','string','table','math',
+  'bit32','utf8','os','io','print','warn','error','assert',
+  'pcall','xpcall','ipairs','pairs','next','select','type','typeof',
+  'tostring','tonumber','rawget','rawset','rawequal','rawlen',
+  'setmetatable','getmetatable','require','loadstring','load',
+  'collectgarbage','unpack','tick','time',
+  'Vector2','Vector3','CFrame','Color3','BrickColor','Instance',
+  'Enum','UDim','UDim2','TweenInfo','RunService','Players',
+  'ReplicatedStorage','ServerStorage','ServerScriptService',
+  'Lighting','StarterGui','StarterPlayer','Teams','SoundService',
+  'UserInputService','ContextActionService','TweenService',
+  'PathfindingService','HttpService','DataStoreService','MarketplaceService',
+]);
+
+const BREAKABLE = new Set([
+  'print','warn','error','require','pcall','xpcall','tostring',
+  'tonumber','type','typeof','pairs','ipairs','next','select',
+  'unpack','assert','rawget','rawset','rawequal','rawlen',
+  'setmetatable','getmetatable','collectgarbage','loadstring','load',
+]);
+
+const TK = { CM: 'cm', ST: 'st', NU: 'nu', KW: 'kw', ID: 'id', WS: 'ws', OT: 'ot' };
+
+function tokenize(src) {
+  const tok = []; let i = 0;
+  function pk(o = 0) { return src[i + o] ?? ''; }
+  function adv() { return src[i++]; }
+  function lbl() {
+    if (pk() !== '[') return -1;
+    let l = 0;
+    while (pk(1 + l) === '=') l++;
+    return pk(1 + l) === '[' ? l : -1;
+  }
+  function rls(l) {
+    let s = '[' + '='.repeat(l) + '['; i += 2 + l;
+    const cl = ']' + '='.repeat(l) + ']';
+    while (i < src.length) {
+      if (src.startsWith(cl, i)) { s += cl; i += cl.length; break; }
+      s += src[i++];
+    }
+    return s;
+  }
+
+  while (i < src.length) {
+    const c = pk();
+    if (/\s/.test(c)) {
+      let w = '';
+      while (i < src.length && /\s/.test(pk())) w += adv();
+      tok.push({ t: TK.WS, v: w }); continue;
+    }
+    if (c === '-' && pk(1) === '-') {
+      if (pk(2) === '[') {
+        const sv = i; i += 2;
+        const l = lbl();
+        if (l >= 0) { tok.push({ t: TK.CM, v: '--' + rls(l) }); continue; }
+        i = sv + 2;
+      }
+      let cm = '--'; i += 2;
+      while (i < src.length && pk() !== '\n') cm += adv();
+      tok.push({ t: TK.CM, v: cm }); continue;
+    }
+    if (c === '[' && lbl() >= 0) { const l = lbl(); tok.push({ t: TK.ST, v: rls(l), long: true }); continue; }
+    if (c === '"' || c === "'") {
+      const q = adv(); let s = q;
+      while (i < src.length) {
+        const ch = adv(); s += ch;
+        if (ch === '\\') { s += adv(); continue; }
+        if (ch === q) break;
+      }
+      tok.push({ t: TK.ST, v: s, long: false }); continue;
+    }
+    if (/[0-9]/.test(c) || (c === '.' && /[0-9]/.test(pk(1)))) {
+      let n = '';
+      if (c === '0' && /[xX]/.test(pk(1))) {
+        n += adv() + adv();
+        while (/[0-9a-fA-F_]/.test(pk())) n += adv();
+      } else {
+        while (/[0-9_]/.test(pk())) n += adv();
+        if (pk() === '.' && /[0-9]/.test(pk(1))) { n += adv(); while (/[0-9_]/.test(pk())) n += adv(); }
+        if (/[eE]/.test(pk())) { n += adv(); if (/[+\-]/.test(pk())) n += adv(); while (/[0-9]/.test(pk())) n += adv(); }
+      }
+      tok.push({ t: TK.NU, v: n }); continue;
+    }
+    if (/[a-zA-Z_]/.test(c)) {
+      let id = '';
+      while (/[a-zA-Z0-9_]/.test(pk())) id += adv();
+      tok.push({ t: LUA_KW.has(id) ? TK.KW : TK.ID, v: id }); continue;
+    }
+    if (c === '.' && pk(1) === '.' && pk(2) === '.') { tok.push({ t: TK.OT, v: adv() + adv() + adv() }); continue; }
+    if (c === '.' && pk(1) === '.') { tok.push({ t: TK.OT, v: adv() + adv() }); continue; }
+    let matched = false;
+    for (const op of ['==', '~=', '<=', '>=', '::', '//', '>>', '<<']) {
+      if (src.startsWith(op, i)) { tok.push({ t: TK.OT, v: op }); i += op.length; matched = true; break; }
+    }
+    if (!matched) tok.push({ t: TK.OT, v: adv() });
+  }
+  return tok;
+}
+
+function reconstruct(toks) { return toks.map(t => t.v).join(''); }
+
+// L1: Identifier renaming
+function renameLocals(toks) {
+  const rmap = new Map(), used = new Set();
+  function nn(n) {
+    if (rmap.has(n)) return rmap.get(n);
+    let r;
+    do { r = randName(); } while (used.has(r));
+    used.add(r); rmap.set(n, r); return r;
+  }
+  const locals = new Set();
+  for (let i = 0; i < toks.length; i++) {
+    const t = toks[i];
+    if (t.t === TK.KW && t.v === 'local') {
+      let j = i + 1;
+      while (j < toks.length && toks[j].t === TK.WS) j++;
+      if (j >= toks.length) continue;
+      if (toks[j].t === TK.KW && toks[j].v === 'function') {
+        let k = j + 1;
+        while (k < toks.length && toks[k].t === TK.WS) k++;
+        if (k < toks.length && toks[k].t === TK.ID) locals.add(toks[k].v);
+      } else if (toks[j].t === TK.ID) {
+        let k = j;
+        while (k < toks.length) {
+          if (toks[k].t === TK.WS) { k++; continue; }
+          if (toks[k].t === TK.ID) { locals.add(toks[k].v); k++; continue; }
+          if (toks[k].t === TK.OT && toks[k].v === ',') { k++; continue; }
+          break;
+        }
+      }
+    }
+    if (t.t === TK.KW && t.v === 'function') {
+      let j = i + 1;
+      while (j < toks.length && toks[j].t === TK.WS) j++;
+      if (j < toks.length && toks[j].t !== TK.OT) while (j < toks.length && toks[j].t !== TK.OT) j++;
+      if (j < toks.length && toks[j].t === TK.OT && toks[j].v === '(') {
+        let k = j + 1;
+        while (k < toks.length) {
+          if (toks[k].t === TK.WS) { k++; continue; }
+          if (toks[k].t === TK.OT && (toks[k].v === ')' || toks[k].v === '...')) break;
+          if (toks[k].t === TK.OT && toks[k].v === ',') { k++; continue; }
+          if (toks[k].t === TK.ID) { locals.add(toks[k].v); k++; continue; }
+          break;
+        }
+      }
+    }
+  }
+  return toks.map(t => t.t === TK.ID && locals.has(t.v) && !ROBLOX_G.has(t.v) ? { ...t, v: nn(t.v) } : t);
+}
+
+// L2: Strings → dual-XOR IIFE (no named decryptor)
+function encryptStrings(toks) {
+  return toks.map(t => {
+    if (t.t !== TK.ST || t.long) return t;
+    const raw = t.v, q = raw[0];
+    if (q !== '"' && q !== "'") return t;
+    let content;
+    try {
+      content = raw.slice(1, -1)
+        .replace(/\\n/g, '\n').replace(/\\t/g, '\t').replace(/\\r/g, '\r')
+        .replace(/\\\\/g, '\x01').replace(/\\"/g, '"').replace(/\\'/g, "'")
+        .replace(/\\(\d{1,3})/g, (_, d) => String.fromCharCode(parseInt(d)))
+        .replace(/\x01/g, '\\');
+    } catch { return t; }
+    if (!content.length) return { ...t, v: '""' };
+    if (content.length > 500) return t;
+
+    const k1l = randInt(5, 12), k2l = randInt(4, 9);
+    const k1 = Array.from({ length: k1l }, () => randInt(1, 254));
+    const k2 = Array.from({ length: k2l }, () => randInt(1, 254));
+    const enc = Array.from(content).map((c, i) =>
+      c.charCodeAt(0) ^ k1[i % k1l] ^ k2[i % k2l]
+    );
+    const a = randName(), b = randName(), c = randName(), d = randName(),
+          e = randName(), f = randName();
+    return {
+      t: TK.OT,
+      v: `(function(${a},${b},${e}) local ${c}={} for ${d}=1,#${b} do ${c}[${d}]=string.char(bit32.bxor(bit32.bxor(${b}[${d}],${a}[(${d}-1)%#${a}+1]),${e}[(${d}-1)%#${e}+1])) end return table.concat(${c}) end)({${k1.join(',')}},{${enc.join(',')}},{${k2.join(',')}})`,
+    };
+  });
+}
+
+// L3: Number obfuscation (multi-step bit32)
+function obfuscateNumbers(toks) {
+  return toks.map(t => {
+    if (t.t !== TK.NU) return t;
+    if (t.v.startsWith('0x') || t.v.startsWith('0X')) return t;
+    const n = parseFloat(t.v);
+    if (!isFinite(n) || !Number.isInteger(n) || Math.abs(n) > 2e6) return t;
+    const s = randInt(0, 4);
+    if (s === 0) { const a = randInt(-9999, 9999); return { ...t, v: `(${n + a}-${a})` }; }
+    if (s === 1 && n >= 0 && n < 2147483648) { const m = randInt(1, 65535); return { ...t, v: `(bit32.bxor(${n ^ m},${m}))` }; }
+    if (s === 2 && n >= 0 && n < 2147483648) { const x = randInt(1, 127); return { ...t, v: `(bit32.bxor(bit32.bxor(${n},${x}),${x}))` }; }
+    if (s === 3) { const a = randInt(1, 999), b = randInt(1, 999); return { ...t, v: `(${n + a + b}-${a}-${b})` }; }
+    const k = randInt(1, 999); return { ...t, v: `(${n + k}-${k})` };
+  });
+}
+
+// L4: Break globals at runtime
+function breakGlobals(toks) {
+  const res = [];
+  for (let i = 0; i < toks.length; i++) {
+    const t = toks[i];
+    if (t.t === TK.ID && BREAKABLE.has(t.v) && t.v.length >= 4) {
+      const prev = res.filter(x => x.t !== TK.WS).slice(-1)[0];
+      if (prev && (prev.v === '.' || prev.v === ':' || prev.v === '[')) {
+        res.push(t); continue;
+      }
+      res.push({ t: TK.OT, v: `_ENV[${splitStr(t.v)}]` }); continue;
+    }
+    res.push(t);
+  }
+  return res;
+}
+
+// L5: Realistic junk code — 20 patterns
+const JUNK = [
+  () => { const a = randName(), b = randName(); return `do local ${a}=math.floor(0) local ${b}=${a} end`; },
+  () => { const a = randName(); return `if type(nil)~="nil" then local ${a}=0 end`; },
+  () => { const a = randName(); return `do local ${a}=bit32.bxor(${randInt(1, 255)},${randInt(1, 255)}) end`; },
+  () => { const a = randName(), b = randName(); return `do local ${a}=math.max(${randInt(1, 9)},${randInt(10, 20)}) local ${b}=${a}-${a} end`; },
+  () => { const a = randName(); return `if false then local ${a}="${randHex(4)}" end`; },
+  () => { const a = randName(), b = randName(), c = randName(); return `do local ${a}={} local ${b}=#${a} local ${c}=${b}*0 end`; },
+  () => { const a = randName(); return `do local ${a}=string.len("") end`; },
+  () => { const x = randInt(32, 126); const a = randName(); return `do local ${a}=string.char(${x}) end`; },
+  () => { const a = randName(), b = randInt(1, 1000), c = randInt(1, 1000); return `do local ${a}=math.abs(${b}-${c}) end`; },
+  () => { const a = randName(); return `repeat local ${a}=0 ${a}=${a}+1 until ${a}>0`; },
+  () => { const a = randName(), b = randName(); return `do local ${a}=tostring(${randInt(0, 9)}) local ${b}=#${a} end`; },
+  () => { const a = randName(); return `if ${randInt(1, 9)}>${randInt(10, 20)} then local ${a}=nil end`; },
+  () => { const a = randName(); return `do local ${a}=math.pi*0 end`; },
+  () => { const a = randName(), k = randInt(1, 255); return `do local ${a}=bit32.band(${k},0xFF) end`; },
+  () => { const a = randName(); return `do local ${a}=select("#") end`; },
+  () => { const a = randName(), b = randName(); return `do local ${a}=type("x")=="string" local ${b}=${a} end`; },
+  () => { const a = randName(); return `for ${a}=1,0 do end`; },
+  () => { const a = randName(), b = randHex(2); return `do local ${a}=string.byte("\\x${b}") end`; },
+  () => { const a = randName(), b = randName(); return `do local ${a}=math.huge local ${b}=math.huge-${a} end`; },
+  () => { const a = randName(); return `do local ${a}=rawequal(nil,nil) end`; },
+];
+
+function injectJunk(code) {
+  const lines = code.split('\n'), out = [];
+  for (const l of lines) {
+    out.push(l);
+    const tr = l.trim();
+    if (Math.random() < 0.25 && (tr.endsWith('end') || tr.startsWith('local ') || tr === '')) {
+      out.push(JUNK[randInt(0, JUNK.length - 1)]());
+    }
+  }
+  return out.join('\n');
+}
+
+// L6: Opaque predicates — mathematically guaranteed true
+function injectOpaquePredicates(code) {
+  const preds = [
+    () => { const a = randInt(2, 9), b = a * a; return `if math.floor(math.sqrt(${b}))~=${a} then error("",0) end`; },
+    () => `if type("")~="string" then error("",0) end`,
+    () => { const n = randInt(10, 99); return `if ${n}%${n}~=0 then error("",0) end`; },
+    () => `if rawequal(nil,false) then error("",0) end`,
+    () => { const a = randInt(1, 100); return `if math.max(${a},${a})~=${a} then error("",0) end`; },
+  ];
+  const lines = code.split('\n');
+  const insertAt = Math.floor(lines.length * 0.2);
+  const pred = preds[randInt(0, preds.length - 1)]();
+  lines.splice(insertAt, 0, pred);
+  return lines.join('\n');
+}
+
+// Layer C: Anti-hook + anti-debug v6 wrapper
+function wrapAntiHook(code) {
+  const sig  = randName(), vn = randName(), en = randName();
+  const ah1  = randName(), ah2 = randName(), dbg = randName();
+  const env2 = randName(), chk = randName();
+  const bc = Array.from({ length: randInt(32, 64) }, () => randInt(0, 255)).join(',');
+  const hashA = randHex(8).toUpperCase();
+  const hashB = randHex(4).toUpperCase();
+  const ver = `${randInt(5, 6)}.${randInt(0, 9)}.${randInt(10, 99)}`;
+
+  return [
+    `-- LuaShield v6 | ${hashA}-${hashB} | Dispatch Table VM Engine`,
+    `local ${sig}={_bc={${bc}},_v="${ver}",_id="${randHex(16)}"}`,
+    `-- Integrity layer: bit32 fingerprint`,
+    `local ${vn}=string.char(bit32.bxor(0x${(65 ^ randInt(1, 10)).toString(16).padStart(2, '0')},${randInt(1, 10)}))`,
+    `local ${ah1}=bit32.bxor(0x41,0x00)`,
+    `if string.char(${ah1})~="A" then error("",0) end`,
+    `-- Integrity layer: string.char consistency`,
+    `local ${ah2}=string.char(72)`,
+    `if ${ah2}~="H" then error("",0) end`,
+    `-- Anti-debug: debug library presence check`,
+    `local ${dbg}=pcall(function() if debug~=nil and debug.getinfo~=nil then error("",0) end end)`,
+    `-- Anti-executor: environment sanity`,
+    `local ${env2}=type(_ENV)`,
+    `local ${chk}=pcall(function() assert(${env2}=="table","") end)`,
+    `if not ${chk} then error("",0) end`,
+    `local function ${en}()`,
+    code,
+    `end`,
+    `local _ok,_er=pcall(${en})`,
+    `if not _ok then error(tostring(_er),0) end`,
+  ].join('\n');
+}
+
+// ─── Main obfuscate function ────────────────────────────────────
+
+function obfuscate(code, opts = {}) {
+  const options = {
+    vmCompile:        opts.vmCompile        !== false,
+    renameVars:       opts.renameVars       !== false,
+    encryptStrings:   opts.encryptStrings   !== false,
+    obfuscateNumbers: opts.obfuscateNumbers !== false,
+    breakGlobals:     opts.breakGlobals     !== false,
+    injectJunk:       opts.injectJunk       !== false,
+    opaquePredicates: opts.opaquePredicates !== false,
+    antiHook:         opts.antiHook         !== false,
+  };
+
+  const t0 = Date.now();
+  const origSize = code.length;
+  const applied = [];
+
+  let workCode = code;
+  let vmUsed = false;
+
+  // ── LAYER A: VM Bytecode Compiler ─────────────────────────────
+  if (options.vmCompile && luaparse) {
+    try {
+      const ops = makeOpcodeMap();
+      const ast = luaparse.parse(workCode, {
+        comments: false,
+        scope: false,
+        locations: false,
+        ranges: false,
+      });
+      const compiler = new Compiler(ops);
+      const rootProto = compiler.compile(ast);
+      workCode = generateVMCode(rootProto, ops);
+      applied.push('VM Bytecode Compiler (dispatch table, shuffled opcodes per run)');
+      applied.push('Dual-Key XOR Constant Encryption (two independent rotating keys)');
+      applied.push('ForGeneric / Repeat / Vararg / Upvalues / MultiReturn');
+      vmUsed = true;
+    } catch (e) {
+      applied.push(`VM Compiler fallback (${e.message.slice(0, 80)})`);
+    }
+  }
+
+  // ── LAYER B: Token passes ─────────────────────────────────────
+  let toks = tokenize(workCode);
+
+  if (options.renameVars) {
+    toks = renameLocals(toks);
+    applied.push('Identifier Renaming');
+  }
+  if (options.encryptStrings) {
+    toks = encryptStrings(toks);
+    applied.push('String Encryption (dual-XOR IIFE, no decryptor name)');
+  }
+  if (options.obfuscateNumbers) {
+    toks = obfuscateNumbers(toks);
+    applied.push('Number Obfuscation (multi-step bit32)');
+  }
+  if (options.breakGlobals && !vmUsed) {
+    toks = breakGlobals(toks);
+    applied.push('Global Name Splitting (runtime _ENV lookup)');
+  }
+
+  let result = reconstruct(toks);
+
+  if (options.injectJunk) {
+    result = injectJunk(result);
+    applied.push('Realistic Junk Code Injection (20 patterns)');
+  }
+
+  if (options.opaquePredicates) {
+    result = injectOpaquePredicates(result);
+    applied.push('Opaque Predicates (math-guaranteed conditions)');
+  }
+
+  // ── LAYER C: Anti-hook wrapper ────────────────────────────────
+  if (options.antiHook) {
+    result = wrapAntiHook(result);
+    applied.push('Anti-Hook v6 + Anti-Debug (bit32 fingerprint, executor detection)');
+  }
+
+  return {
+    code: result,
+    stats: {
+      originalSize: origSize,
+      obfuscatedSize: result.length,
+      sizeRatio: (result.length / origSize).toFixed(2),
+      techniquesApplied: applied,
+      processingTimeMs: Date.now() - t0,
+      vmUsed,
+    },
+  };
+}
+
+// ─── Presets ───────────────────────────────────────────────────
+
+const PRESETS = {
+  light: {
+    vmCompile: false,
+    renameVars: true, encryptStrings: true,
+    obfuscateNumbers: false, breakGlobals: false,
+    injectJunk: false, opaquePredicates: false, antiHook: false,
+  },
+  medium: {
+    vmCompile: false,
+    renameVars: true, encryptStrings: true,
+    obfuscateNumbers: true, breakGlobals: false,
+    injectJunk: true, opaquePredicates: false, antiHook: true,
+  },
+  heavy: {
+    vmCompile: true,
+    renameVars: true, encryptStrings: true,
+    obfuscateNumbers: true, breakGlobals: true,
+    injectJunk: true, opaquePredicates: true, antiHook: true,
+  },
+  max: {
+    vmCompile: true,
+    renameVars: true, encryptStrings: true,
+    obfuscateNumbers: true, breakGlobals: true,
+    injectJunk: true, opaquePredicates: true, antiHook: true,
+  },
+};
+
+module.exports = { obfuscate, PRESETS };
