@@ -1337,24 +1337,58 @@ function flattenControlFlow(code) {
   const lines = code.split('\n').filter(l => l.trim().length > 0);
   if (lines.length < 8) return code;
 
-  const stateVar = randName();
-  const loopVar = randName();
+  // Track Lua nesting depth so we only split at complete-statement boundaries.
+  // Mixing a stray `end` or `}` into a different state block causes syntax errors.
+  let blockDepth = 0;
+  let parenDepth = 0;
+  let braceDepth = 0;
+  const validSplits = new Set(); // indices after which a split is safe
+
+  for (let i = 0; i < lines.length; i++) {
+    const t = lines[i].trim();
+    if (!t.startsWith('--')) {
+      // Block-opening keywords (each adds 1 depth level)
+      blockDepth += (t.match(/\bthen\b/g) || []).length;
+      blockDepth -= (t.match(/\belseif\b/g) || []).length; // elseif contains 'then' but nets 0
+      blockDepth += (t.match(/\bdo\b/g) || []).length;
+      blockDepth += (t.match(/\bfunction\b/g) || []).length;
+      blockDepth += (t.match(/\brepeat\b/g) || []).length;
+      blockDepth -= (t.match(/\bend\b/g) || []).length;
+      blockDepth -= (t.match(/\buntil\b/g) || []).length;
+      // Paren / brace balance (multi-line function calls or table constructors)
+      for (const ch of t) {
+        if (ch === '(') parenDepth++;
+        else if (ch === ')') parenDepth = Math.max(0, parenDepth - 1);
+        else if (ch === '{') braceDepth++;
+        else if (ch === '}') braceDepth = Math.max(0, braceDepth - 1);
+      }
+    }
+    // A line is a valid split point only when all nesting is closed
+    if (blockDepth === 0 && parenDepth === 0 && braceDepth === 0) {
+      validSplits.add(i);
+    }
+  }
+
+  // Build chunks, only cutting at valid (depth-zero) line boundaries
   const chunks = [];
   let chunk = [];
+  let target = randInt(3, 7);
 
-  for (const line of lines) {
-    chunk.push(line);
-    if (chunk.length >= randInt(2, 5)) {
+  for (let i = 0; i < lines.length; i++) {
+    chunk.push(lines[i]);
+    if (chunk.length >= target && validSplits.has(i) && i < lines.length - 1) {
       chunks.push(chunk.join('\n'));
       chunk = [];
+      target = randInt(3, 7);
     }
   }
   if (chunk.length > 0) chunks.push(chunk.join('\n'));
 
   if (chunks.length < 3) return code;
 
-  const order = Array.from({ length: chunks.length }, (_, i) => i);
-  const stateMap = shuffle(Array.from({ length: chunks.length }, (_, i) => randInt(100, 9999)));
+  const stateVar = randName();
+  const loopVar = randName();
+  const stateMap = Array.from({ length: chunks.length }, () => randInt(100, 9999));
   const usedStates = new Set(stateMap);
   let terminalState;
   do { terminalState = randInt(100, 9999); } while (usedStates.has(terminalState));
@@ -2600,52 +2634,7 @@ const PRESETS = {
 };
 
 module.exports = { obfuscate, PRESETS };
- }
-  }
-
-  if (options.encryptStrings) {
-    toks = encryptStrings(toks);
-    applied.push('String Encryption (9-pattern polymorphic, no decryptor name)');
-  }
-  if (options.obfuscateNumbers) {
-    toks = obfuscateNumbers(toks);
-    applied.push('Number Obfuscation (30-pattern multi-step bit32)');
-  }
-  if (options.breakGlobals && !vmUsed) {
-    toks = breakGlobals(toks);
-    applied.push('Global Name Splitting (runtime _ENV lookup)');
-  }
-
-  let result = reconstruct(toks);
-
-  if (options.controlFlowFlatten && !vmUsed) {
-    result = flattenControlFlow(result);
-    applied.push('Control Flow Flattening (state-machine dispatcher)');
-  }
-
-  if (options.injectJunk) {
-    result = injectJunk(result);
-    applied.push('Realistic Junk Code Injection (100 patterns v12)');
-  }
-
-  if (options.opaquePredicates) {
-    result = injectOpaquePredicates(result);
-    applied.push('Opaque Predicates v12 (36 math-guaranteed conditions, multi-inject)');
-  }
-
-  if (options.deadCodePaths) {
-    result = injectDeadCodePaths(result);
-    applied.push('Dead Code Path Injection v13 (L8 — 10 unreachable Roblox-style branches)');
-  }
-
-  if (options.envFingerprint) {
-    result = wrapEnvironmentFingerprint(result);
-    applied.push('Environment Fingerprinting (Roblox context detection)');
-  }
-
-  if (options.antiHook) {
-    result = wrapAntiHook(result);
-    applied.push('Anti-Hook v12 + Anti-Debug (bit32 fingerprint, executor detection, timing check, metatable trap, coroutine state, pcall depth, upvalue introspection trap, closure identity, honeypot trap)');
+ntity, honeypot trap)');
   }
 
   return {

@@ -42,7 +42,10 @@
 - Environment fingerprinting
 - Expanded ROBLOX_G with 20+ additional Roblox service globals
 
-### What Was Fixed (v13 — This Session)
+### What Was Fixed (v13.1 — Latest Session)
+1. **CRITICAL: Control flow flattening produced invalid Lua syntax** — The old `flattenControlFlow()` split code every 2–5 lines at arbitrary boundaries. This put stray `end`, `})`, `}` tokens into different state-machine blocks from their openers, causing `Expected identifier when parsing expression, got '}'` at runtime. Fixed by tracking full Lua nesting depth (block depth for `then`/`do`/`function`/`repeat`/`end`/`until`, paren depth for `()`/`{}`) and only allowing chunk splits when ALL three depth counters are zero. Tested 20× with deeply nested code — 100% pass.
+
+### What Was Fixed (v13 — Previous Session)
 1. **CRITICAL: `SELF` opcode bug** — `SELF` handler was using `kst[c]` instead of `rk_(c)`. In Lua 5.1, `c` in SELF is RK-encoded (can be register or constant). Using `kst[c]` directly caused nil method lookups when `c` indexed into registers. This would break ALL `obj:method()` calls compiled through the VM.
 2. **CRITICAL: `_ENV` setup in VM** — The VM used `setmetatable({}, {__index=_ENV})` which creates a proxy table. In Roblox Luau, reading from `_ENV` through a proxy metatable fails for Roblox-specific globals (game, workspace, etc.) because they exist in the environment directly. Changed to: `local _env = (type(_ENV)=="table" and _ENV) or (type(_ENV)=="userdata" and _ENV) or (getfenv and getfenv(0)) or _G or {}`. Now the VM uses `_ENV` directly.
 3. **FIXED: Anti-hook pcall depth check** — Changed `if pd_~=3 then error("",0) end` to `if pd_<1 then error("",0) end`. In some Roblox executor contexts, the pcall nesting counter could fall short of 3 even when pcall works normally. Changed to only error if NO pcall levels worked at all.
