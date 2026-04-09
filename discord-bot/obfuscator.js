@@ -1638,7 +1638,10 @@ function buildVMCore(rootProto, ops) {
 
   const shapeNames = ['DispatchTable', 'LinkedList', 'TokenizedString', 'StackVM'];
 
-  const selfHash = generateSelfHash(protoStr);
+  const bcCount = rootProto.bc.length;
+  const subCount = rootProto.subp.length;
+  const integrityA = (bcCount * 7 + subCount * 31 + 0x3F) & 0xFFFF;
+  const integrityB = (bcCount ^ subCount ^ 0xA5) & 0xFF;
   const hashVar = randName();
   const hashChk = randName();
 
@@ -1701,12 +1704,11 @@ end
 local _proto=${protoStr}
 
 do
-  local ${hashVar}=0x5A3C
-  local ${hashChk}=tostring(_proto)
-  for _i=1,math.min(#${hashChk},500) do
-    ${hashVar}=bit32.band(bit32.bxor(bit32.lshift(${hashVar},5)+${hashVar}+string.byte(${hashChk},_i)),0xFFFFFFFF)
-  end
-  if ${hashVar}~=${selfHash} then error("integrity check failed",0) end
+  local ${hashVar}=#_proto.bc*7+(#_proto.p)*31+0x3F
+  local ${hashChk}=bit32.band(${hashVar},0xFFFF)
+  if ${hashChk}~=${integrityA} then error("",0) end
+  local _ib=bit32.bxor(#_proto.bc,bit32.bxor(#_proto.p,0xA5))
+  if bit32.band(_ib,0xFF)~=${integrityB} then error("",0) end
 end
 
 local _env=setmetatable({},{__index=_ENV or (getfenv and getfenv() or {})})
@@ -2012,7 +2014,7 @@ function obfuscateNumbers(toks) {
     if (!isFinite(n) || !Number.isInteger(n) || Math.abs(n) > 2e6) return t;
     const safe = n >= 0 && n < 2147483648;
     const s = randInt(0, 29);
-    if (s === 0)  { const a = randInt(-9999, 9999); return { ...t, v: `(${n + a}-${a})` }; }
+    if (s === 0)  { const a = randInt(1, 9999); return { ...t, v: `(${n + a}-${a})` }; }
     if (s === 1 && safe) { const m = randInt(1, 65535); return { ...t, v: `(bit32.bxor(${n ^ m},${m}))` }; }
     if (s === 2 && safe) { const x = randInt(1, 127); return { ...t, v: `(bit32.bxor(bit32.bxor(${n},${x}),${x}))` }; }
     if (s === 3)  { const a = randInt(1, 999), b = randInt(1, 999); return { ...t, v: `(${n + a + b}-${a}-${b})` }; }
@@ -2271,7 +2273,23 @@ function wrapAntiHook(code) {
   const honeypotEnc = honeypotKey ^ randInt(1, 254);
 
   return [
-    `-- LuaShield v12 | ${hashA}-${hashB} | Multi-Shape VM + CFF + Coroutine + DeadBC + PolyHandlers + PentaXOR`,
+    `--[[ `,
+    `    ╔═══════════════════════════════════════════════════╗`,
+    `    ║                                                   ║`,
+    `    ║   ██╗     ██╗   ██╗ █████╗ ███████╗██╗  ██╗      ║`,
+    `    ║   ██║     ██║   ██║██╔══██╗██╔════╝██║  ██║      ║`,
+    `    ║   ██║     ██║   ██║███████║███████╗███████║      ║`,
+    `    ║   ██║     ██║   ██║██╔══██║╚════██║██╔══██║      ║`,
+    `    ║   ███████╗╚██████╔╝██║  ██║███████║██║  ██║      ║`,
+    `    ║   ╚══════╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝      ║`,
+    `    ║                                                   ║`,
+    `    ║           S H I E L D   v${ver.split('.')[0]}                    ║`,
+    `    ║                                                   ║`,
+    `    ║   ID: ${hashA}-${hashB}                           ║`,
+    `    ║   Protected Script                                ║`,
+    `    ║                                                   ║`,
+    `    ╚═══════════════════════════════════════════════════╝`,
+    `]]`,
     `local ${sig}={_bc={${bc}},_v="${ver}",_id="${randHex(16)}",_ts=${Date.now()},_wm="${randHex(8)}",_ck="${randHex(12)}"}`,
     `local ${vn}=string.char(bit32.bxor(0x${(65 ^ randInt(1, 10)).toString(16).padStart(2, '0')},${randInt(1, 10)}))`,
     ...wmDecls,
@@ -2298,8 +2316,10 @@ function wrapAntiHook(code) {
     `    if _ok2 then error("",0) end`,
     `  end`,
     `end)`,
-    `local ${str2_}=string.rep("\\0",${randInt(4,8)})`,
-    `if #${str2_}~=${randInt(4,8)} then end`,
+    (() => { const repLen = randInt(4,8); return [
+    `local ${str2_}=string.rep("\\0",${repLen})`,
+    `if #${str2_}~=${repLen} then end`,
+    ].join('\n'); })(),
     `local ${co_}=coroutine.running()`,
     `local ${co2_}=pcall(function()`,
     `  if ${co_}~=nil then`,
@@ -2556,6 +2576,164 @@ const PRESETS = {
     injectJunk: true, opaquePredicates: true, antiHook: true,
     controlFlowFlatten: true, stringArrayRotate: true, envFingerprint: true,
     vmNesting: true, tripleNesting: true,
+  },
+};
+
+module.exports = { obfuscate, PRESETS };
+h('Self-Hash Integrity Verification (multi-point runtime check)');
+      applied.push('Opaque Payload Encoding (custom-alphabet XOR)');
+      applied.push('Fake Dispatch Table Entries (20-35 dead branches)');
+      applied.push('NOP Opcode + 36 Shuffled Opcodes');
+      applied.push('Goto/Labels/Deep Upvalues/ForGeneric/Repeat/Vararg/MultiReturn');
+      vmUsed = true;
+
+      if (options.vmNesting) {
+        const nestingLayers = options.tripleNesting ? 2 : 1;
+        for (let layer = 0; layer < nestingLayers; layer++) {
+          try {
+            const opsN = makeOpcodeMap();
+            const astN = luaparse.parse(workCode, {
+              comments: false, scope: false, locations: false, ranges: false, luaVersion: '5.2',
+            });
+            const compilerN = new Compiler(opsN);
+            const rootProtoN = compilerN.compile(astN);
+            workCode = buildVMCore(rootProtoN, opsN);
+            const vmShapeN = ['DispatchTable', 'LinkedList', 'TokenizedString', 'StackVM'][randInt(0, 3)];
+            applied.push(`VM Nesting — Layer ${layer + 2} (${vmShapeN} shape, independent opcode map, Russian-doll protection)`);
+          } catch (e) {
+            applied.push(`VM Nesting Layer ${layer + 2} fallback (${e.message.slice(0, 60)})`);
+          }
+        }
+      }
+    } catch (e) {
+      applied.push(`VM Compiler fallback (${e.message.slice(0, 80)})`);
+    }
+  }
+
+  let toks = tokenize(workCode);
+
+  if (options.renameVars) {
+    toks = renameLocals(toks);
+    applied.push('Identifier Renaming');
+  }
+
+  if (options.stringArrayRotate && !vmUsed) {
+    const rotResult = rotateStringArray(toks);
+    if (rotResult) {
+      toks = rotResult.toks;
+      workCode = rotResult.prefix + reconstruct(toks);
+      toks = tokenize(workCode);
+      applied.push('String Array Rotation (indexed lookup with XOR decode)');
+    }
+  }
+
+  if (options.encryptStrings) {
+    toks = encryptStrings(toks);
+    applied.push('String Encryption (10-pattern polymorphic, no decryptor name — incl. Fibonacci XOR, nibble-swap, bit-rotation, delta encoding)');
+  }
+  if (options.obfuscateNumbers) {
+    toks = obfuscateNumbers(toks);
+    applied.push('Number Obfuscation (30-pattern multi-step bit32)');
+  }
+  if (options.breakGlobals && !vmUsed) {
+    toks = breakGlobals(toks);
+    applied.push('Global Name Splitting (runtime _ENV lookup)');
+  }
+
+  let result = reconstruct(toks);
+
+  if (options.controlFlowFlatten && !vmUsed) {
+    result = flattenControlFlow(result);
+    applied.push('Control Flow Flattening v2 — state-machine dispatcher + 5-10 unreachable fake states (shuffled)');
+  }
+
+  if (options.injectJunk) {
+    result = injectJunk(result);
+    applied.push('Realistic Junk Code Injection (120 patterns v13)');
+  }
+
+  if (options.opaquePredicates) {
+    result = injectOpaquePredicates(result);
+    applied.push('Opaque Predicates v13 (46 math-guaranteed conditions, multi-inject)');
+  }
+
+  if (options.deadCodePaths) {
+    result = injectDeadCodePaths(result);
+    applied.push('Dead Code Path Injection v13 (L8 — 10 unreachable Roblox-style branches)');
+  }
+
+  if (options.envFingerprint) {
+    result = wrapEnvironmentFingerprint(result);
+    applied.push('Environment Fingerprinting (Roblox context detection)');
+  }
+
+  if (options.antiHook) {
+    result = wrapAntiHook(result);
+    applied.push('Anti-Hook v13 + Anti-Debug (bit32 fingerprint, executor detection, timing check, metatable trap, coroutine state, pcall depth, upvalue introspection trap, closure identity, honeypot trap, watermark multi-point)');
+  }
+
+  return {
+    code: result,
+    stats: {
+      originalSize: origSize,
+      obfuscatedSize: result.length,
+      sizeRatio: (result.length / origSize).toFixed(2),
+      techniquesApplied: applied,
+      processingTimeMs: Date.now() - t0,
+      vmUsed,
+      vmShape: vmShapeName || 'N/A',
+    },
+  };
+}
+
+// ─── Presets ───────────────────────────────────────────────────
+
+const PRESETS = {
+  light: {
+    vmCompile: false,
+    renameVars: true, encryptStrings: true,
+    obfuscateNumbers: false, breakGlobals: false,
+    injectJunk: false, opaquePredicates: false, antiHook: false,
+    controlFlowFlatten: false, stringArrayRotate: false, envFingerprint: false,
+    vmNesting: false,
+  },
+  medium: {
+    vmCompile: false,
+    renameVars: true, encryptStrings: true,
+    obfuscateNumbers: true, breakGlobals: false,
+    injectJunk: true, opaquePredicates: false, antiHook: true,
+    controlFlowFlatten: false, stringArrayRotate: true, envFingerprint: false,
+    vmNesting: false,
+  },
+  heavy: {
+    vmCompile: true,
+    renameVars: true, encryptStrings: true,
+    obfuscateNumbers: true, breakGlobals: true,
+    injectJunk: true, opaquePredicates: true, antiHook: true,
+    controlFlowFlatten: true, stringArrayRotate: true, envFingerprint: true,
+    vmNesting: false, deadCodePaths: true,
+  },
+  max: {
+    vmCompile: true,
+    renameVars: true, encryptStrings: true,
+    obfuscateNumbers: true, breakGlobals: true,
+    injectJunk: true, opaquePredicates: true, antiHook: true,
+    controlFlowFlatten: true, stringArrayRotate: true, envFingerprint: true,
+    vmNesting: true, tripleNesting: false, deadCodePaths: true,
+  },
+  ultra: {
+    vmCompile: true,
+    renameVars: true, encryptStrings: true,
+    obfuscateNumbers: true, breakGlobals: true,
+    injectJunk: true, opaquePredicates: true, antiHook: true,
+    controlFlowFlatten: true, stringArrayRotate: true, envFingerprint: true,
+    vmNesting: true, tripleNesting: true, deadCodePaths: true,
+  },
+};
+
+module.exports = { obfuscate, PRESETS };
+
+ng: true, deadCodePaths: true,
   },
 };
 
