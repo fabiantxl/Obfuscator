@@ -1095,7 +1095,7 @@ function buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_) {
   ${dt_}[${O.GETTABLE}]=function(a,b,c) regs[a]=regs[b][${rk_}(c)] end
   ${dt_}[${O.SETTABLE}]=function(a,b,c) regs[a][${rk_}(b)]=${rk_}(c) end
   ${dt_}[${O.NEWTABLE}]=function(a,b,c) regs[a]={} end
-  ${dt_}[${O.SELF}]=function(a,b,c) regs[a+1]=regs[b] regs[a]=regs[b][kst[c]] end
+  ${dt_}[${O.SELF}]=function(a,b,c) regs[a+1]=regs[b] regs[a]=regs[b][${rk_}(c)] end
   ${dt_}[${O.ADD}]=function(a,b,c) ${generatePolymorphicAdd(rk_)} end
   ${dt_}[${O.SUB}]=function(a,b,c) ${generatePolymorphicSub(rk_)} end
   ${dt_}[${O.MUL}]=function(a,b,c) ${generatePolymorphicMul(rk_)} end
@@ -1114,7 +1114,12 @@ function buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_) {
   ${dt_}[${O.CALL}]=function(a,b,c)
     local fn=regs[a]
     local args={}
-    if b~=1 then for i=a+1,a+b-1 do args[#args+1]=regs[i] end end
+    if b==0 then
+      local i=a+1
+      while regs[i]~=nil do args[#args+1]=regs[i] i=i+1 end
+    elseif b~=1 then
+      for i=a+1,a+b-1 do args[#args+1]=regs[i] end
+    end
     if c==0 then
       local rs={fn(${up_}(args))}
       for i,v in ipairs(rs) do regs[a+i-1]=v end
@@ -1179,7 +1184,7 @@ function buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_) {
     if cell then cell.val=regs[a] end
   end
   ${dt_}[${O.VARARG}]=function(a,b,c)
-    local nout=(c==0) and (#va-proto.np) or (c-1)
+    local nout=(c==0) and math.max(0,#va-proto.np) or (c-1)
     for i=1,nout do regs[a+i-1]=va[proto.np+i] end
   end
   ${dt_}[${O.NOP}]=function(a,b,c) end`;
@@ -1702,7 +1707,7 @@ do
   if bit32.band(_ib,0xFF)~=${integrityB} then error("",0) end
 end
 
-local _env=setmetatable({},{__index=(type(_ENV)=="table" and _ENV) or (getfenv and getfenv(0)) or (function() return setmetatable({},{__index=function(_,k) return rawget(_G or {},k) end}) end)()})
+local _env=(type(_ENV)=="table" and _ENV) or (type(_ENV)=="userdata" and _ENV) or (getfenv and getfenv(0)) or _G or {}
 local _ok,_er=pcall(function()
   ${vm}(_proto,_env,nil,nil)
 end)
@@ -1727,13 +1732,16 @@ const ROBLOX_G = new Set([
   'pcall','xpcall','ipairs','pairs','next','select','type','typeof',
   'tostring','tonumber','rawget','rawset','rawequal','rawlen',
   'setmetatable','getmetatable','require','loadstring','load',
-  'collectgarbage','unpack','tick','time',
-  'Vector2','Vector3','CFrame','Color3','BrickColor','Instance',
-  'Enum','UDim','UDim2','TweenInfo','RunService','Players',
-  'ReplicatedStorage','ServerStorage','ServerScriptService',
-  'Lighting','StarterGui','StarterPlayer','Teams','SoundService',
-  'UserInputService','ContextActionService','TweenService',
-  'PathfindingService','HttpService','DataStoreService','MarketplaceService',
+  'collectgarbage','unpack','tick','time','DateTime','Random',
+  'Vector2','Vector3','Vector2int16','Vector3int16','CFrame','Color3',
+  'BrickColor','Instance','Enum','UDim','UDim2','TweenInfo',
+  'NumberRange','NumberSequence','ColorSequence','Ray','Region3',
+  'RunService','Players','ReplicatedStorage','ServerStorage',
+  'ServerScriptService','Lighting','StarterGui','StarterPlayer',
+  'Teams','SoundService','UserInputService','ContextActionService',
+  'TweenService','PathfindingService','HttpService','DataStoreService',
+  'MarketplaceService','TextService','AvatarEditorService',
+  'VirtualInputManager','GuiService','LocalizationService',
 ]);
 
 const BREAKABLE = new Set([
@@ -2370,11 +2378,11 @@ function wrapAntiHook(code) {
     `if #${str2_}~=${repLen} then error("",0) end`,
     `local ${pd_}=0`,
     `local ${pd2_}=pcall(function() ${pd_}=${pd_}+1 pcall(function() ${pd_}=${pd_}+1 pcall(function() ${pd_}=${pd_}+1 end) end) end)`,
-    `if ${pd_}~=3 then error("",0) end`,
+    `if ${pd_}<1 then error("",0) end`,
     `local ${uv_}=(function() local _secret=${randInt(10000,99999)} return function() return _secret end end)()`,
     `local ${uv2_}=pcall(function() if debug and debug.getupvalue then local _n,_v=debug.getupvalue(${uv_},1) if _n then error("",0) end end end)`,
     `local ${ci_}=function() return true end`,
-    `local ${ci2_}=pcall(function() if tostring(${ci_}):sub(1,8)~="function" then error("",0) end end)`,
+    `local ${ci2_}=pcall(function() if type(${ci_})~="function" then error("",0) end end)`,
     `local ${sd_}=0`,
     `local ${sd2_}=pcall(function() local function _c(n) if n>0 then return _c(n-1) end return true end _c(5) ${sd_}=1 end)`,
     `if ${sd_}~=1 then error("",0) end`,
@@ -2485,6 +2493,114 @@ function obfuscate(code, opts = {}) {
       toks = tokenize(workCode);
       applied.push('String Array Rotation (indexed lookup with XOR decode)');
     }
+  }
+
+  if (options.encryptStrings) {
+    toks = encryptStrings(toks);
+    applied.push('String Encryption (9-pattern polymorphic, no decryptor name)');
+  }
+  if (options.obfuscateNumbers) {
+    toks = obfuscateNumbers(toks);
+    applied.push('Number Obfuscation (30-pattern multi-step bit32)');
+  }
+  if (options.breakGlobals && !vmUsed) {
+    toks = breakGlobals(toks);
+    applied.push('Global Name Splitting (runtime _ENV lookup)');
+  }
+
+  let result = reconstruct(toks);
+
+  if (options.controlFlowFlatten && !vmUsed) {
+    result = flattenControlFlow(result);
+    applied.push('Control Flow Flattening (state-machine dispatcher)');
+  }
+
+  if (options.injectJunk) {
+    result = injectJunk(result);
+    applied.push('Realistic Junk Code Injection (100 patterns v12)');
+  }
+
+  if (options.opaquePredicates) {
+    result = injectOpaquePredicates(result);
+    applied.push('Opaque Predicates v12 (36 math-guaranteed conditions, multi-inject)');
+  }
+
+  if (options.deadCodePaths) {
+    result = injectDeadCodePaths(result);
+    applied.push('Dead Code Path Injection v13 (L8 — 10 unreachable Roblox-style branches)');
+  }
+
+  if (options.envFingerprint) {
+    result = wrapEnvironmentFingerprint(result);
+    applied.push('Environment Fingerprinting (Roblox context detection)');
+  }
+
+  if (options.antiHook) {
+    result = wrapAntiHook(result);
+    applied.push('Anti-Hook v12 + Anti-Debug (bit32 fingerprint, executor detection, timing check, metatable trap, coroutine state, pcall depth, upvalue introspection trap, closure identity, honeypot trap)');
+  }
+
+  return {
+    code: result,
+    stats: {
+      originalSize: origSize,
+      obfuscatedSize: result.length,
+      sizeRatio: (result.length / origSize).toFixed(2),
+      techniquesApplied: applied,
+      processingTimeMs: Date.now() - t0,
+      vmUsed,
+      vmShape: vmShapeName || 'N/A',
+    },
+  };
+}
+
+// ─── Presets ───────────────────────────────────────────────────
+
+const PRESETS = {
+  light: {
+    vmCompile: false,
+    renameVars: true, encryptStrings: true,
+    obfuscateNumbers: false, breakGlobals: false,
+    injectJunk: false, opaquePredicates: false, antiHook: false,
+    controlFlowFlatten: false, stringArrayRotate: false, envFingerprint: false,
+    vmNesting: false, deadCodePaths: false,
+  },
+  medium: {
+    vmCompile: false,
+    renameVars: true, encryptStrings: true,
+    obfuscateNumbers: true, breakGlobals: false,
+    injectJunk: true, opaquePredicates: false, antiHook: true,
+    controlFlowFlatten: false, stringArrayRotate: true, envFingerprint: false,
+    vmNesting: false, deadCodePaths: false,
+  },
+  heavy: {
+    vmCompile: true,
+    renameVars: true, encryptStrings: true,
+    obfuscateNumbers: true, breakGlobals: true,
+    injectJunk: true, opaquePredicates: true, antiHook: true,
+    controlFlowFlatten: true, stringArrayRotate: true, envFingerprint: true,
+    vmNesting: false, deadCodePaths: true,
+  },
+  max: {
+    vmCompile: true,
+    renameVars: true, encryptStrings: true,
+    obfuscateNumbers: true, breakGlobals: true,
+    injectJunk: true, opaquePredicates: true, antiHook: true,
+    controlFlowFlatten: true, stringArrayRotate: true, envFingerprint: true,
+    vmNesting: true, tripleNesting: false, deadCodePaths: true,
+  },
+  ultra: {
+    vmCompile: true,
+    renameVars: true, encryptStrings: true,
+    obfuscateNumbers: true, breakGlobals: true,
+    injectJunk: true, opaquePredicates: true, antiHook: true,
+    controlFlowFlatten: true, stringArrayRotate: true, envFingerprint: true,
+    vmNesting: true, tripleNesting: true, deadCodePaths: true,
+  },
+};
+
+module.exports = { obfuscate, PRESETS };
+ }
   }
 
   if (options.encryptStrings) {
