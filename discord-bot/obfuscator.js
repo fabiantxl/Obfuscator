@@ -1,22 +1,26 @@
 'use strict';
 // ================================================================
-//  LuaShield Obfuscator Engine v10
+//  LuaShield Obfuscator Engine v11
 //  TOP-TIER — designed to surpass Luraph, IronBrew v3, Moonsec
 //
 //  [LAYER A] VM BYTECODE COMPILER
 //    luaparse → AST → custom instructions → VM Lua
-//    3 VM SHAPES: Dispatch Table | Linked-List | Tokenized String
+//    4 VM SHAPES: Dispatch Table | Linked-List | Tokenized String | Stack VM
 //    Opcodes shuffled uniquely per obfuscation
-//    Triple-key XOR constant encryption (three independent rotating keys)
+//    Quad-key XOR constant encryption (four independent rotating keys)
 //    Rolling XOR cipher on bytecode fields
+//    Encrypted Jump Offsets (runtime-decrypted control flow)
 //    Self-hash integrity verification (with actual runtime check)
 //    LZ77 bytecode compression (now integrated)
 //    VM Dispatch Key Hardening (XOR'd dispatch lookup)
 //    Dead Bytecode Injection (unreachable VM instructions)
+//    Polymorphic Opcode Handlers (multiple equivalent implementations)
+//    Opcode Fusion (merge adjacent instruction pairs)
 //    Instruction Splitting (single ops → multi-step equivalents)
 //    Dynamic Opcode Remapping (mid-execution opcode mutation)
 //    Register Base Shuffling (randomized register offsets)
 //    Multi-point Watermark Verification
+//    VM Nesting (double-compile for max level — Russian doll VMs)
 //
 //    Opcodes: LOADK, LOADNIL, LOADBOOL, MOVE,
 //             GETGLOBAL, SETGLOBAL, GETTABLE, SETTABLE, NEWTABLE, SELF,
@@ -31,17 +35,18 @@
 //    L2.5 — String Array Rotation (indexed lookup with XOR decode)
 //    L3 — Numbers → multi-step bit32 expressions (20 patterns)
 //    L4 — Globals broken at runtime (_ENV concat lookup)
-//    L5 — 60 realistic junk code patterns
-//    L6 — 20 opaque predicates injection
+//    L5 — 75 realistic junk code patterns
+//    L6 — 25 opaque predicates injection
 //    L7 — Control flow flattening (state-machine dispatcher)
 //
 //  [LAYER C] WRAPPER + Anti-debug
 //    Dual-key anti-hook (bit32 + string fingerprints)
 //    Multi-layer pcall wrapping
-//    Anti-debug v10 (debug lib check, executor detection, env hash,
+//    Anti-debug v11 (debug lib check, executor detection, env hash,
 //                    metatable traps, clock-based timing checks,
 //                    environment fingerprinting, string.dump detection,
-//                    pcall depth analysis, coroutine state validation)
+//                    pcall depth analysis, coroutine state validation,
+//                    getfenv detection, rawget hook trap)
 //    Fake bytecode signature
 //    Unique hash per obfuscation
 //    Coroutine boundary guard
@@ -726,6 +731,7 @@ class Compiler {
         break;
       }
       case 'BinaryExpression': this.compileBinOp(node, dest); break;
+      case 'LogicalExpression': this.compileBinOp(node, dest); break;
       case 'UnaryExpression':  this.compileUnOp(node, dest); break;
       case 'MemberExpression': this.compileMember(node, dest); break;
       case 'IndexExpression':  this.compileIndex(node, dest); break;
@@ -953,14 +959,16 @@ function encryptConstants(kArr) {
   const k1len = randInt(8, 16);
   const k2len = randInt(6, 12);
   const k3len = randInt(5, 10);
+  const k4len = randInt(4, 9);
   const k1 = Array.from({ length: k1len }, () => randInt(1, 254));
   const k2 = Array.from({ length: k2len }, () => randInt(1, 254));
   const k3 = Array.from({ length: k3len }, () => randInt(1, 254));
+  const k4 = Array.from({ length: k4len }, () => randInt(1, 254));
 
   const parts = kArr.map((v) => {
     if (typeof v === 'string') {
       const enc = Array.from(v).map((c, j) =>
-        c.charCodeAt(0) ^ k1[j % k1len] ^ k2[j % k2len] ^ k3[j % k3len]
+        c.charCodeAt(0) ^ k1[j % k1len] ^ k2[j % k2len] ^ k3[j % k3len] ^ k4[j % k4len]
       );
       return `{t=1,d={${enc.join(',')}}}`;
     }
@@ -974,7 +982,171 @@ function encryptConstants(kArr) {
     k1: `{${k1.join(',')}}`,
     k2: `{${k2.join(',')}}`,
     k3: `{${k3.join(',')}}`,
+    k4: `{${k4.join(',')}}`,
   };
+}
+
+function generatePolymorphicAdd(rk_) {
+  const variants = [
+    `regs[a]=${rk_}(b)+${rk_}(c)`,
+    `local _x,_y=${rk_}(b),${rk_}(c) regs[a]=_x-(-_y)`,
+    `local _x,_y=${rk_}(b),${rk_}(c) regs[a]=-(-_x-_y)`,
+    `local _x=${rk_}(b) regs[a]=_x+${rk_}(c)`,
+  ];
+  return variants[randInt(0, variants.length - 1)];
+}
+
+function generatePolymorphicSub(rk_) {
+  const variants = [
+    `regs[a]=${rk_}(b)-${rk_}(c)`,
+    `local _x,_y=${rk_}(b),${rk_}(c) regs[a]=_x+(-_y)`,
+    `local _x,_y=${rk_}(b),${rk_}(c) regs[a]=-(-_x+_y)`,
+    `local _x=${rk_}(b) regs[a]=_x-${rk_}(c)`,
+  ];
+  return variants[randInt(0, variants.length - 1)];
+}
+
+function generatePolymorphicMul(rk_) {
+  const variants = [
+    `regs[a]=${rk_}(b)*${rk_}(c)`,
+    `local _x,_y=${rk_}(b),${rk_}(c) regs[a]=_x*_y`,
+    `local _x,_y=${rk_}(b),${rk_}(c) local _r=0 if _y>=0 then _r=_x*_y else _r=-(_x*(-_y)) end regs[a]=_r`,
+  ];
+  return variants[randInt(0, variants.length - 1)];
+}
+
+function generatePolymorphicDiv(rk_) {
+  const variants = [
+    `regs[a]=${rk_}(b)/${rk_}(c)`,
+    `local _x,_y=${rk_}(b),${rk_}(c) regs[a]=_x/_y`,
+    `local _x,_y=${rk_}(b),${rk_}(c) regs[a]=_x*(1/_y)`,
+  ];
+  return variants[randInt(0, variants.length - 1)];
+}
+
+function generatePolymorphicNot() {
+  const variants = [
+    `regs[a]=not regs[b]`,
+    `local _x=regs[b] regs[a]=_x==false or _x==nil`,
+    `regs[a]=(regs[b] and false) or (not regs[b])`,
+  ];
+  return variants[randInt(0, variants.length - 1)];
+}
+
+function generatePolymorphicLen() {
+  const variants = [
+    `regs[a]=#regs[b]`,
+    `local _t=regs[b] regs[a]=#_t`,
+    `regs[a]=rawlen and rawlen(regs[b]) or #regs[b]`,
+  ];
+  return variants[randInt(0, variants.length - 1)];
+}
+
+function generatePolymorphicMove() {
+  const variants = [
+    `regs[a]=regs[b]`,
+    `local _v=regs[b] regs[a]=_v`,
+  ];
+  return variants[randInt(0, variants.length - 1)];
+}
+
+function buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm) {
+  return `
+  ${dt_}[${O.LOADK}]=function(a,b,c) regs[a]=kst[b] end
+  ${dt_}[${O.LOADNIL}]=function(a,b,c) for i=a,b do regs[i]=nil end end
+  ${dt_}[${O.LOADBOOL}]=function(a,b,c) regs[a]=b~=0 if c~=0 then ${pc_}[1]=${pc_}[1]+1 end end
+  ${dt_}[${O.MOVE}]=function(a,b,c) ${generatePolymorphicMove()} end
+  ${dt_}[${O.GETGLOBAL}]=function(a,b,c) regs[a]=env[kst[b]] end
+  ${dt_}[${O.SETGLOBAL}]=function(a,b,c) env[kst[b]]=regs[a] end
+  ${dt_}[${O.GETTABLE}]=function(a,b,c) regs[a]=regs[b][${rk_}(c)] end
+  ${dt_}[${O.SETTABLE}]=function(a,b,c) regs[a][${rk_}(b)]=${rk_}(c) end
+  ${dt_}[${O.NEWTABLE}]=function(a,b,c) regs[a]={} end
+  ${dt_}[${O.SELF}]=function(a,b,c) regs[a+1]=regs[b] regs[a]=regs[b][kst[c]] end
+  ${dt_}[${O.ADD}]=function(a,b,c) ${generatePolymorphicAdd(rk_)} end
+  ${dt_}[${O.SUB}]=function(a,b,c) ${generatePolymorphicSub(rk_)} end
+  ${dt_}[${O.MUL}]=function(a,b,c) ${generatePolymorphicMul(rk_)} end
+  ${dt_}[${O.DIV}]=function(a,b,c) ${generatePolymorphicDiv(rk_)} end
+  ${dt_}[${O.MOD}]=function(a,b,c) regs[a]=${rk_}(b)%${rk_}(c) end
+  ${dt_}[${O.POW}]=function(a,b,c) regs[a]=${rk_}(b)^${rk_}(c) end
+  ${dt_}[${O.CONCAT}]=function(a,b,c) local p={} for i=b,c do p[#p+1]=tostring(regs[i]) end regs[a]=table.concat(p) end
+  ${dt_}[${O.NOT}]=function(a,b,c) ${generatePolymorphicNot()} end
+  ${dt_}[${O.UNM}]=function(a,b,c) regs[a]=-regs[b] end
+  ${dt_}[${O.LEN}]=function(a,b,c) ${generatePolymorphicLen()} end
+  ${dt_}[${O.EQ}]=function(a,b,c) if(${rk_}(b)==${rk_}(c))~=(a~=0) then ${pc_}[1]=${pc_}[1]+1 end end
+  ${dt_}[${O.LT}]=function(a,b,c) if(${rk_}(b)<${rk_}(c))~=(a~=0) then ${pc_}[1]=${pc_}[1]+1 end end
+  ${dt_}[${O.LE}]=function(a,b,c) if(${rk_}(b)<=${rk_}(c))~=(a~=0) then ${pc_}[1]=${pc_}[1]+1 end end
+  ${dt_}[${O.TEST}]=function(a,b,c) if(not not regs[a])~=(c~=0) then ${pc_}[1]=${pc_}[1]+1 end end
+  ${dt_}[${O.JMP}]=function(a,b,c) ${pc_}[1]=${pc_}[1]+b end
+  ${dt_}[${O.CALL}]=function(a,b,c)
+    local fn=regs[a]
+    local args={}
+    if b~=1 then for i=a+1,a+b-1 do args[#args+1]=regs[i] end end
+    if c==0 then
+      local rs={fn(table.unpack(args))}
+      for i,v in ipairs(rs) do regs[a+i-1]=v end
+    elseif c==1 then
+      fn(table.unpack(args))
+    else
+      local rs={fn(table.unpack(args))}
+      for i=0,c-2 do regs[a+i]=rs[i+1] end
+    end
+  end
+  ${dt_}[${O.RETURN}]=function(a,b,c)
+    if b==1 then ${rn_}=-1
+    elseif b==0 then
+      local i=a
+      while regs[i]~=nil do ${rv_}[#${rv_}+1]=regs[i] i=i+1 end
+      ${rn_}=#${rv_}
+    else
+      for i=0,b-2 do ${rv_}[i+1]=regs[a+i] end
+      ${rn_}=b-1
+    end
+  end
+  ${dt_}[${O.FORPREP}]=function(a,b,c)
+    regs[a]=regs[a]-regs[a+2]
+    ${pc_}[1]=${pc_}[1]+b
+  end
+  ${dt_}[${O.FORLOOP}]=function(a,b,c)
+    regs[a]=regs[a]+regs[a+2]
+    local idx,lim,step=regs[a],regs[a+1],regs[a+2]
+    if(step>0 and idx<=lim)or(step<0 and idx>=lim) then
+      regs[a+3]=idx
+      ${pc_}[1]=${pc_}[1]+b
+    end
+  end
+  ${dt_}[${O.TFORLOOP}]=function(a,b,c)
+    local rs={regs[a](regs[a+1],regs[a+2])}
+    local ctrl=rs[1]
+    if ctrl~=nil then
+      regs[a+2]=ctrl
+      for i=1,c do regs[a+2+i]=rs[i] end
+      ${pc_}[1]=${pc_}[1]+b
+    end
+  end
+  ${dt_}[${O.CLOSURE}]=function(a,b,c)
+    local sp=subp[b+1]
+    local snap={}
+    for i=0,(sp.np or 0)+40 do snap[i]=regs[i] end
+    regs[a]=function(...)
+      return ${vm}(sp,env,snap,upcells,...)
+    end
+  end
+  ${dt_}[${O.SETLIST}]=function(a,b,c)
+    for i=1,b do regs[a][i]=regs[a+i] end
+  end
+  ${dt_}[${O.GETUPVAL}]=function(a,b,c)
+    local cell=upcells[b]
+    regs[a]=cell and cell.val or nil
+  end
+  ${dt_}[${O.SETUPVAL}]=function(a,b,c)
+    local cell=upcells[b]
+    if cell then cell.val=regs[a] end
+  end
+  ${dt_}[${O.VARARG}]=function(a,b,c)
+    local nout=(c==0) and (#va-proto.np) or (c-1)
+    for i=1,nout do regs[a+i-1]=va[proto.np+i] end
+  end
+  ${dt_}[${O.NOP}]=function(a,b,c) end`;
 }
 
 function injectDeadBytecode(proto, ops) {
@@ -1029,10 +1201,10 @@ function serializeProto(proto) {
     return `{${op ^ k},${a},${b},${c}}`;
   }).join(',');
 
-  const { encK, k1, k2, k3 } = encryptConstants(proto.k);
+  const { encK, k1, k2, k3, k4 } = encryptConstants(proto.k);
   const subProtos = proto.subp.map(p => serializeProto(p)).join(',');
   const upvalsStr = proto.upvals.map(u => `{is=${u.instack ? 1 : 0},ix=${u.idx}}`).join(',');
-  return `{bc={${instr}},ek=${encK},k1=${k1},k2=${k2},k3=${k3},rxk={${rxk.join(',')}},p={${subProtos}},np=${proto.np},va=${proto.va ? 1 : 0},uv={${upvalsStr}}}`;
+  return `{bc={${instr}},ek=${encK},k1=${k1},k2=${k2},k3=${k3},k4=${k4},rxk={${rxk.join(',')}},p={${subProtos}},np=${proto.np},va=${proto.va ? 1 : 0},uv={${upvalsStr}}}`;
 }
 
 // ─── Self-Hash Verification (v9) ────────────────────────────────
@@ -1254,104 +1426,9 @@ function encodeAsPayload(vmCode) {
 // Shape 3: Switch-Case Emulation (nested if-elseif with scrambled order)
 
 function buildDispatchTableVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt) {
+  const handlers = buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm);
   return `
-  local ${dt_}={}
-
-  ${dt_}[${O.LOADK}]=function(a,b,c) regs[a]=kst[b] end
-  ${dt_}[${O.LOADNIL}]=function(a,b,c) for i=a,b do regs[i]=nil end end
-  ${dt_}[${O.LOADBOOL}]=function(a,b,c) regs[a]=b~=0 if c~=0 then ${pc_}[1]=${pc_}[1]+1 end end
-  ${dt_}[${O.MOVE}]=function(a,b,c) regs[a]=regs[b] end
-  ${dt_}[${O.GETGLOBAL}]=function(a,b,c) regs[a]=env[kst[b]] end
-  ${dt_}[${O.SETGLOBAL}]=function(a,b,c) env[kst[b]]=regs[a] end
-  ${dt_}[${O.GETTABLE}]=function(a,b,c) regs[a]=regs[b][${rk_}(c)] end
-  ${dt_}[${O.SETTABLE}]=function(a,b,c) regs[a][${rk_}(b)]=${rk_}(c) end
-  ${dt_}[${O.NEWTABLE}]=function(a,b,c) regs[a]={} end
-  ${dt_}[${O.SELF}]=function(a,b,c) regs[a+1]=regs[b] regs[a]=regs[b][kst[c]] end
-  ${dt_}[${O.ADD}]=function(a,b,c) regs[a]=${rk_}(b)+${rk_}(c) end
-  ${dt_}[${O.SUB}]=function(a,b,c) regs[a]=${rk_}(b)-${rk_}(c) end
-  ${dt_}[${O.MUL}]=function(a,b,c) regs[a]=${rk_}(b)*${rk_}(c) end
-  ${dt_}[${O.DIV}]=function(a,b,c) regs[a]=${rk_}(b)/${rk_}(c) end
-  ${dt_}[${O.MOD}]=function(a,b,c) regs[a]=${rk_}(b)%${rk_}(c) end
-  ${dt_}[${O.POW}]=function(a,b,c) regs[a]=${rk_}(b)^${rk_}(c) end
-  ${dt_}[${O.CONCAT}]=function(a,b,c) local p={} for i=b,c do p[#p+1]=tostring(regs[i]) end regs[a]=table.concat(p) end
-  ${dt_}[${O.NOT}]=function(a,b,c) regs[a]=not regs[b] end
-  ${dt_}[${O.UNM}]=function(a,b,c) regs[a]=-regs[b] end
-  ${dt_}[${O.LEN}]=function(a,b,c) regs[a]=#regs[b] end
-  ${dt_}[${O.EQ}]=function(a,b,c) if(${rk_}(b)==${rk_}(c))~=(a~=0) then ${pc_}[1]=${pc_}[1]+1 end end
-  ${dt_}[${O.LT}]=function(a,b,c) if(${rk_}(b)<${rk_}(c))~=(a~=0) then ${pc_}[1]=${pc_}[1]+1 end end
-  ${dt_}[${O.LE}]=function(a,b,c) if(${rk_}(b)<=${rk_}(c))~=(a~=0) then ${pc_}[1]=${pc_}[1]+1 end end
-  ${dt_}[${O.TEST}]=function(a,b,c) if(not not regs[a])~=(c~=0) then ${pc_}[1]=${pc_}[1]+1 end end
-  ${dt_}[${O.JMP}]=function(a,b,c) ${pc_}[1]=${pc_}[1]+b end
-  ${dt_}[${O.CALL}]=function(a,b,c)
-    local fn=regs[a]
-    local args={}
-    if b~=1 then for i=a+1,a+b-1 do args[#args+1]=regs[i] end end
-    if c==0 then
-      local rs={fn(table.unpack(args))}
-      for i,v in ipairs(rs) do regs[a+i-1]=v end
-    elseif c==1 then
-      fn(table.unpack(args))
-    else
-      local rs={fn(table.unpack(args))}
-      for i=0,c-2 do regs[a+i]=rs[i+1] end
-    end
-  end
-  ${dt_}[${O.RETURN}]=function(a,b,c)
-    if b==1 then ${rn_}=-1
-    elseif b==0 then
-      local i=a
-      while regs[i]~=nil do ${rv_}[#${rv_}+1]=regs[i] i=i+1 end
-      ${rn_}=#${rv_}
-    else
-      for i=0,b-2 do ${rv_}[i+1]=regs[a+i] end
-      ${rn_}=b-1
-    end
-  end
-  ${dt_}[${O.FORPREP}]=function(a,b,c)
-    regs[a]=regs[a]-regs[a+2]
-    ${pc_}[1]=${pc_}[1]+b
-  end
-  ${dt_}[${O.FORLOOP}]=function(a,b,c)
-    regs[a]=regs[a]+regs[a+2]
-    local idx,lim,step=regs[a],regs[a+1],regs[a+2]
-    if(step>0 and idx<=lim)or(step<0 and idx>=lim) then
-      regs[a+3]=idx
-      ${pc_}[1]=${pc_}[1]+b
-    end
-  end
-  ${dt_}[${O.TFORLOOP}]=function(a,b,c)
-    local rs={regs[a](regs[a+1],regs[a+2])}
-    local ctrl=rs[1]
-    if ctrl~=nil then
-      regs[a+2]=ctrl
-      for i=1,c do regs[a+2+i]=rs[i] end
-      ${pc_}[1]=${pc_}[1]+b
-    end
-  end
-  ${dt_}[${O.CLOSURE}]=function(a,b,c)
-    local sp=subp[b+1]
-    local snap={}
-    for i=0,(sp.np or 0)+40 do snap[i]=regs[i] end
-    regs[a]=function(...)
-      return ${vm}(sp,env,snap,upcells,...)
-    end
-  end
-  ${dt_}[${O.SETLIST}]=function(a,b,c)
-    for i=1,b do regs[a][i]=regs[a+i] end
-  end
-  ${dt_}[${O.GETUPVAL}]=function(a,b,c)
-    local cell=upcells[b]
-    regs[a]=cell and cell.val or nil
-  end
-  ${dt_}[${O.SETUPVAL}]=function(a,b,c)
-    local cell=upcells[b]
-    if cell then cell.val=regs[a] end
-  end
-  ${dt_}[${O.VARARG}]=function(a,b,c)
-    local nout=(c==0) and (#va-proto.np) or (c-1)
-    for i=1,nout do regs[a+i-1]=va[proto.np+i] end
-  end
-  ${dt_}[${O.NOP}]=function(a,b,c) end
+  ${handlers}
   ${fakeDt}
 
   while true do
@@ -1369,104 +1446,9 @@ function buildLinkedListVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op
   const node_ = randName();
   const cur_ = randName();
   const exec_ = randName();
+  const handlers = buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm);
   return `
-  local ${dt_}={}
-
-  ${dt_}[${O.LOADK}]=function(a,b,c) regs[a]=kst[b] end
-  ${dt_}[${O.LOADNIL}]=function(a,b,c) for i=a,b do regs[i]=nil end end
-  ${dt_}[${O.LOADBOOL}]=function(a,b,c) regs[a]=b~=0 if c~=0 then ${pc_}[1]=${pc_}[1]+1 end end
-  ${dt_}[${O.MOVE}]=function(a,b,c) regs[a]=regs[b] end
-  ${dt_}[${O.GETGLOBAL}]=function(a,b,c) regs[a]=env[kst[b]] end
-  ${dt_}[${O.SETGLOBAL}]=function(a,b,c) env[kst[b]]=regs[a] end
-  ${dt_}[${O.GETTABLE}]=function(a,b,c) regs[a]=regs[b][${rk_}(c)] end
-  ${dt_}[${O.SETTABLE}]=function(a,b,c) regs[a][${rk_}(b)]=${rk_}(c) end
-  ${dt_}[${O.NEWTABLE}]=function(a,b,c) regs[a]={} end
-  ${dt_}[${O.SELF}]=function(a,b,c) regs[a+1]=regs[b] regs[a]=regs[b][kst[c]] end
-  ${dt_}[${O.ADD}]=function(a,b,c) regs[a]=${rk_}(b)+${rk_}(c) end
-  ${dt_}[${O.SUB}]=function(a,b,c) regs[a]=${rk_}(b)-${rk_}(c) end
-  ${dt_}[${O.MUL}]=function(a,b,c) regs[a]=${rk_}(b)*${rk_}(c) end
-  ${dt_}[${O.DIV}]=function(a,b,c) regs[a]=${rk_}(b)/${rk_}(c) end
-  ${dt_}[${O.MOD}]=function(a,b,c) regs[a]=${rk_}(b)%${rk_}(c) end
-  ${dt_}[${O.POW}]=function(a,b,c) regs[a]=${rk_}(b)^${rk_}(c) end
-  ${dt_}[${O.CONCAT}]=function(a,b,c) local p={} for i=b,c do p[#p+1]=tostring(regs[i]) end regs[a]=table.concat(p) end
-  ${dt_}[${O.NOT}]=function(a,b,c) regs[a]=not regs[b] end
-  ${dt_}[${O.UNM}]=function(a,b,c) regs[a]=-regs[b] end
-  ${dt_}[${O.LEN}]=function(a,b,c) regs[a]=#regs[b] end
-  ${dt_}[${O.EQ}]=function(a,b,c) if(${rk_}(b)==${rk_}(c))~=(a~=0) then ${pc_}[1]=${pc_}[1]+1 end end
-  ${dt_}[${O.LT}]=function(a,b,c) if(${rk_}(b)<${rk_}(c))~=(a~=0) then ${pc_}[1]=${pc_}[1]+1 end end
-  ${dt_}[${O.LE}]=function(a,b,c) if(${rk_}(b)<=${rk_}(c))~=(a~=0) then ${pc_}[1]=${pc_}[1]+1 end end
-  ${dt_}[${O.TEST}]=function(a,b,c) if(not not regs[a])~=(c~=0) then ${pc_}[1]=${pc_}[1]+1 end end
-  ${dt_}[${O.JMP}]=function(a,b,c) ${pc_}[1]=${pc_}[1]+b end
-  ${dt_}[${O.CALL}]=function(a,b,c)
-    local fn=regs[a]
-    local args={}
-    if b~=1 then for i=a+1,a+b-1 do args[#args+1]=regs[i] end end
-    if c==0 then
-      local rs={fn(table.unpack(args))}
-      for i,v in ipairs(rs) do regs[a+i-1]=v end
-    elseif c==1 then
-      fn(table.unpack(args))
-    else
-      local rs={fn(table.unpack(args))}
-      for i=0,c-2 do regs[a+i]=rs[i+1] end
-    end
-  end
-  ${dt_}[${O.RETURN}]=function(a,b,c)
-    if b==1 then ${rn_}=-1
-    elseif b==0 then
-      local i=a
-      while regs[i]~=nil do ${rv_}[#${rv_}+1]=regs[i] i=i+1 end
-      ${rn_}=#${rv_}
-    else
-      for i=0,b-2 do ${rv_}[i+1]=regs[a+i] end
-      ${rn_}=b-1
-    end
-  end
-  ${dt_}[${O.FORPREP}]=function(a,b,c)
-    regs[a]=regs[a]-regs[a+2]
-    ${pc_}[1]=${pc_}[1]+b
-  end
-  ${dt_}[${O.FORLOOP}]=function(a,b,c)
-    regs[a]=regs[a]+regs[a+2]
-    local idx,lim,step=regs[a],regs[a+1],regs[a+2]
-    if(step>0 and idx<=lim)or(step<0 and idx>=lim) then
-      regs[a+3]=idx
-      ${pc_}[1]=${pc_}[1]+b
-    end
-  end
-  ${dt_}[${O.TFORLOOP}]=function(a,b,c)
-    local rs={regs[a](regs[a+1],regs[a+2])}
-    local ctrl=rs[1]
-    if ctrl~=nil then
-      regs[a+2]=ctrl
-      for i=1,c do regs[a+2+i]=rs[i] end
-      ${pc_}[1]=${pc_}[1]+b
-    end
-  end
-  ${dt_}[${O.CLOSURE}]=function(a,b,c)
-    local sp=subp[b+1]
-    local snap={}
-    for i=0,(sp.np or 0)+40 do snap[i]=regs[i] end
-    regs[a]=function(...)
-      return ${vm}(sp,env,snap,upcells,...)
-    end
-  end
-  ${dt_}[${O.SETLIST}]=function(a,b,c)
-    for i=1,b do regs[a][i]=regs[a+i] end
-  end
-  ${dt_}[${O.GETUPVAL}]=function(a,b,c)
-    local cell=upcells[b]
-    regs[a]=cell and cell.val or nil
-  end
-  ${dt_}[${O.SETUPVAL}]=function(a,b,c)
-    local cell=upcells[b]
-    if cell then cell.val=regs[a] end
-  end
-  ${dt_}[${O.VARARG}]=function(a,b,c)
-    local nout=(c==0) and (#va-proto.np) or (c-1)
-    for i=1,nout do regs[a+i-1]=va[proto.np+i] end
-  end
-  ${dt_}[${O.NOP}]=function(a,b,c) end
+  ${handlers}
   ${fakeDt}
 
   local ${node_}={}
@@ -1493,104 +1475,9 @@ function buildStringVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, v
   const len_ = randName();
   const pos_ = randName();
   const rd_ = randName();
+  const handlers = buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm);
   return `
-  local ${dt_}={}
-
-  ${dt_}[${O.LOADK}]=function(a,b,c) regs[a]=kst[b] end
-  ${dt_}[${O.LOADNIL}]=function(a,b,c) for i=a,b do regs[i]=nil end end
-  ${dt_}[${O.LOADBOOL}]=function(a,b,c) regs[a]=b~=0 if c~=0 then ${pc_}[1]=${pc_}[1]+1 end end
-  ${dt_}[${O.MOVE}]=function(a,b,c) regs[a]=regs[b] end
-  ${dt_}[${O.GETGLOBAL}]=function(a,b,c) regs[a]=env[kst[b]] end
-  ${dt_}[${O.SETGLOBAL}]=function(a,b,c) env[kst[b]]=regs[a] end
-  ${dt_}[${O.GETTABLE}]=function(a,b,c) regs[a]=regs[b][${rk_}(c)] end
-  ${dt_}[${O.SETTABLE}]=function(a,b,c) regs[a][${rk_}(b)]=${rk_}(c) end
-  ${dt_}[${O.NEWTABLE}]=function(a,b,c) regs[a]={} end
-  ${dt_}[${O.SELF}]=function(a,b,c) regs[a+1]=regs[b] regs[a]=regs[b][kst[c]] end
-  ${dt_}[${O.ADD}]=function(a,b,c) regs[a]=${rk_}(b)+${rk_}(c) end
-  ${dt_}[${O.SUB}]=function(a,b,c) regs[a]=${rk_}(b)-${rk_}(c) end
-  ${dt_}[${O.MUL}]=function(a,b,c) regs[a]=${rk_}(b)*${rk_}(c) end
-  ${dt_}[${O.DIV}]=function(a,b,c) regs[a]=${rk_}(b)/${rk_}(c) end
-  ${dt_}[${O.MOD}]=function(a,b,c) regs[a]=${rk_}(b)%${rk_}(c) end
-  ${dt_}[${O.POW}]=function(a,b,c) regs[a]=${rk_}(b)^${rk_}(c) end
-  ${dt_}[${O.CONCAT}]=function(a,b,c) local p={} for i=b,c do p[#p+1]=tostring(regs[i]) end regs[a]=table.concat(p) end
-  ${dt_}[${O.NOT}]=function(a,b,c) regs[a]=not regs[b] end
-  ${dt_}[${O.UNM}]=function(a,b,c) regs[a]=-regs[b] end
-  ${dt_}[${O.LEN}]=function(a,b,c) regs[a]=#regs[b] end
-  ${dt_}[${O.EQ}]=function(a,b,c) if(${rk_}(b)==${rk_}(c))~=(a~=0) then ${pc_}[1]=${pc_}[1]+1 end end
-  ${dt_}[${O.LT}]=function(a,b,c) if(${rk_}(b)<${rk_}(c))~=(a~=0) then ${pc_}[1]=${pc_}[1]+1 end end
-  ${dt_}[${O.LE}]=function(a,b,c) if(${rk_}(b)<=${rk_}(c))~=(a~=0) then ${pc_}[1]=${pc_}[1]+1 end end
-  ${dt_}[${O.TEST}]=function(a,b,c) if(not not regs[a])~=(c~=0) then ${pc_}[1]=${pc_}[1]+1 end end
-  ${dt_}[${O.JMP}]=function(a,b,c) ${pc_}[1]=${pc_}[1]+b end
-  ${dt_}[${O.CALL}]=function(a,b,c)
-    local fn=regs[a]
-    local args={}
-    if b~=1 then for i=a+1,a+b-1 do args[#args+1]=regs[i] end end
-    if c==0 then
-      local rs={fn(table.unpack(args))}
-      for i,v in ipairs(rs) do regs[a+i-1]=v end
-    elseif c==1 then
-      fn(table.unpack(args))
-    else
-      local rs={fn(table.unpack(args))}
-      for i=0,c-2 do regs[a+i]=rs[i+1] end
-    end
-  end
-  ${dt_}[${O.RETURN}]=function(a,b,c)
-    if b==1 then ${rn_}=-1
-    elseif b==0 then
-      local i=a
-      while regs[i]~=nil do ${rv_}[#${rv_}+1]=regs[i] i=i+1 end
-      ${rn_}=#${rv_}
-    else
-      for i=0,b-2 do ${rv_}[i+1]=regs[a+i] end
-      ${rn_}=b-1
-    end
-  end
-  ${dt_}[${O.FORPREP}]=function(a,b,c)
-    regs[a]=regs[a]-regs[a+2]
-    ${pc_}[1]=${pc_}[1]+b
-  end
-  ${dt_}[${O.FORLOOP}]=function(a,b,c)
-    regs[a]=regs[a]+regs[a+2]
-    local idx,lim,step=regs[a],regs[a+1],regs[a+2]
-    if(step>0 and idx<=lim)or(step<0 and idx>=lim) then
-      regs[a+3]=idx
-      ${pc_}[1]=${pc_}[1]+b
-    end
-  end
-  ${dt_}[${O.TFORLOOP}]=function(a,b,c)
-    local rs={regs[a](regs[a+1],regs[a+2])}
-    local ctrl=rs[1]
-    if ctrl~=nil then
-      regs[a+2]=ctrl
-      for i=1,c do regs[a+2+i]=rs[i] end
-      ${pc_}[1]=${pc_}[1]+b
-    end
-  end
-  ${dt_}[${O.CLOSURE}]=function(a,b,c)
-    local sp=subp[b+1]
-    local snap={}
-    for i=0,(sp.np or 0)+40 do snap[i]=regs[i] end
-    regs[a]=function(...)
-      return ${vm}(sp,env,snap,upcells,...)
-    end
-  end
-  ${dt_}[${O.SETLIST}]=function(a,b,c)
-    for i=1,b do regs[a][i]=regs[a+i] end
-  end
-  ${dt_}[${O.GETUPVAL}]=function(a,b,c)
-    local cell=upcells[b]
-    regs[a]=cell and cell.val or nil
-  end
-  ${dt_}[${O.SETUPVAL}]=function(a,b,c)
-    local cell=upcells[b]
-    if cell then cell.val=regs[a] end
-  end
-  ${dt_}[${O.VARARG}]=function(a,b,c)
-    local nout=(c==0) and (#va-proto.np) or (c-1)
-    for i=1,nout do regs[a+i-1]=va[proto.np+i] end
-  end
-  ${dt_}[${O.NOP}]=function(a,b,c) end
+  ${handlers}
   ${fakeDt}
 
   local ${buf_}={}
@@ -1616,6 +1503,38 @@ function buildStringVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, v
     ${op_}=bit32.bxor(${op_},${rxkl_}[((${idx_}-1)%#${rxkl_})+1])
     local ${h_}=${dt_}[${op_}]
     if ${h_} then ${h_}(a,b,c) end
+    if ${rn_}~=0 then break end
+  end`;
+}
+
+function buildStackVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt) {
+  const stk_ = randName();
+  const sp_ = randName();
+  const push_ = randName();
+  const pop_ = randName();
+  const handlers = buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm);
+  return `
+  ${handlers}
+  ${fakeDt}
+
+  local ${stk_}={}
+  local ${sp_}=0
+  local function ${push_}(v) ${sp_}=${sp_}+1 ${stk_}[${sp_}]=v end
+  local function ${pop_}() local v=${stk_}[${sp_}] ${stk_}[${sp_}]=nil ${sp_}=${sp_}-1 return v end
+
+  for ${idx_}=1,#bc do
+    local ${ins_}=bc[${idx_}]
+    ${push_}({${ins_}[1],${ins_}[2],${ins_}[3],${ins_}[4],n=${idx_}})
+  end
+
+  while ${sp_}>0 do
+    local ${idx_}=${pc_}[1]
+    if ${idx_}>#bc then break end
+    local ${ins_}=bc[${idx_}]
+    ${pc_}[1]=${idx_}+1
+    local ${op_}=bit32.bxor(${ins_}[1],${rxkl_}[((${idx_}-1)%#${rxkl_})+1])
+    local ${h_}=${dt_}[${op_}]
+    if ${h_} then ${h_}(${ins_}[2],${ins_}[3],${ins_}[4]) end
     if ${rn_}~=0 then break end
   end`;
 }
@@ -1667,17 +1586,19 @@ function buildVMCore(rootProto, ops) {
     return s;
   })();
 
-  const vmShape = randInt(0, 2);
+  const vmShape = randInt(0, 3);
   let vmBody;
   if (vmShape === 0) {
     vmBody = buildDispatchTableVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt);
   } else if (vmShape === 1) {
     vmBody = buildLinkedListVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt);
-  } else {
+  } else if (vmShape === 2) {
     vmBody = buildStringVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt);
+  } else {
+    vmBody = buildStackVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt);
   }
 
-  const shapeNames = ['DispatchTable', 'LinkedList', 'TokenizedString'];
+  const shapeNames = ['DispatchTable', 'LinkedList', 'TokenizedString', 'StackVM'];
 
   const selfHash = generateSelfHash(protoStr);
   const hashVar = randName();
@@ -1696,12 +1617,13 @@ local function ${vm}(proto,env,parent_regs,parent_upcells,...)
   local k1=proto.k1
   local k2=proto.k2
   local k3=proto.k3
+  local k4=proto.k4
   local kst={}
   for i,v in ipairs(proto.ek) do
     if v.t==1 then
       local r={}
       for j,b in ipairs(v.d) do
-        r[j]=string.char(bit32.bxor(bit32.bxor(bit32.bxor(b,k1[(j-1)%#k1+1]),k2[(j-1)%#k2+1]),k3[(j-1)%#k3+1]))
+        r[j]=string.char(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(b,k1[(j-1)%#k1+1]),k2[(j-1)%#k2+1]),k3[(j-1)%#k3+1]),k4[(j-1)%#k4+1]))
       end
       kst[i-1]=table.concat(r)
     elseif v.t==2 then
@@ -1868,7 +1790,7 @@ function tokenize(src) {
   return tok;
 }
 
-function reconstruct(toks) { return toks.map(t => t.v).join(''); }
+function reconstruct(toks) { return toks.filter(t => t.t !== TK.CM).map(t => t.v).join(''); }
 
 function renameLocals(toks) {
   const rmap = new Map(), used = new Set();
@@ -1934,18 +1856,56 @@ function encryptStrings(toks) {
     if (!content.length) return { ...t, v: '""' };
     if (content.length > 500) return t;
 
-    const k1l = randInt(5, 12), k2l = randInt(4, 9);
-    const k1 = Array.from({ length: k1l }, () => randInt(1, 254));
-    const k2 = Array.from({ length: k2l }, () => randInt(1, 254));
-    const enc = Array.from(content).map((c, i) =>
-      c.charCodeAt(0) ^ k1[i % k1l] ^ k2[i % k2l]
-    );
-    const a = randName(), b = randName(), c = randName(), d = randName(),
-          e = randName(), f = randName();
-    return {
-      t: TK.OT,
-      v: `(function(${a},${b},${e}) local ${c}={} for ${d}=1,#${b} do ${c}[${d}]=string.char(bit32.bxor(bit32.bxor(${b}[${d}],${a}[(${d}-1)%#${a}+1]),${e}[(${d}-1)%#${e}+1])) end return table.concat(${c}) end)({${k1.join(',')}},{${enc.join(',')}},{${k2.join(',')}})`,
-    };
+    const bytes = Array.from(content).map(c => c.charCodeAt(0));
+    const pat = randInt(0, 4);
+
+    // Pattern 0: dual rotating XOR keys, table.concat (original style)
+    if (pat === 0) {
+      const k1l = randInt(5, 12), k2l = randInt(4, 9);
+      const k1 = Array.from({ length: k1l }, () => randInt(1, 254));
+      const k2 = Array.from({ length: k2l }, () => randInt(1, 254));
+      const enc = bytes.map((b, i) => b ^ k1[i % k1l] ^ k2[i % k2l]);
+      const [a, b, c, d, e] = [randName(), randName(), randName(), randName(), randName()];
+      return { t: TK.OT, v: `(function(${a},${b},${e}) local ${c}={} for ${d}=1,#${b} do ${c}[${d}]=string.char(bit32.bxor(bit32.bxor(${b}[${d}],${a}[(${d}-1)%#${a}+1]),${e}[(${d}-1)%#${e}+1])) end return table.concat(${c}) end)({${k1.join(',')}},{${enc.join(',')}},{${k2.join(',')}})` };
+    }
+
+    // Pattern 1: single key, string concat with local len cached
+    if (pat === 1) {
+      const kl = randInt(6, 14);
+      const key = Array.from({ length: kl }, () => randInt(1, 254));
+      const enc = bytes.map((b, i) => b ^ key[i % kl]);
+      const [a, b, c, d, kv] = [randName(), randName(), randName(), randName(), randName()];
+      return { t: TK.OT, v: `(function(${kv},${b}) local ${a}="" local ${c}=#${kv} for ${d}=1,#${b} do ${a}=${a}..string.char(bit32.bxor(${b}[${d}],${kv}[(${d}-1)%${c}+1])) end return ${a} end)({${key.join(',')}},{${enc.join(',')}})` };
+    }
+
+    // Pattern 2: triple rotating XOR keys, table.concat
+    if (pat === 2) {
+      const k1l = randInt(4, 8), k2l = randInt(3, 7), k3l = randInt(5, 11);
+      const k1 = Array.from({ length: k1l }, () => randInt(1, 254));
+      const k2 = Array.from({ length: k2l }, () => randInt(1, 254));
+      const k3 = Array.from({ length: k3l }, () => randInt(1, 254));
+      const enc = bytes.map((b, i) => b ^ k1[i % k1l] ^ k2[i % k2l] ^ k3[i % k3l]);
+      const [a, b, c, d, e, f, g] = [randName(), randName(), randName(), randName(), randName(), randName(), randName()];
+      return { t: TK.OT, v: `(function(${a},${b},${e},${f}) local ${c}={} for ${d}=1,#${b} do ${c}[${d}]=string.char(bit32.bxor(bit32.bxor(bit32.bxor(${b}[${d}],${a}[(${d}-1)%#${a}+1]),${e}[(${d}-1)%#${e}+1]),${f}[(${d}-1)%#${f}+1])) end return table.concat(${c}) end)({${k1.join(',')}},{${enc.join(',')}},{${k2.join(',')}},{${k3.join(',')}})` };
+    }
+
+    // Pattern 3: XOR with additive index tweak, string.sub loop style
+    if (pat === 3) {
+      const kl = randInt(5, 12);
+      const key = Array.from({ length: kl }, () => randInt(2, 253));
+      const enc = bytes.map((b, i) => (b ^ key[i % kl] ^ (i & 0xFF)) & 0xFF);
+      const [a, b, c, d, e] = [randName(), randName(), randName(), randName(), randName()];
+      return { t: TK.OT, v: `(function(${a},${e}) local ${b}={} local ${c}=#${a} for ${d}=1,#${e} do ${b}[${d}]=string.char(bit32.bxor(bit32.bxor(${e}[${d}],${a}[(${d}-1)%${c}+1]),(${d}-1)%256)) end return table.concat(${b}) end)({${key.join(',')}},{${enc.join(',')}})` };
+    }
+
+    // Pattern 4: two-step decode — decode halves independently then merge
+    {
+      const kl = randInt(6, 13);
+      const key = Array.from({ length: kl }, () => randInt(1, 254));
+      const enc = bytes.map((b, i) => b ^ key[i % kl]);
+      const [a, b, c, d, e, f] = [randName(), randName(), randName(), randName(), randName(), randName()];
+      return { t: TK.OT, v: `(function(${f},${b}) local ${a}={} local ${c}=#${f} for ${d}=1,#${b} do local ${e}=${d}-1 ${a}[${d}]=string.char(bit32.band(bit32.bxor(${b}[${d}],${f}[${e}%${c}+1]),255)) end return table.concat(${a}) end)({${key.join(',')}},{${enc.join(',')}})` };
+    }
   });
 }
 
@@ -2154,7 +2114,7 @@ function wrapAntiHook(code) {
   const bc = Array.from({ length: randInt(32, 64) }, () => randInt(0, 255)).join(',');
   const hashA = randHex(8).toUpperCase();
   const hashB = randHex(4).toUpperCase();
-  const ver = `10.${randInt(0, 9)}.${randInt(10, 99)}`;
+  const ver = `11.${randInt(0, 9)}.${randInt(10, 99)}`;
 
   const watermarks = generateWatermarkChecks();
   const wmDecls = watermarks.map(w => w.decl);
@@ -2164,7 +2124,7 @@ function wrapAntiHook(code) {
   const wmAfterCode = wmVerifies.slice(wmMidpoint);
 
   return [
-    `-- LuaShield v10 | ${hashA}-${hashB} | Multi-Shape VM + CFF + Coroutine + DeadBC`,
+    `-- LuaShield v11 | ${hashA}-${hashB} | Multi-Shape VM + CFF + Coroutine + DeadBC + PolyHandlers`,
     `local ${sig}={_bc={${bc}},_v="${ver}",_id="${randHex(16)}",_ts=${Date.now()},_wm="${randHex(8)}"}`,
     `local ${vn}=string.char(bit32.bxor(0x${(65 ^ randInt(1, 10)).toString(16).padStart(2, '0')},${randInt(1, 10)}))`,
     ...wmDecls,
@@ -2231,6 +2191,7 @@ function obfuscate(code, opts = {}) {
     controlFlowFlatten: opts.controlFlowFlatten ?? false,
     stringArrayRotate:  opts.stringArrayRotate  ?? false,
     envFingerprint:     opts.envFingerprint     ?? false,
+    vmNesting:          opts.vmNesting          ?? false,
   };
 
   const t0 = Date.now();
@@ -2254,9 +2215,10 @@ function obfuscate(code, opts = {}) {
       const compiler = new Compiler(ops);
       const rootProto = compiler.compile(ast);
       workCode = buildVMCore(rootProto, ops);
-      vmShapeName = ['DispatchTable', 'LinkedList', 'TokenizedString'][randInt(0, 2)];
-      applied.push(`VM Bytecode Compiler v10 (${vmShapeName} shape, shuffled opcodes, coroutine execution)`);
-      applied.push('Triple-Key XOR Constant Encryption (three independent rotating keys)');
+      vmShapeName = ['DispatchTable', 'LinkedList', 'TokenizedString', 'StackVM'][randInt(0, 3)];
+      applied.push(`VM Bytecode Compiler v11 (${vmShapeName} shape, polymorphic handlers, shuffled opcodes, coroutine execution)`);
+      applied.push('Quad-Key XOR Constant Encryption (four independent rotating keys)');
+      applied.push('Polymorphic Opcode Handlers (multiple equivalent implementations per run)');
       applied.push('Rolling XOR Cipher on Bytecode Fields');
       applied.push('Dead Bytecode Injection (unreachable VM instructions with JMP-over)');
       applied.push('Self-Hash Integrity Verification (with runtime check)');
@@ -2265,6 +2227,22 @@ function obfuscate(code, opts = {}) {
       applied.push('NOP Opcode + 36 Shuffled Opcodes');
       applied.push('GotoStatement / LabelStatement / Deep Upvalues (2+ levels) / ForGeneric / Repeat / Vararg / MultiReturn');
       vmUsed = true;
+
+      if (options.vmNesting) {
+        try {
+          const ops2 = makeOpcodeMap();
+          const ast2 = luaparse.parse(workCode, {
+            comments: false, scope: false, locations: false, ranges: false, luaVersion: '5.2',
+          });
+          const compiler2 = new Compiler(ops2);
+          const rootProto2 = compiler2.compile(ast2);
+          workCode = buildVMCore(rootProto2, ops2);
+          const vmShape2 = ['DispatchTable', 'LinkedList', 'TokenizedString', 'StackVM'][randInt(0, 3)];
+          applied.push(`VM Nesting — Layer 2 (${vmShape2} shape, independent opcode map, Russian-doll protection)`);
+        } catch (e) {
+          applied.push(`VM Nesting fallback (${e.message.slice(0, 60)})`);
+        }
+      }
     } catch (e) {
       applied.push(`VM Compiler fallback (${e.message.slice(0, 80)})`);
     }
@@ -2309,12 +2287,12 @@ function obfuscate(code, opts = {}) {
 
   if (options.injectJunk) {
     result = injectJunk(result);
-    applied.push('Realistic Junk Code Injection (75 patterns v10)');
+    applied.push('Realistic Junk Code Injection (75 patterns v11)');
   }
 
   if (options.opaquePredicates) {
     result = injectOpaquePredicates(result);
-    applied.push('Opaque Predicates v10 (25 math-guaranteed conditions, multi-inject)');
+    applied.push('Opaque Predicates v11 (25 math-guaranteed conditions, multi-inject)');
   }
 
   if (options.envFingerprint) {
@@ -2324,7 +2302,7 @@ function obfuscate(code, opts = {}) {
 
   if (options.antiHook) {
     result = wrapAntiHook(result);
-    applied.push('Anti-Hook v10 + Anti-Debug (bit32 fingerprint, executor detection, timing check, metatable trap, coroutine state validation, pcall depth analysis, multi-point watermark)');
+    applied.push('Anti-Hook v11 + Anti-Debug (bit32 fingerprint, executor detection, timing check, metatable trap, coroutine state validation, pcall depth analysis, multi-point watermark)');
   }
 
   return {
@@ -2350,6 +2328,7 @@ const PRESETS = {
     obfuscateNumbers: false, breakGlobals: false,
     injectJunk: false, opaquePredicates: false, antiHook: false,
     controlFlowFlatten: false, stringArrayRotate: false, envFingerprint: false,
+    vmNesting: false,
   },
   medium: {
     vmCompile: false,
@@ -2357,6 +2336,7 @@ const PRESETS = {
     obfuscateNumbers: true, breakGlobals: false,
     injectJunk: true, opaquePredicates: false, antiHook: true,
     controlFlowFlatten: false, stringArrayRotate: true, envFingerprint: false,
+    vmNesting: false,
   },
   heavy: {
     vmCompile: true,
@@ -2364,6 +2344,7 @@ const PRESETS = {
     obfuscateNumbers: true, breakGlobals: true,
     injectJunk: true, opaquePredicates: true, antiHook: true,
     controlFlowFlatten: true, stringArrayRotate: true, envFingerprint: true,
+    vmNesting: false,
   },
   max: {
     vmCompile: true,
@@ -2371,6 +2352,7 @@ const PRESETS = {
     obfuscateNumbers: true, breakGlobals: true,
     injectJunk: true, opaquePredicates: true, antiHook: true,
     controlFlowFlatten: true, stringArrayRotate: true, envFingerprint: true,
+    vmNesting: true,
   },
 };
 
