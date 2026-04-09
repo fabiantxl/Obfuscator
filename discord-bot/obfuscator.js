@@ -1003,6 +1003,7 @@ function encryptConstants(kArr) {
     return `{t=4,d=nil}`;
   });
 
+  const realCount = parts.length;
   for (const fc of fakeConstants) {
     parts.push(fc);
   }
@@ -1015,7 +1016,7 @@ function encryptConstants(kArr) {
     k4: `{${k4.join(',')}}`,
     k5: `{${k5.join(',')}}`,
     nFake,
-    fakePositions: insertPositions.map(ip => ip.pos),
+    realCount,
   };
 }
 
@@ -1393,13 +1394,14 @@ function flattenControlFlow(code) {
   let terminalState;
   do { terminalState = randInt(100, 9999); } while (usedStates.has(terminalState));
 
-  const cases = chunks.map((c, i) => {
-    const nextState = i < chunks.length - 1 ? stateMap[i + 1] : terminalState;
-    return `if ${stateVar}==${stateMap[i]} then\n${c}\n${stateVar}=${nextState}`;
+  const shuffledOrder = shuffle(Array.from({ length: chunks.length }, (_, i) => i));
+  const cases = shuffledOrder.map((ci, pos) => {
+    const nextState = ci < chunks.length - 1 ? stateMap[ci + 1] : terminalState;
+    const kw = pos === 0 ? 'if' : 'elseif';
+    return `${kw} ${stateVar}==${stateMap[ci]} then\n${chunks[ci]}\n${stateVar}=${nextState}`;
   });
 
-  const shuffledCases = shuffle(cases);
-  const dispatcher = shuffledCases.join('\nelse');
+  const dispatcher = cases.join('\n');
 
   return `local ${stateVar}=${stateMap[0]}\nlocal ${loopVar}=true\nwhile ${loopVar} do\n${dispatcher}\nelse\n${loopVar}=false\nend\nend`;
 }
@@ -1409,6 +1411,11 @@ function flattenControlFlow(code) {
 // with index lookups. Makes string analysis much harder.
 
 function rotateStringArray(toks) {
+  // Safety: skip rotation on single-line scripts over 50k chars (already minified/obfuscated)
+  const rawCode = toks.map(t => t.v).join('');
+  const lines = rawCode.split('\n');
+  if (lines.some(l => l.length > 50000)) return null;
+
   const strings = [];
   const indices = [];
 
@@ -1652,6 +1659,8 @@ function buildVMCore(rootProto, ops) {
     return s;
   })();
 
+  const unpack_ = randName();
+
   const vmShape = randInt(0, 3);
   let vmBody;
   if (vmShape === 0) {
@@ -1672,8 +1681,6 @@ function buildVMCore(rootProto, ops) {
   const integrityB = (bcCount ^ subCount ^ 0xA5) & 0xFF;
   const hashVar = randName();
   const hashChk = randName();
-
-  const unpack_ = randName();
   const vmCode = `
 local ${unpack_}=table.unpack or unpack
 local function ${vm}(proto,env,parent_regs,parent_upcells,...)
@@ -2226,12 +2233,40 @@ const JUNK = [
   () => { const a = randName(); return `do local ${a}=string.format("%d",math.max(${randInt(0,9)},${randInt(0,9)})) end`; },
 ];
 
+// Returns indices where nesting depth == 0 (safe to inject top-level statements).
+function findSafeInsertionPoints(lines) {
+  let blockDepth = 0, parenDepth = 0, braceDepth = 0;
+  const safe = [];
+  for (let i = 0; i < lines.length; i++) {
+    const t = lines[i].trim();
+    if (!t.startsWith('--')) {
+      blockDepth += (t.match(/\bthen\b/g) || []).length;
+      blockDepth -= (t.match(/\belseif\b/g) || []).length;
+      blockDepth += (t.match(/\bdo\b/g) || []).length;
+      blockDepth += (t.match(/\bfunction\b/g) || []).length;
+      blockDepth += (t.match(/\brepeat\b/g) || []).length;
+      blockDepth -= (t.match(/\bend\b/g) || []).length;
+      blockDepth -= (t.match(/\buntil\b/g) || []).length;
+      for (const ch of t) {
+        if (ch === '(') parenDepth++;
+        else if (ch === ')') parenDepth = Math.max(0, parenDepth - 1);
+        else if (ch === '{') braceDepth++;
+        else if (ch === '}') braceDepth = Math.max(0, braceDepth - 1);
+      }
+    }
+    if (blockDepth === 0 && parenDepth === 0 && braceDepth === 0) {
+      safe.push(i);
+    }
+  }
+  return safe;
+}
+
 function injectJunk(code) {
   const lines = code.split('\n'), out = [];
-  for (const l of lines) {
-    out.push(l);
-    const tr = l.trim();
-    if (Math.random() < 0.25 && (tr.endsWith('end') || tr.startsWith('local ') || tr === '')) {
+  const safe = new Set(findSafeInsertionPoints(lines));
+  for (let i = 0; i < lines.length; i++) {
+    out.push(lines[i]);
+    if (Math.random() < 0.25 && safe.has(i)) {
       out.push(JUNK[randInt(0, JUNK.length - 1)]());
     }
   }
@@ -2278,11 +2313,21 @@ function injectOpaquePredicates(code) {
     () => { const a = randInt(2,8); return `if ${a}%1~=0 then error("",0) end`; },
   ];
   const lines = code.split('\n');
+  const safePoints = findSafeInsertionPoints(lines);
+  if (safePoints.length === 0) return code;
   const nPreds = randInt(3, 6);
+  let offset = 0;
+  const chosen = [];
+  const nSafe = safePoints.length;
   for (let p = 0; p < nPreds; p++) {
-    const insertAt = Math.floor(lines.length * (0.1 + Math.random() * 0.6));
+    const si = safePoints[randInt(Math.floor(nSafe * 0.1), Math.floor(nSafe * 0.9))];
+    chosen.push(si);
+  }
+  chosen.sort((a, b) => a - b);
+  for (const si of chosen) {
     const pred = preds[randInt(0, preds.length - 1)]();
-    lines.splice(insertAt, 0, pred);
+    lines.splice(si + 1 + offset, 0, pred);
+    offset++;
   }
   return lines.join('\n');
 }
@@ -2306,11 +2351,11 @@ const DEAD_PATHS = [
 
 function injectDeadCodePaths(code) {
   const lines = code.split('\n');
+  const safe = new Set(findSafeInsertionPoints(lines));
   const out = [];
-  for (const l of lines) {
-    out.push(l);
-    const tr = l.trim();
-    if (Math.random() < 0.12 && (tr === 'end' || tr === 'end,' || tr.startsWith('local function') || tr.startsWith('do'))) {
+  for (let i = 0; i < lines.length; i++) {
+    out.push(lines[i]);
+    if (Math.random() < 0.12 && safe.has(i)) {
       out.push(DEAD_PATHS[randInt(0, DEAD_PATHS.length - 1)]());
     }
   }
@@ -2634,56 +2679,7 @@ const PRESETS = {
 };
 
 module.exports = { obfuscate, PRESETS };
-ntity, honeypot trap)');
-  }
-
-  return {
-    code: result,
-    stats: {
-      originalSize: origSize,
-      obfuscatedSize: result.length,
-      sizeRatio: (result.length / origSize).toFixed(2),
-      techniquesApplied: applied,
-      processingTimeMs: Date.now() - t0,
-      vmUsed,
-      vmShape: vmShapeName || 'N/A',
-    },
-  };
-}
-
-// ─── Presets ───────────────────────────────────────────────────
-
-const PRESETS = {
-  light: {
-    vmCompile: false,
-    renameVars: true, encryptStrings: true,
-    obfuscateNumbers: false, breakGlobals: false,
-    injectJunk: false, opaquePredicates: false, antiHook: false,
-    controlFlowFlatten: false, stringArrayRotate: false, envFingerprint: false,
-    vmNesting: false, deadCodePaths: false,
-  },
-  medium: {
-    vmCompile: false,
-    renameVars: true, encryptStrings: true,
-    obfuscateNumbers: true, breakGlobals: false,
-    injectJunk: true, opaquePredicates: false, antiHook: true,
-    controlFlowFlatten: false, stringArrayRotate: true, envFingerprint: false,
-    vmNesting: false, deadCodePaths: false,
-  },
-  heavy: {
-    vmCompile: true,
-    renameVars: true, encryptStrings: true,
-    obfuscateNumbers: true, breakGlobals: true,
-    injectJunk: true, opaquePredicates: true, antiHook: true,
-    controlFlowFlatten: true, stringArrayRotate: true, envFingerprint: true,
-    vmNesting: false, deadCodePaths: true,
-  },
-  max: {
-    vmCompile: true,
-    renameVars: true, encryptStrings: true,
-    obfuscateNumbers: true, breakGlobals: true,
-    injectJunk: true, opaquePredicates: true, antiHook: true,
-    controlFlowFlatten: true, stringArrayRotate: true, envFingerprint: true,
+true, stringArrayRotate: true, envFingerprint: true,
     vmNesting: true, tripleNesting: false, deadCodePaths: true,
   },
   ultra: {
