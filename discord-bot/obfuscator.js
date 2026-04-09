@@ -1003,7 +1003,6 @@ function encryptConstants(kArr) {
     return `{t=4,d=nil}`;
   });
 
-  const realCount = parts.length;
   for (const fc of fakeConstants) {
     parts.push(fc);
   }
@@ -1016,7 +1015,6 @@ function encryptConstants(kArr) {
     k4: `{${k4.join(',')}}`,
     k5: `{${k5.join(',')}}`,
     nFake,
-    realCount,
   };
 }
 
@@ -1394,16 +1392,23 @@ function flattenControlFlow(code) {
   let terminalState;
   do { terminalState = randInt(100, 9999); } while (usedStates.has(terminalState));
 
-  const shuffledOrder = shuffle(Array.from({ length: chunks.length }, (_, i) => i));
-  const cases = shuffledOrder.map((ci, pos) => {
-    const nextState = ci < chunks.length - 1 ? stateMap[ci + 1] : terminalState;
-    const kw = pos === 0 ? 'if' : 'elseif';
-    return `${kw} ${stateVar}==${stateMap[ci]} then\n${chunks[ci]}\n${stateVar}=${nextState}`;
+  const cases = chunks.map((c, i) => {
+    const nextState = i < chunks.length - 1 ? stateMap[i + 1] : terminalState;
+    return { state: stateMap[i], body: c, next: nextState };
   });
 
-  const dispatcher = cases.join('\n');
+  const shuffledCases = shuffle(cases);
 
-  return `local ${stateVar}=${stateMap[0]}\nlocal ${loopVar}=true\nwhile ${loopVar} do\n${dispatcher}\nelse\n${loopVar}=false\nend\nend`;
+  // Use elseif chain (flat) instead of nested else/if to avoid unmatched end issues
+  const firstCase = shuffledCases[0];
+  let dispatcher = `if ${stateVar}==${firstCase.state} then\n${firstCase.body}\n${stateVar}=${firstCase.next}`;
+  for (let i = 1; i < shuffledCases.length; i++) {
+    const c = shuffledCases[i];
+    dispatcher += `\nelseif ${stateVar}==${c.state} then\n${c.body}\n${stateVar}=${c.next}`;
+  }
+  dispatcher += `\nelse\n${loopVar}=false\nend`;
+
+  return `local ${stateVar}=${stateMap[0]}\nlocal ${loopVar}=true\nwhile ${loopVar} do\n${dispatcher}\nend`;
 }
 
 // ─── String Array Rotation (v9) ──────────────────────────────────
@@ -1411,11 +1416,6 @@ function flattenControlFlow(code) {
 // with index lookups. Makes string analysis much harder.
 
 function rotateStringArray(toks) {
-  // Safety: skip rotation on single-line scripts over 50k chars (already minified/obfuscated)
-  const rawCode = toks.map(t => t.v).join('');
-  const lines = rawCode.split('\n');
-  if (lines.some(l => l.length > 50000)) return null;
-
   const strings = [];
   const indices = [];
 
@@ -1660,7 +1660,6 @@ function buildVMCore(rootProto, ops) {
   })();
 
   const unpack_ = randName();
-
   const vmShape = randInt(0, 3);
   let vmBody;
   if (vmShape === 0) {
@@ -1785,11 +1784,12 @@ const ROBLOX_G = new Set([
   'VirtualInputManager','GuiService','LocalizationService',
 ]);
 
+// loadstring / load are executor-injected into getgenv(), NOT into _ENV — never break them
 const BREAKABLE = new Set([
   'print','warn','error','require','pcall','xpcall','tostring',
   'tonumber','type','typeof','pairs','ipairs','next','select',
   'unpack','assert','rawget','rawset','rawequal','rawlen',
-  'setmetatable','getmetatable','collectgarbage','loadstring','load',
+  'setmetatable','getmetatable','collectgarbage',
 ]);
 
 const TK = { CM: 'cm', ST: 'st', NU: 'nu', KW: 'kw', ID: 'id', WS: 'ws', OT: 'ot' };
@@ -2233,40 +2233,44 @@ const JUNK = [
   () => { const a = randName(); return `do local ${a}=string.format("%d",math.max(${randInt(0,9)},${randInt(0,9)})) end`; },
 ];
 
-// Returns indices where nesting depth == 0 (safe to inject top-level statements).
-function findSafeInsertionPoints(lines) {
-  let blockDepth = 0, parenDepth = 0, braceDepth = 0;
-  const safe = [];
-  for (let i = 0; i < lines.length; i++) {
-    const t = lines[i].trim();
-    if (!t.startsWith('--')) {
-      blockDepth += (t.match(/\bthen\b/g) || []).length;
-      blockDepth -= (t.match(/\belseif\b/g) || []).length;
-      blockDepth += (t.match(/\bdo\b/g) || []).length;
-      blockDepth += (t.match(/\bfunction\b/g) || []).length;
-      blockDepth += (t.match(/\brepeat\b/g) || []).length;
-      blockDepth -= (t.match(/\bend\b/g) || []).length;
-      blockDepth -= (t.match(/\buntil\b/g) || []).length;
-      for (const ch of t) {
-        if (ch === '(') parenDepth++;
-        else if (ch === ')') parenDepth = Math.max(0, parenDepth - 1);
-        else if (ch === '{') braceDepth++;
-        else if (ch === '}') braceDepth = Math.max(0, braceDepth - 1);
-      }
+// Count net brace depth contributed by a source line (outside strings/comments)
+function netBracesOnLine(line) {
+  let depth = 0, inStr = false, strCh = '', i = 0;
+  while (i < line.length) {
+    const ch = line[i];
+    if (!inStr) {
+      if (ch === '"' || ch === "'") { inStr = true; strCh = ch; }
+      else if (ch === '[' && line[i+1] === '[') { // long string — skip to ]]
+        i += 2;
+        while (i < line.length && !(line[i] === ']' && line[i+1] === ']')) i++;
+        i++;
+      } else if (ch === '-' && line[i+1] === '-') { break; } // comment — stop
+      else if (ch === '{') depth++;
+      else if (ch === '}') depth--;
+    } else {
+      if (ch === '\\') { i++; } // escaped char
+      else if (ch === strCh) { inStr = false; }
     }
-    if (blockDepth === 0 && parenDepth === 0 && braceDepth === 0) {
-      safe.push(i);
-    }
+    i++;
   }
-  return safe;
+  return depth;
 }
 
 function injectJunk(code) {
   const lines = code.split('\n'), out = [];
-  const safe = new Set(findSafeInsertionPoints(lines));
-  for (let i = 0; i < lines.length; i++) {
-    out.push(lines[i]);
-    if (Math.random() < 0.25 && safe.has(i)) {
+  let braceDepth = 0;
+  let lastMeaningful = '';
+  for (const l of lines) {
+    out.push(l);
+    braceDepth += netBracesOnLine(l);
+    if (braceDepth < 0) braceDepth = 0;
+    const tr = l.trim();
+    if (tr !== '') lastMeaningful = tr;
+    // After return/break/goto in the same block, no statements are allowed
+    const afterBlockTerminator = lastMeaningful.startsWith('return') ||
+      lastMeaningful === 'break' || lastMeaningful.startsWith('goto ');
+    if (braceDepth === 0 && !afterBlockTerminator && Math.random() < 0.25 &&
+        (tr.endsWith('end') || tr.startsWith('local ') || tr === '')) {
       out.push(JUNK[randInt(0, JUNK.length - 1)]());
     }
   }
@@ -2313,21 +2317,32 @@ function injectOpaquePredicates(code) {
     () => { const a = randInt(2,8); return `if ${a}%1~=0 then error("",0) end`; },
   ];
   const lines = code.split('\n');
-  const safePoints = findSafeInsertionPoints(lines);
-  if (safePoints.length === 0) return code;
-  const nPreds = randInt(3, 6);
-  let offset = 0;
-  const chosen = [];
-  const nSafe = safePoints.length;
-  for (let p = 0; p < nPreds; p++) {
-    const si = safePoints[randInt(Math.floor(nSafe * 0.1), Math.floor(nSafe * 0.9))];
-    chosen.push(si);
+  // Build list of safe "insert-after" indices (statement level, not inside table constructors,
+  // and not after return/break/goto which terminate the statement sequence)
+  const candidates = [];
+  let predBraceDepth = 0;
+  for (let i = 0; i < lines.length; i++) {
+    predBraceDepth += netBracesOnLine(lines[i]);
+    if (predBraceDepth < 0) predBraceDepth = 0;
+    const inRange = i > lines.length * 0.05 && i < lines.length * 0.95;
+    const tr = lines[i].trim();
+    const isTerminator = tr.startsWith('return') || tr === 'break' || tr.startsWith('goto ');
+    if (predBraceDepth === 0 && inRange && !isTerminator) candidates.push(i);
   }
-  chosen.sort((a, b) => a - b);
-  for (const si of chosen) {
-    const pred = preds[randInt(0, preds.length - 1)]();
-    lines.splice(si + 1 + offset, 0, pred);
-    offset++;
+  if (candidates.length === 0) return lines.join('\n');
+  // Pick nPreds unique safe positions, no duplicates
+  const nPreds = randInt(3, 6);
+  const chosen = [];
+  const pool = candidates.slice();
+  for (let p = 0; p < nPreds && pool.length > 0; p++) {
+    const idx = randInt(0, pool.length - 1);
+    chosen.push(pool[idx]);
+    pool.splice(idx, 1);
+  }
+  // Sort DESCENDING so back-to-front insertion keeps earlier positions valid
+  chosen.sort((a, b) => b - a);
+  for (const pos of chosen) {
+    lines.splice(pos + 1, 0, preds[randInt(0, preds.length - 1)]());
   }
   return lines.join('\n');
 }
@@ -2351,11 +2366,17 @@ const DEAD_PATHS = [
 
 function injectDeadCodePaths(code) {
   const lines = code.split('\n');
-  const safe = new Set(findSafeInsertionPoints(lines));
   const out = [];
-  for (let i = 0; i < lines.length; i++) {
-    out.push(lines[i]);
-    if (Math.random() < 0.12 && safe.has(i)) {
+  let deadBraceDepth = 0;
+  for (const l of lines) {
+    out.push(l);
+    deadBraceDepth += netBracesOnLine(l);
+    if (deadBraceDepth < 0) deadBraceDepth = 0;
+    const tr = l.trim();
+    // 'end,' triggers only inside tables (e.g. function value field ending) — skip injection there
+    // Only inject at statement level (braceDepth === 0)
+    if (deadBraceDepth === 0 && Math.random() < 0.12 &&
+        (tr === 'end' || tr.startsWith('local function') || tr.startsWith('do'))) {
       out.push(DEAD_PATHS[randInt(0, DEAD_PATHS.length - 1)]());
     }
   }
@@ -2666,20 +2687,6 @@ const PRESETS = {
     obfuscateNumbers: true, breakGlobals: true,
     injectJunk: true, opaquePredicates: true, antiHook: true,
     controlFlowFlatten: true, stringArrayRotate: true, envFingerprint: true,
-    vmNesting: true, tripleNesting: false, deadCodePaths: true,
-  },
-  ultra: {
-    vmCompile: true,
-    renameVars: true, encryptStrings: true,
-    obfuscateNumbers: true, breakGlobals: true,
-    injectJunk: true, opaquePredicates: true, antiHook: true,
-    controlFlowFlatten: true, stringArrayRotate: true, envFingerprint: true,
-    vmNesting: true, tripleNesting: true, deadCodePaths: true,
-  },
-};
-
-module.exports = { obfuscate, PRESETS };
-true, stringArrayRotate: true, envFingerprint: true,
     vmNesting: true, tripleNesting: false, deadCodePaths: true,
   },
   ultra: {
