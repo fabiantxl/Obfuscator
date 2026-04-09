@@ -1189,19 +1189,34 @@ function buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm) {
 
 function injectDeadBytecode(proto, ops) {
   const deadOps = [ops['LOADK'], ops['LOADNIL'], ops['MOVE'], ops['ADD'], ops['SUB']];
+  const jumpOps = new Set([ops['JMP'], ops['FORPREP'], ops['FORLOOP'], ops['TFORLOOP']]);
+  const oldBc = proto.bc;
   const newBc = [];
-  for (let i = 0; i < proto.bc.length; i++) {
-    newBc.push(proto.bc[i]);
+  const oldToNew = new Array(oldBc.length);
+
+  for (let i = 0; i < oldBc.length; i++) {
+    oldToNew[i] = newBc.length;
+    newBc.push(oldBc[i]);
     if (Math.random() < 0.15) {
       const nDead = randInt(1, 3);
-      // JMP with b=nDead skips exactly nDead instructions after it
       newBc.push({ op: ops['JMP'], a: 0, b: nDead, c: 0 });
       for (let d = 0; d < nDead; d++) {
-        const deadIns = { op: deadOps[randInt(0, deadOps.length - 1)], a: randInt(50, 80), b: randInt(0, 20), c: randInt(0, 10) };
-        newBc.push(deadIns);
+        newBc.push({ op: deadOps[randInt(0, deadOps.length - 1)], a: randInt(50, 80), b: randInt(0, 20), c: randInt(0, 10) });
       }
     }
   }
+
+  for (let i = 0; i < oldBc.length; i++) {
+    const ins = oldBc[i];
+    if (jumpOps.has(ins.op) && ins.b !== 0) {
+      const oldIdx = i;
+      const oldTarget = oldIdx + 1 + ins.b;
+      const newIdx = oldToNew[oldIdx];
+      const newTarget = oldTarget < oldBc.length ? oldToNew[oldTarget] : newBc.length;
+      newBc[newIdx] = { ...ins, b: newTarget - newIdx - 1 };
+    }
+  }
+
   proto.bc = newBc;
 
   for (let i = 0; i < proto.subp.length; i++) {
@@ -1211,16 +1226,33 @@ function injectDeadBytecode(proto, ops) {
 
 function insertNopPadding(proto, ops) {
   const nopOp = ops['NOP'];
+  const jumpOps = new Set([ops['JMP'], ops['FORPREP'], ops['FORLOOP'], ops['TFORLOOP']]);
+  const oldBc = proto.bc;
   const newBc = [];
-  for (let i = 0; i < proto.bc.length; i++) {
+  const oldToNew = new Array(oldBc.length);
+
+  for (let i = 0; i < oldBc.length; i++) {
     if (Math.random() < 0.10) {
       const nNops = randInt(1, 2);
       for (let n = 0; n < nNops; n++) {
         newBc.push({ op: nopOp, a: randInt(0, 50), b: randInt(0, 50), c: randInt(0, 50) });
       }
     }
-    newBc.push(proto.bc[i]);
+    oldToNew[i] = newBc.length;
+    newBc.push(oldBc[i]);
   }
+
+  for (let i = 0; i < oldBc.length; i++) {
+    const ins = oldBc[i];
+    if (jumpOps.has(ins.op) && ins.b !== 0) {
+      const oldIdx = i;
+      const oldTarget = oldIdx + 1 + ins.b;
+      const newIdx = oldToNew[oldIdx];
+      const newTarget = oldTarget >= 0 && oldTarget < oldBc.length ? oldToNew[oldTarget] : (oldTarget >= oldBc.length ? newBc.length : 0);
+      newBc[newIdx] = { ...ins, b: newTarget - newIdx - 1 };
+    }
+  }
+
   proto.bc = newBc;
   for (let i = 0; i < proto.subp.length; i++) {
     insertNopPadding(proto.subp[i], ops);
@@ -1665,7 +1697,7 @@ do
   if bit32.band(_ib,0xFF)~=${integrityB} then error("",0) end
 end
 
-local _env=setmetatable({},{__index=_ENV or (getfenv and getfenv() or {})})
+local _env=setmetatable({},{__index=(type(_ENV)=="table" and _ENV) or (getfenv and getfenv(0)) or (function() return setmetatable({},{__index=function(_,k) return rawget(_G or {},k) end}) end)()})
 local _ok,_er=pcall(function()
   ${vm}(_proto,_env,nil,nil)
 end)
@@ -2321,8 +2353,8 @@ function wrapAntiHook(code) {
     `local ${ah2}=string.char(72)`,
     `if ${ah2}~="H" then error("",0) end`,
     `local ${dbg}=pcall(function() if debug~=nil and debug.getinfo~=nil then error("",0) end end)`,
-    `local ${env2}=type(_ENV)`,
-    `local ${chk}=pcall(function() assert(${env2}=="table","") end)`,
+    `local ${env2}=(function() local _ok,_r=pcall(function() return type(_ENV) end) return _ok and _r or "nil" end)()`,
+    `local ${chk}=pcall(function() assert(${env2}=="table" or ${env2}=="nil" or ${env2}=="userdata","") end)`,
     `if not ${chk} then error("",0) end`,
     ...wmBeforeCode,
     `local ${mt_}=setmetatable({},{__index=function() return nil end})`,
@@ -2555,43 +2587,4 @@ const PRESETS = {
 };
 
 module.exports = { obfuscate, PRESETS };
-e,
-    renameVars: true, encryptStrings: true,
-    obfuscateNumbers: true, breakGlobals: false,
-    injectJunk: true, opaquePredicates: false, antiHook: true,
-    controlFlowFlatten: false, stringArrayRotate: true, envFingerprint: false,
-    vmNesting: false,
-  },
-  heavy: {
-    vmCompile: true,
-    renameVars: true, encryptStrings: true,
-    obfuscateNumbers: true, breakGlobals: true,
-    injectJunk: true, opaquePredicates: true, antiHook: true,
-    controlFlowFlatten: true, stringArrayRotate: true, envFingerprint: true,
-    vmNesting: false, deadCodePaths: true,
-  },
-  max: {
-    vmCompile: true,
-    renameVars: true, encryptStrings: true,
-    obfuscateNumbers: true, breakGlobals: true,
-    injectJunk: true, opaquePredicates: true, antiHook: true,
-    controlFlowFlatten: true, stringArrayRotate: true, envFingerprint: true,
-    vmNesting: true, tripleNesting: false, deadCodePaths: true,
-  },
-  ultra: {
-    vmCompile: true,
-    renameVars: true, encryptStrings: true,
-    obfuscateNumbers: true, breakGlobals: true,
-    injectJunk: true, opaquePredicates: true, antiHook: true,
-    controlFlowFlatten: true, stringArrayRotate: true, envFingerprint: true,
-    vmNesting: true, tripleNesting: true, deadCodePaths: true,
-  },
-};
-
-module.exports = { obfuscate, PRESETS };
-
-ng: true, deadCodePaths: true,
-  },
-};
-
-module.exports = { obfuscate, PRESETS };
+ { obfuscate, PRESETS };

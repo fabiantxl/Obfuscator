@@ -1,4 +1,4 @@
-# LuaShield — Roblox Lua Obfuscator (v7 Engine + Discord Bot)
+# LuaShield — Roblox Lua Obfuscator (v12 Engine + Discord Bot)
 
 ## MISSION
 Build the **best Lua/Luau obfuscator for Roblox** — surpass Luraph in every measurable dimension:
@@ -14,13 +14,14 @@ strength, unpredictability, anti-analysis, and coverage of Lua AST nodes.
 
 | File | Purpose |
 |------|---------|
-| `discord-bot/obfuscator.js` | **PRIMARY ENGINE (v7)** — 1655 lines, the obfuscator |
+| `discord-bot/obfuscator.js` | **PRIMARY ENGINE (v12)** — ~2590 lines, the obfuscator |
 | `discord-bot/bot.js` | Discord bot — slash commands, DM support, EN/ES i18n |
 | `discord-bot/package.json` | Bot dependencies: discord.js, dotenv, luaparse |
 | `discord-bot/.env.example` | Copy to `.env` and add `DISCORD_BOT_TOKEN` |
 | `discord-bot/REPORT.md` | Technical report from previous agent sessions |
 | `artifacts/api-server/src/lib/obfuscator.js` | Mirror copy of engine (keep in sync with discord-bot/) |
 | `attached_assets/` | Sample Lua scripts for testing the obfuscator |
+| `thebutton.txt` | Sample obfuscated output for Roblox testing |
 
 ---
 
@@ -34,105 +35,56 @@ cp .env.example .env
 node bot.js
 ```
 
-The bot registers slash commands globally on `ready` — takes up to 1h on Discord.
-For instant dev registration: change `Routes.applicationCommands` to
-`Routes.applicationGuildCommands(clientId, guildId)` in bot.js.
-
 ---
 
-## ENGINE ARCHITECTURE — obfuscator.js (v7)
+## ENGINE ARCHITECTURE — obfuscator.js (v12)
 
-### Protection Layers (9 total)
+### Protection Layers (9+ total)
 
-#### LAYER A — VM Bytecode Compiler (v7)
-The core innovation. Compiles Lua AST to a custom bytecode, then generates Lua
-code that runs a **Dispatch Table VM**:
-
-```lua
-local _DT = {}
-_DT[op_LOADK] = function(a,b,c) regs[a]=kst[b] end
--- ... one closure per opcode ...
-while true do
-  local ins = bc[_pc[1]]; _pc[1] = _pc[1]+1
-  local h = _DT[ins[1]]
-  if h then h(ins[2],ins[3],ins[4]) end
-  if _rn ~= 0 then break end
-end
-```
+#### LAYER A — VM Bytecode Compiler (v12)
+4 VM shapes randomly selected per run:
+- Dispatch Table (original)
+- Linked-List (instructions as linked table nodes)
+- Tokenized String VM (encode bytecode as binary string)
+- Stack VM
 
 Key properties:
-- **35 opcodes** shuffled into a random permutation on EVERY obfuscation call
-  → Two runs of the same script produce completely different bytecode
-- **Dual-Key XOR** constant encryption: two independent rotating keys of different
-  lengths — attacker must find both simultaneously. Keys in proto table, runtime-only.
-- **Coroutine execution wrapper** (v7): root program runs inside `coroutine.create/resume`,
-  making `debug.sethook` completely useless across coroutine boundaries
-- **CONST_BASE = 2000**: constants referenced as `kst[2000+i]`, `isKR(x) = x >= 2000`
-- **`_pc`** is a 1-element table `{1}` so all closures share the same program counter
-- **`_rn` sentinel**: -1 = no-value return, >0 = N values stored in `_rv`
-
-#### Supported Lua AST nodes (as of v7):
-| Node | Status |
-|------|--------|
-| LocalStatement | ✅ |
-| AssignmentStatement (multi-assign from single call) | ✅ |
-| CallStatement / CallExpression | ✅ |
-| IfStatement (if/elseif/else chains) | ✅ |
-| WhileStatement | ✅ |
-| RepeatStatement | ✅ |
-| ForNumericStatement | ✅ |
-| ForGenericStatement (pairs/ipairs/next) | ✅ |
-| ReturnStatement (vararg returns) | ✅ |
-| BreakStatement | ✅ |
-| DoStatement | ✅ |
-| FunctionDeclaration (local, global, a.b.c(), anon) | ✅ |
-| VarargLiteral (...) | ✅ |
-| GotoStatement / LabelStatement | ✅ (v7 — backpatching for forward gotos) |
-| Upvalues 1 level deep (GETUPVAL/SETUPVAL) | ✅ |
-| Deep transitive upvalues (2+ closure levels) | ✅ (v7 — recursive resolveUpval) |
-| Multiple returns from single call | ✅ |
+- **36 opcodes** shuffled into a random permutation on EVERY obfuscation call
+- **Penta-Key XOR** constant encryption: five independent rotating keys
+- **Rolling XOR cipher** on bytecode fields
+- **Dead Bytecode Injection** with proper jump offset remapping (FIXED in this session)
+- **NOP Padding** with proper jump offset remapping (FIXED in this session)
+- **Self-Hash Integrity Verification** (multi-point runtime checks)
+- **Constant Pool Interleaving** (fake constants mixed with real)
+- **Polymorphic Opcode Handlers** (multiple equivalent implementations)
+- **Fake Dispatch Table Entries** (20-35 dead branches)
+- **VM Nesting** (Russian doll VMs for max/ultra levels)
 
 #### LAYER B — Token Passes
 | Pass | Technique | Min level |
 |------|-----------|-----------|
 | L1 | Identifier renaming (scope-aware) | light |
-| L2 | Strings → dual-XOR IIFE (two independent keys, no named decryptor) | light |
-| L3 | Numbers → multi-step bit32 expressions (5 patterns) | medium |
-| L4 | Globals broken at runtime (`_ENV["pr".."int"]`) | heavy |
-| L5 | Junk code injection (**30 patterns v7**, up from 20 in v6) | medium |
-| L6 | Opaque predicates (**10 math-guaranteed conditions v7**, up from 5) | heavy |
+| L2 | Strings → 9-pattern polymorphic encryption | light |
+| L2.5 | String Array Rotation (indexed lookup with multi-key decode) | medium |
+| L3 | Numbers → 40-pattern multi-step bit32 expressions | medium |
+| L4 | Globals broken at runtime (_ENV concat lookup) | heavy |
+| L5 | 100 realistic junk code patterns | medium |
+| L6 | 36 opaque predicates | heavy |
+| L7 | Control flow flattening (state-machine dispatcher) | heavy |
+| L8 | Dead code path injection (unreachable branches) | heavy |
 
-#### LAYER C — Anti-Hook + Anti-Debug Wrapper (v7)
+#### LAYER C — Anti-Hook + Anti-Debug Wrapper (v12)
 - `bit32.bxor(0x41, 0x00)` fingerprint check
 - `string.char(72)` consistency check
-- `pcall` debug library detection (executor detection)
-- `_ENV` type sanity check
-- Multi-layer `pcall` wrapping
-- Fake bytecode signature (random bytes in proto)
-- Unique hex hash per obfuscation run
-- **Coroutine boundary guard** (v7) — invalidates `debug.sethook`
-
----
-
-## DISCORD BOT — bot.js (v7)
-
-### Commands
-| Command | Description |
-|---------|-------------|
-| `/obfuscate [level] [file] [code]` | Attach .lua/.luau file OR paste code. 4 levels: light/medium/heavy/max |
-| `/help` | Shows all protection levels explained (EN/ES) |
-| `/language` | Shows EN/ES language picker buttons |
-
-### Features
-- **First-use language picker**: EN/ES buttons on first `/obfuscate` or `/help`
-- **DM support**: works in DMs (via `Partials.Channel` and `Partials.Message`)
-- **File upload**: reads attached `.lua`/`.luau` files, returns obfuscated file
-- **Size limit**: 500 KB per file
-- **Error feedback**: friendly error messages in EN/ES if Lua is invalid
-
-### i18n
-Language stored in `userLang` Map (in-memory, resets on bot restart).
-**TODO**: persist to a JSON file so language survives restarts.
+- `pcall` debug library detection
+- Robust `_ENV` type check (compatible with Roblox executors) — FIXED
+- Multi-layer `pcall` depth validation
+- Metatable traps and honeypot detection
+- Upvalue introspection trap
+- Closure identity verification
+- Stack depth validation
+- Fake bytecode signature
+- Multi-point watermark verification
 
 ---
 
@@ -140,73 +92,108 @@ Language stored in `userLang` Map (in-memory, resets on bot restart).
 
 ```javascript
 PRESETS.light  — rename + strings
-PRESETS.medium — + numbers + junk + antiHook
-PRESETS.heavy  — + vmCompile + breakGlobals + opaquePredicates
-PRESETS.max    — heavy + antiHook: true explicitly
+PRESETS.medium — + numbers + junk + antiHook + stringArrayRotate
+PRESETS.heavy  — + vmCompile + breakGlobals + opaquePredicates + envFingerprint + deadCodePaths + controlFlowFlatten
+PRESETS.max    — heavy + vmNesting (double VM)
+PRESETS.ultra  — max + tripleNesting (triple VM)
 ```
 
 ---
 
-## COMPARISON vs COMPETITORS (v7 status)
+## CRITICAL FIXES APPLIED (this session)
 
-| Feature | LuaShield v7 | Luraph | IronBrew v3 | Moonsec v3 |
-|---------|:-----------:|:------:|:-----------:|:----------:|
-| Dispatch table VM | ✅ | ✅ | ❌ | ❌ |
-| Shuffled opcodes per run | ✅ | ✅ | ✅ | ✅ |
-| Dual-key XOR constants | ✅ | Partial | ❌ | ❌ |
-| GotoStatement support | ✅ | ✅ | ❌ | ❌ |
-| Deep upvalues (2+ levels) | ✅ | ✅ | Partial | ❌ |
-| Coroutine VM execution | ✅ | ❌ | ❌ | ❌ |
-| 30-pattern junk injection | ✅ | ❌ | ❌ | ❌ |
-| 10 opaque predicates | ✅ | ✅ | ❌ | ❌ |
-| Anti-hook (bit32 check) | ✅ | Partial | ❌ | ❌ |
-| Anti-debug executor detect | ✅ | ❌ | ❌ | ❌ |
-| Global name splitting | ✅ | ❌ | ❌ | ❌ |
-| No named decryptor fn | ✅ | ❌ | ❌ | ❌ |
-| luaparse 5.2 (goto parse) | ✅ | — | — | — |
+### 1. Dead Bytecode Injection — Jump Offset Remapping (CRITICAL)
+**Root cause of Roblox crash.** `injectDeadBytecode()` was inserting JMP + dead instructions
+into the bytecode array WITHOUT adjusting existing JMP/FORPREP/FORLOOP/TFORLOOP relative
+offsets. This corrupted all control flow (loops, ifs, breaks) in obfuscated scripts.
 
----
+**Fix:** Build oldToNew index mapping before insertion, then remap all jump-bearing opcodes
+after insertion using the mapping.
 
-## V7 COMPLETED (this session)
+### 2. NOP Padding — Jump Offset Remapping (CRITICAL)
+Same issue as above. `insertNopPadding()` inserted NOP instructions before existing
+instructions, shifting all indices without adjusting jumps.
 
-1. ✅ GotoStatement / LabelStatement compiler support (backpatching)
-2. ✅ Deep transitive upvalue resolution (2+ closure levels, `resolveUpval()`)
-3. ✅ VM function signature upgraded: `(proto, env, parent_regs, parent_upcells, ...)`
-4. ✅ Coroutine VM wrapper (root execution in `coroutine.create/resume`)
-5. ✅ luaparse configured with `luaVersion: '5.2'` (enables goto parsing)
-6. ✅ Junk patterns expanded: 20 → 30
-7. ✅ Opaque predicates expanded: 5 → 10
-8. ✅ Anti-hook label updated: v6 → v7
-9. ✅ `luaparse` added as dependency in `artifacts/api-server/package.json`
-10. ✅ bot.js updated: all v6 references → v7, help text reflects new features
+**Fix:** Same approach — oldToNew mapping with post-insertion remapping.
+
+### 3. _ENV Type Check — Roblox Executor Compatibility
+The anti-hook `_ENV` check (`type(_ENV)=="table"`) was too strict for Roblox executors
+where `_ENV` might be nil or have unusual type. Changed to pcall-wrapped detection that
+accepts "table", "nil", or "userdata".
+
+### 4. VM Environment Setup — Robust Fallback Chain
+Changed from `_ENV or (getfenv and getfenv() or {})` to a proper fallback chain:
+`(type(_ENV)=="table" and _ENV) or (getfenv and getfenv(0)) or _G-based fallback`
+
+### 5. File Corruption Cleanup
+Removed duplicated PRESETS/module.exports at end of file (lines 2558-2598 were garbage).
 
 ---
 
-## V8 ROADMAP (what to do next)
+## V13+ ROADMAP (what to do next)
 
-### HIGH PRIORITY (critical for beating Luraph)
-1. **Rolling XOR cipher on bytecode fields** — after encoding each instruction's
-   fields (op, a, b, c) through a rolling XOR cipher derived from a per-run seed,
-   the VM's dispatch closures decode before executing. Adds a layer that decompilers
-   see as random data.
-
-2. **Alternative VM shapes** — randomly pick one of 3 VM shapes per run:
-   - Dispatch table (current)
-   - Linked-list (instructions as linked table nodes)
-   - Tokenized string VM (encode bytecode as a binary string, decode at runtime)
-   Having 3 shapes means static signatures for "LuaShield" don't work.
-
-3. **Self-hash verification** — at runtime, the script computes a `bit32` checksum
-   of its own serialized bytecode and errors if tampered with.
-
-4. **Bytecode compression** — run LZ77 over the encoded bytecode before
-   embedding it. Reduces output size ~30% and makes the bytecode opaque.
+### HIGH PRIORITY
+1. **Bytecode compression (LZ77)** — The lz77Compress function exists but isn't used in the
+   main VM code path. Integrate it to compress the serialized proto before embedding.
+2. **Alternative VM dispatch keys** — Use `_DT[op ^ runtime_key]` instead of `_DT[op]`.
+3. **Anti-decompile: fake jump table** — Insert large fake dispatch tables with dead branches.
+4. **Encrypted Jump Offsets** — XOR jump targets with a runtime key.
+5. **Register Base Shuffling** — Add random offset to all register indices.
 
 ### MEDIUM PRIORITY
-5. **Persistent language storage** — write `userLang` to a JSON file in bot.js
-   so EN/ES preference survives bot restarts.
+6. **Persistent language storage** — Write userLang to JSON in bot.js.
+7. **Dynamic Opcode Remapping** — Mid-execution opcode mutation.
+8. **Metamorphic VM Shell** — Self-modifying dispatcher.
+9. **Encrypted Upvalue Cells** — XOR'd upvalue storage.
 
-6. **Multiple VM dispatch keys** — instead of `_DT[op]`, use `_DT[op ^ runtime_key]`
+### LOWER PRIORITY
+10. **Rate limiting** for `/obfuscate` command.
+11. **Stats tracking** — Count total obfuscations.
+12. **`/status` command** — Show engine version, uptime.
+
+---
+
+## INTERNAL NOTES FOR AGENTS
+
+### DO NOT DO
+- Do not create web interfaces, React apps, or any UI
+- Do not move the project to TypeScript (it's intentionally CommonJS/plain JS)
+- Do not add databases or user accounts
+- Do not change the Discord bot's EN/ES behavior without keeping both languages
+- Do not break the `module.exports = { obfuscate, PRESETS }` interface
+- **Do not add duplicate code** — check existing functions before adding new ones
+- **Do not replace existing work** — extend and improve, never rewrite from scratch
+
+### SYNC RULE
+The engine exists in TWO places:
+1. `discord-bot/obfuscator.js` — **primary, what the bot uses**
+2. `artifacts/api-server/src/lib/obfuscator.js` — mirror copy
+
+After editing the engine, always copy to both locations.
+
+### Critical implementation details
+- **Compiler class** (line ~230): `compile(ast)` → returns root `Proto`
+- **Proto class** (line ~168): holds `bc[]`, `k[]`, `upvals[]`, `subProtos[]`, `gotoList[]`, `labelMap{}`
+- **`makeOpcodeMap()`**: creates random permutation of 36 opcode names → integers
+- **`buildVMCore(rootProto, ops)`**: orchestrates VM code generation
+- **`serializeProto(proto)`**: serializes Proto to Lua table string
+- **`encryptConstants(kst)`**: returns `{ encK, k1..k5 }` with penta rotating keys
+- **`wrapAntiHook(code)`**: wraps code in anti-debug shell
+- **`injectDeadBytecode(proto, ops)`**: injects dead instructions WITH jump remapping
+- **`insertNopPadding(proto, ops)`**: inserts NOPs WITH jump remapping
+- **`obfuscate(code, opts)`**: main entry point, returns `{ code, stats }`
+- **`PRESETS`**: exported object with light/medium/heavy/max/ultra option sets
+- **`module.exports = { obfuscate, PRESETS }`**: CommonJS export
+
+### Jump offset remapping (critical for correctness)
+All functions that modify bytecode arrays MUST maintain an `oldToNew` index mapping
+and remap JMP/FORPREP/FORLOOP/TFORLOOP `b` fields after insertion. The formula is:
+```
+oldTarget = oldIdx + 1 + ins.b
+newTarget = oldToNew[oldTarget]
+newB = newTarget - newIdx - 1
+```
+ `_DT[op]`, use `_DT[op ^ runtime_key]`
    where `runtime_key` is computed from a hash of the environment.
 
 7. **Anti-decompile: fake jump table** — insert a large fake dispatch table with
