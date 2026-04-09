@@ -1003,13 +1003,8 @@ function encryptConstants(kArr) {
     return `{t=4,d=nil}`;
   });
 
-  const insertPositions = [];
   for (const fc of fakeConstants) {
-    insertPositions.push({ pos: randInt(0, parts.length), val: fc });
-  }
-  insertPositions.sort((a, b) => b.pos - a.pos);
-  for (const ip of insertPositions) {
-    parts.splice(ip.pos, 0, ip.val);
+    parts.push(fc);
   }
 
   return {
@@ -1088,7 +1083,8 @@ function generatePolymorphicMove() {
   return variants[randInt(0, variants.length - 1)];
 }
 
-function buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm) {
+function buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_) {
+  const up_ = unpack_ || 'table.unpack';
   return `
   ${dt_}[${O.LOADK}]=function(a,b,c) regs[a]=kst[b] end
   ${dt_}[${O.LOADNIL}]=function(a,b,c) for i=a,b do regs[i]=nil end end
@@ -1120,12 +1116,12 @@ function buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm) {
     local args={}
     if b~=1 then for i=a+1,a+b-1 do args[#args+1]=regs[i] end end
     if c==0 then
-      local rs={fn(table.unpack(args))}
+      local rs={fn(${up_}(args))}
       for i,v in ipairs(rs) do regs[a+i-1]=v end
     elseif c==1 then
-      fn(table.unpack(args))
+      fn(${up_}(args))
     else
-      local rs={fn(table.unpack(args))}
+      local rs={fn(${up_}(args))}
       for i=0,c-2 do regs[a+i]=rs[i+1] end
     end
   end
@@ -1164,7 +1160,9 @@ function buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm) {
   ${dt_}[${O.CLOSURE}]=function(a,b,c)
     local sp=subp[b+1]
     local snap={}
-    for i=0,(sp.np or 0)+40 do snap[i]=regs[i] end
+    local _mx=0
+    if sp.uv then for _,uv in ipairs(sp.uv) do if uv.is==1 and uv.ix>_mx then _mx=uv.ix end end end
+    for i=0,math.max(_mx,a)+10 do snap[i]=regs[i] end
     regs[a]=function(...)
       return ${vm}(sp,env,snap,upcells,...)
     end
@@ -1449,8 +1447,8 @@ function encodeAsPayload(vmCode) {
 // Shape 2: Linked-List (instructions as linked table nodes)
 // Shape 3: Switch-Case Emulation (nested if-elseif with scrambled order)
 
-function buildDispatchTableVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt) {
-  const handlers = buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm);
+function buildDispatchTableVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt, unpack_) {
+  const handlers = buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_);
   return `
   ${handlers}
   ${fakeDt}
@@ -1466,11 +1464,11 @@ function buildDispatchTableVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_,
   end`;
 }
 
-function buildLinkedListVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt) {
+function buildLinkedListVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt, unpack_) {
   const node_ = randName();
   const cur_ = randName();
   const exec_ = randName();
-  const handlers = buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm);
+  const handlers = buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_);
   return `
   ${handlers}
   ${fakeDt}
@@ -1494,12 +1492,12 @@ function buildLinkedListVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op
   end`;
 }
 
-function buildStringVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt) {
+function buildStringVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt, unpack_) {
   const buf_ = randName();
   const len_ = randName();
   const pos_ = randName();
   const rd_ = randName();
-  const handlers = buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm);
+  const handlers = buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_);
   return `
   ${handlers}
   ${fakeDt}
@@ -1507,8 +1505,11 @@ function buildStringVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, v
   local ${buf_}={}
   for ${idx_}=1,#bc do
     local ${ins_}=bc[${idx_}]
-    ${buf_}[#${buf_}+1]=string.char(${ins_}[1],${ins_}[2]%256,${ins_}[3]%256,${ins_}[4]%256)
-    ${buf_}[#${buf_}+1]=string.char(math.floor(${ins_}[2]/256)%256,math.floor(${ins_}[3]/256)%256,math.floor(${ins_}[4]/256)%256,0)
+    local _a,_b,_c=${ins_}[2],${ins_}[3],${ins_}[4]
+    if _b<0 then _b=_b+65536 end
+    if _c<0 then _c=_c+65536 end
+    ${buf_}[#${buf_}+1]=string.char(${ins_}[1],_a%256,_b%256,_c%256)
+    ${buf_}[#${buf_}+1]=string.char(math.floor(_a/256)%256,math.floor(_b/256)%256,math.floor(_c/256)%256,0)
   end
   local ${len_}=table.concat(${buf_})
 
@@ -1517,6 +1518,8 @@ function buildStringVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, v
     local sB=math.floor(b2 or 0)+math.floor(b5 or 0)*256
     local sC=math.floor(b3 or 0)+math.floor(b6 or 0)*256
     local sD=math.floor(b4 or 0)+math.floor(b7 or 0)*256
+    if sB>32767 then sB=sB-65536 end
+    if sC>32767 then sC=sC-65536 end
     return b1 or 0,sB,sC,sD
   end
 
@@ -1531,12 +1534,12 @@ function buildStringVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, v
   end`;
 }
 
-function buildStackVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt) {
+function buildStackVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt, unpack_) {
   const stk_ = randName();
   const sp_ = randName();
   const push_ = randName();
   const pop_ = randName();
-  const handlers = buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm);
+  const handlers = buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_);
   return `
   ${handlers}
   ${fakeDt}
@@ -1613,13 +1616,13 @@ function buildVMCore(rootProto, ops) {
   const vmShape = randInt(0, 3);
   let vmBody;
   if (vmShape === 0) {
-    vmBody = buildDispatchTableVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt);
+    vmBody = buildDispatchTableVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt, unpack_);
   } else if (vmShape === 1) {
-    vmBody = buildLinkedListVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt);
+    vmBody = buildLinkedListVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt, unpack_);
   } else if (vmShape === 2) {
-    vmBody = buildStringVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt);
+    vmBody = buildStringVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt, unpack_);
   } else {
-    vmBody = buildStackVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt);
+    vmBody = buildStackVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt, unpack_);
   }
 
   const shapeNames = ['DispatchTable', 'LinkedList', 'TokenizedString', 'StackVM'];
@@ -1631,7 +1634,9 @@ function buildVMCore(rootProto, ops) {
   const hashVar = randName();
   const hashChk = randName();
 
+  const unpack_ = randName();
   const vmCode = `
+local ${unpack_}=table.unpack or unpack
 local function ${vm}(proto,env,parent_regs,parent_upcells,...)
   local bc=proto.bc
   local subp=proto.p
@@ -1684,7 +1689,7 @@ local function ${vm}(proto,env,parent_regs,parent_upcells,...)
 ${vmBody}
 
   if ${rn_}==-1 then return
-  else return table.unpack(${rv_},1,${rn_}) end
+  else return ${unpack_}(${rv_},1,${rn_}) end
 end
 
 local _proto=${protoStr}
@@ -2587,4 +2592,3 @@ const PRESETS = {
 };
 
 module.exports = { obfuscate, PRESETS };
- { obfuscate, PRESETS };

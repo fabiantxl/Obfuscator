@@ -251,3 +251,5 @@ cp discord-bot/obfuscator.js artifacts/api-server/src/lib/obfuscator.js
 # or
 cp artifacts/api-server/src/lib/obfuscator.js discord-bot/obfuscator.js
 ```
+last checkpoint :
+Let me check why VM nesting isn't producing significantly larger output (which it should):
