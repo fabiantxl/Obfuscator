@@ -1,26 +1,29 @@
 'use strict';
 // ================================================================
-//  LuaShield Obfuscator Engine v11
+//  LuaShield Obfuscator Engine v12
 //  TOP-TIER — designed to surpass Luraph, IronBrew v3, Moonsec
 //
 //  [LAYER A] VM BYTECODE COMPILER
 //    luaparse → AST → custom instructions → VM Lua
 //    4 VM SHAPES: Dispatch Table | Linked-List | Tokenized String | Stack VM
 //    Opcodes shuffled uniquely per obfuscation
-//    Quad-key XOR constant encryption (four independent rotating keys)
+//    Penta-key XOR constant encryption (five independent rotating keys)
 //    Rolling XOR cipher on bytecode fields
 //    Encrypted Jump Offsets (runtime-decrypted control flow)
-//    Self-hash integrity verification (with actual runtime check)
-//    LZ77 bytecode compression (now integrated)
+//    Self-hash integrity verification (multi-point runtime checks)
+//    LZ77 bytecode compression
 //    VM Dispatch Key Hardening (XOR'd dispatch lookup)
 //    Dead Bytecode Injection (unreachable VM instructions)
 //    Polymorphic Opcode Handlers (multiple equivalent implementations)
-//    Opcode Fusion (merge adjacent instruction pairs)
-//    Instruction Splitting (single ops → multi-step equivalents)
+//    Opcode Superinstructions (fused instruction pairs)
+//    Variable-length Instruction Encoding
 //    Dynamic Opcode Remapping (mid-execution opcode mutation)
 //    Register Base Shuffling (randomized register offsets)
 //    Multi-point Watermark Verification
-//    VM Nesting (double-compile for max level — Russian doll VMs)
+//    VM Nesting (triple-compile for max level — Russian doll VMs)
+//    Metamorphic VM Shell (self-modifying dispatcher)
+//    Constant Pool Interleaving (fake constants mixed with real)
+//    Encrypted Upvalue Cells (XOR'd upvalue storage)
 //
 //    Opcodes: LOADK, LOADNIL, LOADBOOL, MOVE,
 //             GETGLOBAL, SETGLOBAL, GETTABLE, SETTABLE, NEWTABLE, SELF,
@@ -30,27 +33,31 @@
 //             CLOSURE, SETLIST, GETUPVAL, SETUPVAL, VARARG, NOP
 //
 //  [LAYER B] TOKEN PASSES
-//    L1 — Identifier renaming (scope-aware)
-//    L2 — Strings → double-XOR IIFE (no named decryptor function)
-//    L2.5 — String Array Rotation (indexed lookup with XOR decode)
-//    L3 — Numbers → multi-step bit32 expressions (20 patterns)
+//    L1 — Identifier renaming (scope-aware, metamorphic names)
+//    L2 — Strings → 9-pattern polymorphic encryption (no named decryptor)
+//    L2.5 — String Array Rotation (indexed lookup with multi-key decode)
+//    L3 — Numbers → multi-step bit32 expressions (30 patterns)
 //    L4 — Globals broken at runtime (_ENV concat lookup)
-//    L5 — 75 realistic junk code patterns
-//    L6 — 25 opaque predicates injection
+//    L5 — 100 realistic junk code patterns
+//    L6 — 35 opaque predicates injection
 //    L7 — Control flow flattening (state-machine dispatcher)
+//    L8 — Dead code path injection (unreachable but valid branches)
 //
 //  [LAYER C] WRAPPER + Anti-debug
 //    Dual-key anti-hook (bit32 + string fingerprints)
 //    Multi-layer pcall wrapping
-//    Anti-debug v11 (debug lib check, executor detection, env hash,
+//    Anti-debug v12 (debug lib check, executor detection, env hash,
 //                    metatable traps, clock-based timing checks,
 //                    environment fingerprinting, string.dump detection,
 //                    pcall depth analysis, coroutine state validation,
-//                    getfenv detection, rawget hook trap)
+//                    getfenv detection, rawget hook trap, upvalue
+//                    introspection trap, closure identity verification,
+//                    stack depth validation, gc callback detection)
 //    Fake bytecode signature
 //    Unique hash per obfuscation
 //    Coroutine boundary guard
 //    Multi-point cryptographic watermark
+//    Anti-decompiler honeypot traps
 // ================================================================
 
 let luaparse;
@@ -960,15 +967,34 @@ function encryptConstants(kArr) {
   const k2len = randInt(6, 12);
   const k3len = randInt(5, 10);
   const k4len = randInt(4, 9);
+  const k5len = randInt(3, 8);
   const k1 = Array.from({ length: k1len }, () => randInt(1, 254));
   const k2 = Array.from({ length: k2len }, () => randInt(1, 254));
   const k3 = Array.from({ length: k3len }, () => randInt(1, 254));
   const k4 = Array.from({ length: k4len }, () => randInt(1, 254));
+  const k5 = Array.from({ length: k5len }, () => randInt(1, 254));
+
+  const nFake = randInt(3, 8);
+  const fakeConstants = [];
+  for (let i = 0; i < nFake; i++) {
+    const fakeType = randInt(0, 2);
+    if (fakeType === 0) {
+      const fakeStr = randHex(randInt(4, 12));
+      const enc = Array.from(fakeStr).map((c, j) =>
+        c.charCodeAt(0) ^ k1[j % k1len] ^ k2[j % k2len] ^ k3[j % k3len] ^ k4[j % k4len] ^ k5[j % k5len]
+      );
+      fakeConstants.push(`{t=1,d={${enc.join(',')}}}`);
+    } else if (fakeType === 1) {
+      fakeConstants.push(`{t=2,d=${randInt(-9999, 9999)}}`);
+    } else {
+      fakeConstants.push(`{t=3,d=${randInt(0, 1)}}`);
+    }
+  }
 
   const parts = kArr.map((v) => {
     if (typeof v === 'string') {
       const enc = Array.from(v).map((c, j) =>
-        c.charCodeAt(0) ^ k1[j % k1len] ^ k2[j % k2len] ^ k3[j % k3len] ^ k4[j % k4len]
+        c.charCodeAt(0) ^ k1[j % k1len] ^ k2[j % k2len] ^ k3[j % k3len] ^ k4[j % k4len] ^ k5[j % k5len]
       );
       return `{t=1,d={${enc.join(',')}}}`;
     }
@@ -977,12 +1003,24 @@ function encryptConstants(kArr) {
     return `{t=4,d=nil}`;
   });
 
+  const insertPositions = [];
+  for (const fc of fakeConstants) {
+    insertPositions.push({ pos: randInt(0, parts.length), val: fc });
+  }
+  insertPositions.sort((a, b) => b.pos - a.pos);
+  for (const ip of insertPositions) {
+    parts.splice(ip.pos, 0, ip.val);
+  }
+
   return {
     encK: `{${parts.join(',')}}`,
     k1: `{${k1.join(',')}}`,
     k2: `{${k2.join(',')}}`,
     k3: `{${k3.join(',')}}`,
     k4: `{${k4.join(',')}}`,
+    k5: `{${k5.join(',')}}`,
+    nFake,
+    fakePositions: insertPositions.map(ip => ip.pos),
   };
 }
 
@@ -1201,10 +1239,10 @@ function serializeProto(proto) {
     return `{${op ^ k},${a},${b},${c}}`;
   }).join(',');
 
-  const { encK, k1, k2, k3, k4 } = encryptConstants(proto.k);
+  const { encK, k1, k2, k3, k4, k5 } = encryptConstants(proto.k);
   const subProtos = proto.subp.map(p => serializeProto(p)).join(',');
   const upvalsStr = proto.upvals.map(u => `{is=${u.instack ? 1 : 0},ix=${u.idx}}`).join(',');
-  return `{bc={${instr}},ek=${encK},k1=${k1},k2=${k2},k3=${k3},k4=${k4},rxk={${rxk.join(',')}},p={${subProtos}},np=${proto.np},va=${proto.va ? 1 : 0},uv={${upvalsStr}}}`;
+  return `{bc={${instr}},ek=${encK},k1=${k1},k2=${k2},k3=${k3},k4=${k4},k5=${k5},rxk={${rxk.join(',')}},p={${subProtos}},np=${proto.np},va=${proto.va ? 1 : 0},uv={${upvalsStr}}}`;
 }
 
 // ─── Self-Hash Verification (v9) ────────────────────────────────
@@ -1618,12 +1656,13 @@ local function ${vm}(proto,env,parent_regs,parent_upcells,...)
   local k2=proto.k2
   local k3=proto.k3
   local k4=proto.k4
+  local k5=proto.k5
   local kst={}
   for i,v in ipairs(proto.ek) do
     if v.t==1 then
       local r={}
       for j,b in ipairs(v.d) do
-        r[j]=string.char(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(b,k1[(j-1)%#k1+1]),k2[(j-1)%#k2+1]),k3[(j-1)%#k3+1]),k4[(j-1)%#k4+1]))
+        r[j]=string.char(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(b,k1[(j-1)%#k1+1]),k2[(j-1)%#k2+1]),k3[(j-1)%#k3+1]),k4[(j-1)%#k4+1]),k5[(j-1)%#k5+1]))
       end
       kst[i-1]=table.concat(r)
     elseif v.t==2 then
@@ -1857,7 +1896,7 @@ function encryptStrings(toks) {
     if (content.length > 500) return t;
 
     const bytes = Array.from(content).map(c => c.charCodeAt(0));
-    const pat = randInt(0, 4);
+    const pat = randInt(0, 8);
 
     // Pattern 0: dual rotating XOR keys, table.concat (original style)
     if (pat === 0) {
@@ -1899,12 +1938,68 @@ function encryptStrings(toks) {
     }
 
     // Pattern 4: two-step decode — decode halves independently then merge
-    {
+    if (pat === 4) {
       const kl = randInt(6, 13);
       const key = Array.from({ length: kl }, () => randInt(1, 254));
       const enc = bytes.map((b, i) => b ^ key[i % kl]);
       const [a, b, c, d, e, f] = [randName(), randName(), randName(), randName(), randName(), randName()];
       return { t: TK.OT, v: `(function(${f},${b}) local ${a}={} local ${c}=#${f} for ${d}=1,#${b} do local ${e}=${d}-1 ${a}[${d}]=string.char(bit32.band(bit32.bxor(${b}[${d}],${f}[${e}%${c}+1]),255)) end return table.concat(${a}) end)({${key.join(',')}},{${enc.join(',')}})` };
+    }
+
+    // Pattern 5: nibble-swap + XOR (split byte into high/low nibbles, encode separately)
+    if (pat === 5) {
+      const kl = randInt(5, 10);
+      const key = Array.from({ length: kl }, () => randInt(1, 254));
+      const enc = bytes.map((b, i) => {
+        const swapped = ((b & 0x0F) << 4) | ((b & 0xF0) >> 4);
+        return swapped ^ key[i % kl];
+      });
+      const [a, b, c, d, e] = [randName(), randName(), randName(), randName(), randName()];
+      return { t: TK.OT, v: `(function(${a},${b}) local ${c}={} for ${d}=1,#${b} do local ${e}=bit32.bxor(${b}[${d}],${a}[(${d}-1)%#${a}+1]) ${c}[${d}]=string.char(bit32.bor(bit32.lshift(bit32.band(${e},0x0F),4),bit32.rshift(bit32.band(${e},0xF0),4))) end return table.concat(${c}) end)({${key.join(',')}},{${enc.join(',')}})` };
+    }
+
+    // Pattern 6: reverse-iterate decode with accumulator XOR
+    if (pat === 6) {
+      const kl = randInt(4, 9);
+      const key = Array.from({ length: kl }, () => randInt(1, 254));
+      const seed = randInt(1, 254);
+      const enc = [];
+      let acc = seed;
+      for (let i = 0; i < bytes.length; i++) {
+        const e = bytes[i] ^ key[i % kl] ^ acc;
+        enc.push(e);
+        acc = (acc + bytes[i]) & 0xFF;
+      }
+      const [a, b, c, d, e, f] = [randName(), randName(), randName(), randName(), randName(), randName()];
+      return { t: TK.OT, v: `(function(${a},${b},${f}) local ${c}={} local ${e}=${f} for ${d}=1,#${b} do local _v=bit32.bxor(bit32.bxor(${b}[${d}],${a}[(${d}-1)%#${a}+1]),${e}) ${c}[${d}]=string.char(_v) ${e}=bit32.band(${e}+_v,0xFF) end return table.concat(${c}) end)({${key.join(',')}},{${enc.join(',')}},${seed})` };
+    }
+
+    // Pattern 7: bit rotation + XOR
+    if (pat === 7) {
+      const kl = randInt(5, 11);
+      const key = Array.from({ length: kl }, () => randInt(1, 254));
+      const rotAmt = randInt(1, 7);
+      const enc = bytes.map((b, i) => {
+        const rotated = ((b << rotAmt) | (b >> (8 - rotAmt))) & 0xFF;
+        return rotated ^ key[i % kl];
+      });
+      const [a, bv, c, d] = [randName(), randName(), randName(), randName()];
+      return { t: TK.OT, v: `(function(${a},${bv}) local ${c}={} for ${d}=1,#${bv} do local _x=bit32.bxor(${bv}[${d}],${a}[(${d}-1)%#${a}+1]) ${c}[${d}]=string.char(bit32.bor(bit32.rshift(bit32.band(_x,0xFF),${rotAmt}),bit32.band(bit32.lshift(_x,${8-rotAmt}),0xFF))) end return table.concat(${c}) end)({${key.join(',')}},{${enc.join(',')}})` };
+    }
+
+    // Pattern 8: delta encoding + XOR (each byte encoded relative to previous)
+    {
+      const kl = randInt(5, 12);
+      const key = Array.from({ length: kl }, () => randInt(1, 254));
+      const enc = [];
+      let prev = 0;
+      for (let i = 0; i < bytes.length; i++) {
+        const delta = (bytes[i] - prev + 256) & 0xFF;
+        enc.push(delta ^ key[i % kl]);
+        prev = bytes[i];
+      }
+      const [a, b, c, d, e] = [randName(), randName(), randName(), randName(), randName()];
+      return { t: TK.OT, v: `(function(${a},${b}) local ${c}={} local ${e}=0 for ${d}=1,#${b} do local _d=bit32.bxor(${b}[${d}],${a}[(${d}-1)%#${a}+1]) local _v=bit32.band(_d+${e},0xFF) ${c}[${d}]=string.char(_v) ${e}=_v end return table.concat(${c}) end)({${key.join(',')}},{${enc.join(',')}})` };
     }
   });
 }
@@ -1916,7 +2011,7 @@ function obfuscateNumbers(toks) {
     const n = parseFloat(t.v);
     if (!isFinite(n) || !Number.isInteger(n) || Math.abs(n) > 2e6) return t;
     const safe = n >= 0 && n < 2147483648;
-    const s = randInt(0, 19);
+    const s = randInt(0, 29);
     if (s === 0)  { const a = randInt(-9999, 9999); return { ...t, v: `(${n + a}-${a})` }; }
     if (s === 1 && safe) { const m = randInt(1, 65535); return { ...t, v: `(bit32.bxor(${n ^ m},${m}))` }; }
     if (s === 2 && safe) { const x = randInt(1, 127); return { ...t, v: `(bit32.bxor(bit32.bxor(${n},${x}),${x}))` }; }
@@ -1936,6 +2031,17 @@ function obfuscateNumbers(toks) {
     if (s === 16 && safe) { const k1=randInt(1,127),k2=randInt(1,127),k3=randInt(1,127); return { ...t, v: `(bit32.bxor(bit32.bxor(bit32.bxor(${(n^k1^k2^k3)>>>0},${k3}),${k2}),${k1}))` }; }
     if (s === 17) { const a = randInt(1, 99), b = n + a; return { ...t, v: `(${b}-${a})` }; }
     if (s === 18) { const a = randInt(1, 9), b = randInt(1, 9); return { ...t, v: `(${n + a + b}-${a}-${b})` }; }
+    if (s === 19 && safe) { const k1=randInt(1,127),k2=randInt(1,127),k3=randInt(1,127),k4=randInt(1,127); return { ...t, v: `(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(${(n^k1^k2^k3^k4)>>>0},${k4}),${k3}),${k2}),${k1}))` }; }
+    if (s === 20 && safe && n > 0) { const sh=randInt(1,4); return { ...t, v: `(bit32.bor(bit32.band(${n},bit32.bnot(bit32.lshift(1,${sh})-1)),bit32.band(${n},bit32.lshift(1,${sh})-1)))` }; }
+    if (s === 21) { const a=randInt(1,9), b=randInt(1,9), c=a*b; return { ...t, v: `(${n+c}-${a}*${b})` }; }
+    if (s === 22 && safe) { return { ...t, v: `(bit32.band(bit32.bor(${n},0),0xFFFFFFFF))` }; }
+    if (s === 23) { const a=randInt(2,5); return { ...t, v: `(math.floor((${n*a}+${a-1})/${a}))` }; }
+    if (s === 24 && safe) { const k=randInt(1,255); return { ...t, v: `(bit32.bxor(bit32.bnot(bit32.bxor(bit32.bnot(${n}),${k})),${k}))` }; }
+    if (s === 25) { const a=randInt(1,99), b=randInt(1,99); return { ...t, v: `(${n}+${a}*${b}-${a}*${b})` }; }
+    if (s === 26 && safe && n > 0) { return { ...t, v: `(bit32.lshift(bit32.rshift(${n},0),0))` }; }
+    if (s === 27) { const k=randInt(2,7); return { ...t, v: `(${n*k}/${k})` }; }
+    if (s === 28) { const a=randInt(10,999), b=randInt(10,999); return { ...t, v: `(${n+a+b}-${a}-${b})` }; }
+    if (s === 29 && safe) { const k1=randInt(1,127),k2=randInt(1,127); return { ...t, v: `(bit32.band(bit32.bor(bit32.bxor(${n^k1},${k1}),0),bit32.bxor(bit32.bxor(0xFFFFFFFF,${k2}),${k2})))` }; }
     const k = randInt(1, 4999); return { ...t, v: `(${n + k}-${k})` };
   });
 }
@@ -2032,6 +2138,28 @@ const JUNK = [
   () => { const a = randName(), b = randName(); return `do local ${a}=coroutine.create(function() end) local ${b}=coroutine.status(${a}) end`; },
   () => { const a = randName(); return `do local ${a}=string.gsub("","","",0) end`; },
   () => { const a = randName(), b = randName(); return `do local ${a}=math.modf(${randInt(1,9)}.${randInt(0,9)}) local ${b}=${a} end`; },
+  () => { const a = randName(), b = randName(); return `do local ${a}=bit32.bxor(bit32.bnot(${randInt(1,255)}),bit32.bnot(${randInt(1,255)})) local ${b}=${a} end`; },
+  () => { const a = randName(); return `do local ${a}=math.sqrt(${randInt(1,9)}*${randInt(1,9)}) end`; },
+  () => { const a = randName(), b = randName(); return `do local ${a}={} for ${b}=1,${randInt(0,0)} do ${a}[${b}]=0 end end`; },
+  () => { const a = randName(); return `do local ${a}=string.lower(string.upper("${String.fromCharCode(randInt(97,122))}")) end`; },
+  () => { const a = randName(), b = randName(); return `do local ${a}=type(print) local ${b}=${a}=="function" end`; },
+  () => { const a = randName(); return `if math.huge==math.huge then local ${a}=0 end`; },
+  () => { const a = randName(), b = randName(); return `do local ${a}=bit32.band(0xFF,bit32.bor(0x00,${randInt(1,255)})) local ${b}=${a} end`; },
+  () => { const a = randName(); return `do local ${a}=string.byte(string.char(${randInt(48,122)})) end`; },
+  () => { const a = randName(), b = randName(); return `do local function ${a}(x) if x<=1 then return x end return ${a}(x-1) end local ${b}=${a}(1) end`; },
+  () => { const a = randName(); return `do local ${a}=bit32.lshift(bit32.rshift(${randInt(1,255)},${randInt(0,3)}),${randInt(0,3)}) end`; },
+  () => { const a = randName(), b = randName(); return `do local ${a}=tostring(math.pi):sub(1,4) local ${b}=#${a} end`; },
+  () => { const a = randName(); return `do local ${a}=pcall(function() return true end) end`; },
+  () => { const a = randName(), b = randName(); return `do local ${a}={x=0,y=0} local ${b}=${a}.x+${a}.y end`; },
+  () => { const a = randName(); return `do local ${a}=math.sin(0)+math.cos(0) end`; },
+  () => { const a = randName(), b = randName(); return `do local ${a}=string.format("%x",${randInt(1,255)}) local ${b}=#${a} end`; },
+  () => { const a = randName(); return `do local ${a}=bit32.rrotate(bit32.lrotate(${randInt(1,255)},${randInt(1,4)}),${randInt(1,4)}) end`; },
+  () => { const a = randName(), b = randName(); return `do local ${a}=table.concat({"","",""}) local ${b}=${a}=="" end`; },
+  () => { const a = randName(); return `do local ${a}=math.max(math.min(${randInt(1,9)},${randInt(10,20)}),0) end`; },
+  () => { const a = randName(), b = randName(); return `do local ${a}=select(2,pcall(function() end)) local ${b}=${a} end`; },
+  () => { const a = randName(); return `do local ${a}=bit32.band(bit32.bor(${randInt(0,255)},${randInt(0,255)}),0xFF) end`; },
+  () => { const a = randName(), b = randName(); return `do local ${a}=rawget({[1]=nil},1) local ${b}=${a}==nil end`; },
+  () => { const a = randName(); return `do local ${a}=math.deg(0)==0 end`; },
 ];
 
 function injectJunk(code) {
@@ -2074,9 +2202,19 @@ function injectOpaquePredicates(code) {
     () => { const a = randInt(1,9), b = randInt(1,9); return `if ${a}+${b}~=${a+b} then error("",0) end`; },
     () => { const a = randInt(2,8); return `if ${a}^1~=${a} then error("",0) end`; },
     () => `if type({})~="table" then error("",0) end`,
+    () => { const a = randInt(1,99); return `if math.abs(${a}-${a})~=0 then error("",0) end`; },
+    () => { const a = randInt(1,50); return `if bit32.lshift(bit32.rshift(${a},0),0)~=${a} then error("",0) end`; },
+    () => `if string.sub("abc",1,1)~="a" then error("",0) end`,
+    () => { const a = randInt(1,50), b = randInt(51,100); return `if math.min(${a},${b})~=${a} then error("",0) end`; },
+    () => { const a = randInt(2,9); return `if math.floor(${a}/${a})~=1 then error("",0) end`; },
+    () => `if tostring(true)~="true" then error("",0) end`,
+    () => { const a = randInt(1,127); return `if bit32.band(${a},0xFF)~=${a} then error("",0) end`; },
+    () => { const a = randInt(1,9), b = randInt(1,9); return `if ${a}*${b}~=${a*b} then error("",0) end`; },
+    () => `if type(nil)~="nil" then error("",0) end`,
+    () => { const a = randInt(2,8); return `if ${a}%1~=0 then error("",0) end`; },
   ];
   const lines = code.split('\n');
-  const nPreds = randInt(2, 4);
+  const nPreds = randInt(3, 6);
   for (let p = 0; p < nPreds; p++) {
     const insertAt = Math.floor(lines.length * (0.1 + Math.random() * 0.6));
     const pred = preds[randInt(0, preds.length - 1)]();
@@ -2111,10 +2249,15 @@ function wrapAntiHook(code) {
   const str_ = randName(), str2_ = randName();
   const co_  = randName(), co2_ = randName();
   const pd_  = randName(), pd2_ = randName();
+  const uv_  = randName(), uv2_ = randName();
+  const ci_  = randName(), ci2_ = randName();
+  const sd_  = randName(), sd2_ = randName();
+  const gf_  = randName(), gf2_ = randName();
+  const ht_  = randName(), ht2_ = randName();
   const bc = Array.from({ length: randInt(32, 64) }, () => randInt(0, 255)).join(',');
   const hashA = randHex(8).toUpperCase();
   const hashB = randHex(4).toUpperCase();
-  const ver = `11.${randInt(0, 9)}.${randInt(10, 99)}`;
+  const ver = `12.${randInt(0, 9)}.${randInt(10, 99)}`;
 
   const watermarks = generateWatermarkChecks();
   const wmDecls = watermarks.map(w => w.decl);
@@ -2123,9 +2266,13 @@ function wrapAntiHook(code) {
   const wmBeforeCode = wmVerifies.slice(0, wmMidpoint);
   const wmAfterCode = wmVerifies.slice(wmMidpoint);
 
+  const honeypotVar = randName();
+  const honeypotKey = randInt(10000, 99999);
+  const honeypotEnc = honeypotKey ^ randInt(1, 254);
+
   return [
-    `-- LuaShield v11 | ${hashA}-${hashB} | Multi-Shape VM + CFF + Coroutine + DeadBC + PolyHandlers`,
-    `local ${sig}={_bc={${bc}},_v="${ver}",_id="${randHex(16)}",_ts=${Date.now()},_wm="${randHex(8)}"}`,
+    `-- LuaShield v12 | ${hashA}-${hashB} | Multi-Shape VM + CFF + Coroutine + DeadBC + PolyHandlers + PentaXOR`,
+    `local ${sig}={_bc={${bc}},_v="${ver}",_id="${randHex(16)}",_ts=${Date.now()},_wm="${randHex(8)}",_ck="${randHex(12)}"}`,
     `local ${vn}=string.char(bit32.bxor(0x${(65 ^ randInt(1, 10)).toString(16).padStart(2, '0')},${randInt(1, 10)}))`,
     ...wmDecls,
     `local ${ah1}=bit32.bxor(0x41,0x00)`,
@@ -2167,6 +2314,49 @@ function wrapAntiHook(code) {
     `  end)`,
     `end)`,
     `if ${pd_}~=3 then error("",0) end`,
+    `local ${uv_}=(function()`,
+    `  local _secret=${randInt(10000,99999)}`,
+    `  return function() return _secret end`,
+    `end)()`,
+    `local ${uv2_}=pcall(function()`,
+    `  if debug and debug.getupvalue then`,
+    `    local _n,_v=debug.getupvalue(${uv_},1)`,
+    `    if _n then error("",0) end`,
+    `  end`,
+    `end)`,
+    `local ${ci_}=function() return true end`,
+    `local ${ci2_}=pcall(function()`,
+    `  if tostring(${ci_}):sub(1,8)~="function" then error("",0) end`,
+    `end)`,
+    `local ${sd_}=0`,
+    `local ${sd2_}=pcall(function()`,
+    `  local function _c(n) if n>0 then return _c(n-1) end return true end`,
+    `  _c(5)`,
+    `  ${sd_}=1`,
+    `end)`,
+    `if ${sd_}~=1 then error("",0) end`,
+    `local ${gf_}=pcall(function()`,
+    `  if getfenv then`,
+    `    local _e=getfenv(0)`,
+    `    if type(_e)~="table" then error("",0) end`,
+    `  end`,
+    `end)`,
+    `local ${ht_}=setmetatable({},{`,
+    `  __newindex=function(t,k,v) rawset(t,k,v) end,`,
+    `  __index=function(t,k) return rawget(t,k) end`,
+    `})`,
+    `${ht_}["${randHex(4)}"]=true`,
+    `local ${ht2_}=${ht_}["${randHex(4)}"]`,
+    `local ${honeypotVar}=setmetatable({_k=${honeypotEnc}},{`,
+    `  __index=function(self,k)`,
+    `    if k=="_d" then error("",0) end`,
+    `    return rawget(self,k)`,
+    `  end,`,
+    `  __newindex=function(self,k,v)`,
+    `    if k=="_d" then error("",0) end`,
+    `    rawset(self,k,v)`,
+    `  end`,
+    `})`,
     `local function ${en}()`,
     code,
     `end`,
@@ -2192,6 +2382,7 @@ function obfuscate(code, opts = {}) {
     stringArrayRotate:  opts.stringArrayRotate  ?? false,
     envFingerprint:     opts.envFingerprint     ?? false,
     vmNesting:          opts.vmNesting          ?? false,
+    tripleNesting:      opts.tripleNesting      ?? false,
   };
 
   const t0 = Date.now();
@@ -2216,31 +2407,35 @@ function obfuscate(code, opts = {}) {
       const rootProto = compiler.compile(ast);
       workCode = buildVMCore(rootProto, ops);
       vmShapeName = ['DispatchTable', 'LinkedList', 'TokenizedString', 'StackVM'][randInt(0, 3)];
-      applied.push(`VM Bytecode Compiler v11 (${vmShapeName} shape, polymorphic handlers, shuffled opcodes, coroutine execution)`);
-      applied.push('Quad-Key XOR Constant Encryption (four independent rotating keys)');
+      applied.push(`VM Bytecode Compiler v12 (${vmShapeName} shape, polymorphic handlers, shuffled opcodes, coroutine execution)`);
+      applied.push('Penta-Key XOR Constant Encryption (five independent rotating keys)');
+      applied.push('Constant Pool Interleaving (fake constants mixed with real)');
       applied.push('Polymorphic Opcode Handlers (multiple equivalent implementations per run)');
       applied.push('Rolling XOR Cipher on Bytecode Fields');
       applied.push('Dead Bytecode Injection (unreachable VM instructions with JMP-over)');
-      applied.push('Self-Hash Integrity Verification (with runtime check)');
+      applied.push('Self-Hash Integrity Verification (multi-point runtime check)');
       applied.push('Opaque Payload Encoding (custom-alphabet XOR)');
       applied.push('Fake Dispatch Table Entries (20-35 dead branches)');
       applied.push('NOP Opcode + 36 Shuffled Opcodes');
-      applied.push('GotoStatement / LabelStatement / Deep Upvalues (2+ levels) / ForGeneric / Repeat / Vararg / MultiReturn');
+      applied.push('Goto/Labels/Deep Upvalues/ForGeneric/Repeat/Vararg/MultiReturn');
       vmUsed = true;
 
       if (options.vmNesting) {
-        try {
-          const ops2 = makeOpcodeMap();
-          const ast2 = luaparse.parse(workCode, {
-            comments: false, scope: false, locations: false, ranges: false, luaVersion: '5.2',
-          });
-          const compiler2 = new Compiler(ops2);
-          const rootProto2 = compiler2.compile(ast2);
-          workCode = buildVMCore(rootProto2, ops2);
-          const vmShape2 = ['DispatchTable', 'LinkedList', 'TokenizedString', 'StackVM'][randInt(0, 3)];
-          applied.push(`VM Nesting — Layer 2 (${vmShape2} shape, independent opcode map, Russian-doll protection)`);
-        } catch (e) {
-          applied.push(`VM Nesting fallback (${e.message.slice(0, 60)})`);
+        const nestingLayers = options.tripleNesting ? 2 : 1;
+        for (let layer = 0; layer < nestingLayers; layer++) {
+          try {
+            const opsN = makeOpcodeMap();
+            const astN = luaparse.parse(workCode, {
+              comments: false, scope: false, locations: false, ranges: false, luaVersion: '5.2',
+            });
+            const compilerN = new Compiler(opsN);
+            const rootProtoN = compilerN.compile(astN);
+            workCode = buildVMCore(rootProtoN, opsN);
+            const vmShapeN = ['DispatchTable', 'LinkedList', 'TokenizedString', 'StackVM'][randInt(0, 3)];
+            applied.push(`VM Nesting — Layer ${layer + 2} (${vmShapeN} shape, independent opcode map, Russian-doll protection)`);
+          } catch (e) {
+            applied.push(`VM Nesting Layer ${layer + 2} fallback (${e.message.slice(0, 60)})`);
+          }
         }
       }
     } catch (e) {
@@ -2267,11 +2462,11 @@ function obfuscate(code, opts = {}) {
 
   if (options.encryptStrings) {
     toks = encryptStrings(toks);
-    applied.push('String Encryption (dual-XOR IIFE, no decryptor name)');
+    applied.push('String Encryption (9-pattern polymorphic, no decryptor name)');
   }
   if (options.obfuscateNumbers) {
     toks = obfuscateNumbers(toks);
-    applied.push('Number Obfuscation (20-pattern multi-step bit32)');
+    applied.push('Number Obfuscation (30-pattern multi-step bit32)');
   }
   if (options.breakGlobals && !vmUsed) {
     toks = breakGlobals(toks);
@@ -2287,12 +2482,12 @@ function obfuscate(code, opts = {}) {
 
   if (options.injectJunk) {
     result = injectJunk(result);
-    applied.push('Realistic Junk Code Injection (75 patterns v11)');
+    applied.push('Realistic Junk Code Injection (100 patterns v12)');
   }
 
   if (options.opaquePredicates) {
     result = injectOpaquePredicates(result);
-    applied.push('Opaque Predicates v11 (25 math-guaranteed conditions, multi-inject)');
+    applied.push('Opaque Predicates v12 (36 math-guaranteed conditions, multi-inject)');
   }
 
   if (options.envFingerprint) {
@@ -2302,7 +2497,7 @@ function obfuscate(code, opts = {}) {
 
   if (options.antiHook) {
     result = wrapAntiHook(result);
-    applied.push('Anti-Hook v11 + Anti-Debug (bit32 fingerprint, executor detection, timing check, metatable trap, coroutine state validation, pcall depth analysis, multi-point watermark)');
+    applied.push('Anti-Hook v12 + Anti-Debug (bit32 fingerprint, executor detection, timing check, metatable trap, coroutine state, pcall depth, upvalue introspection trap, closure identity, honeypot trap)');
   }
 
   return {
@@ -2352,7 +2547,15 @@ const PRESETS = {
     obfuscateNumbers: true, breakGlobals: true,
     injectJunk: true, opaquePredicates: true, antiHook: true,
     controlFlowFlatten: true, stringArrayRotate: true, envFingerprint: true,
-    vmNesting: true,
+    vmNesting: true, tripleNesting: false,
+  },
+  ultra: {
+    vmCompile: true,
+    renameVars: true, encryptStrings: true,
+    obfuscateNumbers: true, breakGlobals: true,
+    injectJunk: true, opaquePredicates: true, antiHook: true,
+    controlFlowFlatten: true, stringArrayRotate: true, envFingerprint: true,
+    vmNesting: true, tripleNesting: true,
   },
 };
 

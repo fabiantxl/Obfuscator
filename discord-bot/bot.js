@@ -274,27 +274,48 @@ function buildSuccessEmbed(userId, stats, level, filename) {
   const ratio = parseFloat(stats.sizeRatio);
   const increase = ((ratio - 1) * 100).toFixed(1);
 
+  let techList = stats.techniquesApplied.map(x => `• ${x}`).join('\n') || '—';
+
+  const fields = [
+    { name: t(userId, 'fieldFile'),     value: filename,                                inline: true },
+    { name: `${levelEmoji(level)} ${t(userId, 'fieldLevel')}`, value: level.toUpperCase(), inline: true },
+    { name: t(userId, 'fieldTime'),     value: `${stats.processingTimeMs}ms`,           inline: true },
+    { name: t(userId, 'fieldOrigSize'), value: `${bytesToKB(stats.originalSize)} KB`,   inline: true },
+    { name: t(userId, 'fieldObfSize'),  value: `${bytesToKB(stats.obfuscatedSize)} KB`, inline: true },
+    { name: t(userId, 'fieldIncrease'), value: `+${increase}%`,                         inline: true },
+  ];
+
+  if (techList.length <= 1024) {
+    fields.push({ name: t(userId, 'fieldTech'), value: techList, inline: false });
+  } else {
+    const techItems = stats.techniquesApplied;
+    let chunk = [];
+    let chunkLen = 0;
+    let partNum = 1;
+    for (let i = 0; i < techItems.length; i++) {
+      const line = `• ${techItems[i]}`;
+      if (chunkLen + line.length + 1 > 1020 && chunk.length > 0) {
+        fields.push({ name: `${t(userId, 'fieldTech')} (${partNum})`, value: chunk.join('\n'), inline: false });
+        partNum++;
+        chunk = [];
+        chunkLen = 0;
+      }
+      chunk.push(line);
+      chunkLen += line.length + 1;
+    }
+    if (chunk.length > 0) {
+      fields.push({ name: `${t(userId, 'fieldTech')} (${partNum})`, value: chunk.join('\n'), inline: false });
+    }
+  }
+
+  if (stats.vmShape && stats.vmShape !== 'N/A') {
+    fields.push({ name: '🧠 VM Shape', value: stats.vmShape, inline: true });
+  }
+
   return new EmbedBuilder()
     .setTitle(t(userId, 'doneTitle'))
     .setColor(Colors.Green)
-    .addFields(
-      { name: t(userId, 'fieldFile'),     value: filename,                                inline: true },
-      { name: `${levelEmoji(level)} ${t(userId, 'fieldLevel')}`, value: level.toUpperCase(), inline: true },
-      { name: t(userId, 'fieldTime'),     value: `${stats.processingTimeMs}ms`,           inline: true },
-      { name: t(userId, 'fieldOrigSize'), value: `${bytesToKB(stats.originalSize)} KB`,   inline: true },
-      { name: t(userId, 'fieldObfSize'),  value: `${bytesToKB(stats.obfuscatedSize)} KB`, inline: true },
-      { name: t(userId, 'fieldIncrease'), value: `+${increase}%`,                         inline: true },
-      {
-        name: t(userId, 'fieldTech'),
-        value: stats.techniquesApplied.map(x => `• ${x}`).join('\n') || '—',
-        inline: false,
-      },
-      ...(stats.vmShape && stats.vmShape !== 'N/A' ? [{
-        name: '🧠 VM Shape',
-        value: stats.vmShape,
-        inline: true,
-      }] : []),
-    )
+    .addFields(...fields)
     .setFooter({ text: t(userId, 'footer') })
     .setTimestamp();
 }
