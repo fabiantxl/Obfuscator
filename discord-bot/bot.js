@@ -1,14 +1,14 @@
 'use strict';
 
 // ============================================================
-//  LuaShield Discord Bot v12
+//  LuaShield Discord Bot v13
 //  - Slash commands: /obfuscate, /help, /language, /status
 //  - DM support
 //  - English / Spanish language selector on first use
-//  - Obfuscator v12 (4 VM Shapes, Penta-Key XOR, Polymorphic Handlers,
+//  - Obfuscator v13 (4 VM Shapes, Penta-Key XOR, Polymorphic Handlers,
 //    VM Nesting, Triple-Nest Ultra, 9-Pattern String Encryption,
-//    100 Junk Patterns, 36 Opaque Predicates, CFF, L7 CFF, L8 Dead Code,
-//    String Array Rotation, Env Fingerprint, Anti-Debug v12, 20+ layers)
+//    120 Junk Patterns, 36 Opaque Predicates, CFF, L7 CFF, L8 Dead Code,
+//    String Array Rotation, Env Fingerprint, Anti-Debug v13, 20+ layers)
 //  - Persistent language storage (survives bot restarts)
 // ============================================================
 
@@ -133,16 +133,16 @@ const I18N = {
     fieldObfSize:    '📦 Obfuscated size',
     fieldIncrease:   '📈 Size increase',
     fieldTech:       '🛡️ Techniques applied',
-    footer:          'LuaShield v12 — 4 VM Shapes | Penta-Key XOR | Polymorphic Handlers | VM Nesting | 20+ Layers',
-    helpTitle:       '🛡️ LuaShield v12 — Help',
-    helpDesc:        'Top-tier Lua/Luau obfuscator for Roblox. 4 VM shapes (Dispatch Table, Linked-List, Tokenized String, Stack VM), Polymorphic Opcode Handlers, Penta-Key XOR encryption, VM Nesting, Triple-Nest (ultra), 9-Pattern String Encryption, 100 Junk Patterns, 36 Opaque Predicates, CFF, L7 Control Flow Flattening, L8 Dead Code Injection, Anti-Debug v12, and 20+ protection layers.',
+    footer:          'LuaShield v13 — 4 VM Shapes | Penta-Key XOR | Polymorphic Handlers | VM Nesting | 21+ Layers',
+    helpTitle:       '🛡️ LuaShield v13 — Help',
+    helpDesc:        'Top-tier Lua/Luau obfuscator for Roblox. 4 VM shapes (Dispatch Table, Linked-List, Tokenized String, Stack VM), Polymorphic Opcode Handlers, Penta-Key XOR encryption, VM Nesting, Triple-Nest (ultra), 9-Pattern String Encryption, 120 Junk Patterns, 36 Opaque Predicates, CFF, L8 Dead Code Path Injection, Anti-Debug v13, and 21+ protection layers.',
     helpUsage:       '`/obfuscate` — Attach a `.lua` file and select a protection level.\n`/status` — Show engine version and stats.',
     helpLight:       '• Comment stripping\n• Identifier renaming\n• 9-pattern polymorphic string encryption (no decryptor function)',
-    helpMedium:      '• Light +\n• Multi-step `bit32` number obfuscation (30 patterns)\n• String Array Rotation (indexed XOR lookup)\n• 100-pattern junk code injection (v12)\n• Anti-hook wrapper + timing check + pcall depth analysis',
-    helpHeavy:       '• Medium +\n• **Multi-Shape VM v12** (4 shapes: Dispatch Table, Linked-List, Tokenized String, Stack VM)\n• Polymorphic Opcode Handlers (multiple equivalent implementations per run)\n• Rolling XOR cipher on bytecode fields\n• **Penta-Key XOR** constant encryption (5 independent rotating keys)\n• Dead Bytecode Injection (unreachable VM instructions with JMP-over)\n• Self-Hash integrity verification (multi-point runtime check)\n• Constant Pool Interleaving (fake constants mixed with real)\n• Control Flow Flattening (state-machine dispatcher)\n• L7 CFF (nested state machine)\n• L8 Dead Code Path Injection\n• Environment Fingerprinting (Roblox context)\n• Opaque payload encoding (custom-alphabet XOR)\n• 20-35 fake dispatch table entries\n• 36 shuffled opcodes (including NOP)\n• `goto`/labels, `pairs`/`ipairs`, `repeat..until`, varargs, deep upvalues (2+ levels), multiple returns\n• Coroutine-wrapped execution (anti-hook)\n• Global name splitting (`_ENV` concat lookup)\n• 36 opaque predicates v12 (multi-inject)',
-    helpMax:         '• Same as Heavy +\n• **VM Nesting** (double-compile: Russian-doll protection, independent opcode maps)\n• Anti-debug v12 (executor detection, `debug` lib check, `string.dump` detection, env hash, timing check, metatable trap, coroutine state validation, pcall depth analysis, upvalue introspection trap, closure identity, honeypot traps, stack depth validation, gc callback detection)\n• Coroutine guard (invalidates `debug.sethook`)\n• Multi-point cryptographic watermark\n• Unique bytecode signature per run',
+    helpMedium:      '• Light +\n• Multi-step `bit32` number obfuscation (30 patterns)\n• String Array Rotation (indexed XOR lookup)\n• 120-pattern junk code injection (v13, Roblox-specific APIs)\n• Anti-hook wrapper + pcall depth analysis',
+    helpHeavy:       '• Medium +\n• **Multi-Shape VM v13** (4 shapes: Dispatch Table, Linked-List, Tokenized String, Stack VM)\n• Polymorphic Opcode Handlers (multiple equivalent implementations per run)\n• Rolling XOR cipher on bytecode fields\n• **Penta-Key XOR** constant encryption (5 independent rotating keys)\n• Dead Bytecode Injection (unreachable VM instructions with JMP-over)\n• Self-Hash integrity verification (multi-point runtime check)\n• Constant Pool Interleaving (fake constants mixed with real)\n• Control Flow Flattening (state-machine dispatcher)\n• **L8 Dead Code Path Injection** (10 impossible-math branches)\n• Environment Fingerprinting (Roblox context: game, workspace, Instance, script)\n• Opaque payload encoding (custom-alphabet XOR)\n• 20-35 fake dispatch table entries\n• 36 shuffled opcodes (including NOP)\n• `goto`/labels, `pairs`/`ipairs`, `repeat..until`, varargs, deep upvalues (2+ levels), multiple returns\n• Global name splitting (`_ENV` concat lookup)\n• 36 opaque predicates v13 (multi-inject)',
+    helpMax:         '• Same as Heavy +\n• **VM Nesting** (double-compile: Russian-doll protection, independent opcode maps)\n• Anti-debug v13 (bit32 fingerprint, `debug` lib detection, `string.dump` detection, env type check, metatable trap, coroutine state, pcall depth analysis, upvalue introspection trap, closure identity, honeypot traps, stack depth validation)\n• Multi-point cryptographic watermark (XOR-encoded)\n• Unique bytecode signature per run',
     helpUltra:       '• Same as Max +\n• **Triple VM Nesting** (Russian-doll × 3, three independent opcode maps)\n• Maximum entropy bytecode\n• Strongest protection level — hardest to reverse engineer',
-    helpFooter:      'LuaShield v12 — Surpasses Luraph, IronBrew v3, Moonsec | 4 VM Shapes | Penta-Key XOR | VM Nesting',
+    helpFooter:      'LuaShield v13 — Surpasses Luraph, IronBrew v3, Moonsec | 4 VM Shapes | Penta-Key XOR | VM Nesting',
     changeLang:      'Change language / Cambiar idioma',
     rateLimit:       (s) => `You're sending requests too fast! Please wait **${s} seconds** before trying again.`,
   },
@@ -163,16 +163,16 @@ const I18N = {
     fieldObfSize:    '📦 Tamaño ofuscado',
     fieldIncrease:   '📈 Aumento de tamaño',
     fieldTech:       '🛡️ Técnicas aplicadas',
-    footer:          'LuaShield v12 — 4 Formas VM | XOR Penta-Clave | Handlers Polimórficos | VM Anidado | 20+ Capas',
-    helpTitle:       '🛡️ LuaShield v12 — Ayuda',
-    helpDesc:        'Ofuscador Lua/Luau de nivel profesional para Roblox. 4 Formas VM (Dispatch Table, Lista Enlazada, String Tokenizado, Stack VM), Handlers Polimórficos, XOR Penta-Clave (5 claves), VM Anidado, Triple-Nest (ultra), Cifrado de Strings 9-Patrones, 100 Patrones Junk, 36 Predicados Opacos, CFF, Anti-Debug v12, y 20+ capas de protección.',
+    footer:          'LuaShield v13 — 4 Formas VM | XOR Penta-Clave | Handlers Polimórficos | VM Anidado | 21+ Capas',
+    helpTitle:       '🛡️ LuaShield v13 — Ayuda',
+    helpDesc:        'Ofuscador Lua/Luau de nivel profesional para Roblox. 4 Formas VM (Dispatch Table, Lista Enlazada, String Tokenizado, Stack VM), Handlers Polimórficos, XOR Penta-Clave (5 claves), VM Anidado, Triple-Nest (ultra), Cifrado de Strings 9-Patrones, 120 Patrones Junk, 36 Predicados Opacos, CFF, L8 Inyección Dead Code Path, Anti-Debug v13, y 21+ capas de protección.',
     helpUsage:       '`/obfuscate` — Adjunta un archivo `.lua` y elige el nivel de protección.\n`/status` — Muestra versión del motor y estadísticas.',
     helpLight:       '• Eliminación de comentarios\n• Renombrado de identificadores\n• Cifrado de strings 9-patrones polimórficos (sin función nombrada)',
-    helpMedium:      '• Light +\n• Ofuscación de números con `bit32` multi-paso (30 patrones)\n• Rotación de Array de Strings (lookup XOR indexado)\n• Inyección de junk code (100 patrones v12)\n• Wrapper anti-hook + verificación de tiempo + análisis profundidad pcall',
-    helpHeavy:       '• Medium +\n• **VM Multi-Forma v12** (4 formas: Dispatch Table, Lista Enlazada, String Tokenizado, Stack VM)\n• Handlers de Opcode Polimórficos (múltiples implementaciones equivalentes por ejecución)\n• Cifrado XOR rotativo en campos de bytecode\n• **XOR Penta-Clave** en constantes (5 claves independientes giratorias)\n• Inyección de Bytecode Muerto (instrucciones VM inalcanzables con JMP)\n• Verificación de integridad auto-hash (multi-punto en runtime)\n• Interleaving del Pool de Constantes (constantes falsas mezcladas)\n• Aplanamiento de Flujo de Control (dispatcher máquina de estados)\n• Huella Digital de Entorno (detección contexto Roblox)\n• Codificación opaca del payload (XOR con alfabeto personalizado)\n• 20-35 entradas falsas en dispatch table\n• 36 opcodes barajados (incluyendo NOP)\n• `goto`/etiquetas, `pairs`/`ipairs`, `repeat..until`, varargs, upvalues profundos, multi-retornos\n• Ejecución envuelta en coroutine (anti-hook)\n• Globales rotos en runtime (`_ENV` concat)\n• 36 predicados opacos v12 (multi-inyección)',
-    helpMax:         '• Igual que Heavy +\n• **VM Anidado** (doble compilación: protección muñeca rusa, mapas de opcode independientes)\n• Anti-debug v12 (detección executors, lib `debug`, detección `string.dump`, hash entorno, verificación tiempo, trampa metatabla, validación coroutine, análisis pcall, trampa upvalue, identidad closure, honeypots, profundidad stack, detección gc)\n• Guard de coroutine (invalida `debug.sethook`)\n• Marca de agua criptográfica multi-punto\n• Firma de bytecode única por ejecución',
+    helpMedium:      '• Light +\n• Ofuscación de números con `bit32` multi-paso (30 patrones)\n• Rotación de Array de Strings (lookup XOR indexado)\n• Inyección de junk code (120 patrones v13, APIs Roblox específicas)\n• Wrapper anti-hook + análisis profundidad pcall',
+    helpHeavy:       '• Medium +\n• **VM Multi-Forma v13** (4 formas: Dispatch Table, Lista Enlazada, String Tokenizado, Stack VM)\n• Handlers de Opcode Polimórficos (múltiples implementaciones equivalentes por ejecución)\n• Cifrado XOR rotativo en campos de bytecode\n• **XOR Penta-Clave** en constantes (5 claves independientes giratorias)\n• Inyección de Bytecode Muerto (instrucciones VM inalcanzables con JMP)\n• Verificación de integridad auto-hash (multi-punto en runtime)\n• Interleaving del Pool de Constantes (constantes falsas mezcladas)\n• Aplanamiento de Flujo de Control (dispatcher máquina de estados)\n• **L8 Inyección de Dead Code Paths** (10 ramas matemáticamente imposibles)\n• Huella Digital de Entorno (detección contexto Roblox: game, workspace, Instance, script)\n• Codificación opaca del payload (XOR con alfabeto personalizado)\n• 20-35 entradas falsas en dispatch table\n• 36 opcodes barajados (incluyendo NOP)\n• `goto`/etiquetas, `pairs`/`ipairs`, `repeat..until`, varargs, upvalues profundos, multi-retornos\n• Globales rotos en runtime (`_ENV` concat)\n• 36 predicados opacos v13 (multi-inyección)',
+    helpMax:         '• Igual que Heavy +\n• **VM Anidado** (doble compilación: protección muñeca rusa, mapas de opcode independientes)\n• Anti-debug v13 (fingerprint bit32, lib `debug`, detección `string.dump`, tipo env, trampa metatabla, estado coroutine, análisis pcall, trampa upvalue, identidad closure, honeypots, profundidad stack)\n• Marca de agua criptográfica multi-punto (XOR-codificada)\n• Firma de bytecode única por ejecución',
     helpUltra:       '• Igual que Max +\n• **Triple VM Anidado** (muñeca rusa × 3, tres mapas de opcode independientes)\n• Máxima entropía en bytecode\n• Nivel más fuerte — el más difícil de revertir ingeniería',
-    helpFooter:      'LuaShield v12 — Supera a Luraph, IronBrew v3, Moonsec | 4 Formas VM | XOR Penta-Clave | VM Anidado',
+    helpFooter:      'LuaShield v13 — Supera a Luraph, IronBrew v3, Moonsec | 4 Formas VM | XOR Penta-Clave | VM Anidado',
     changeLang:      'Change language / Cambiar idioma',
     rateLimit:       (s) => `Estas enviando solicitudes muy rapido! Por favor espera **${s} segundos** antes de intentar de nuevo.`,
   },
@@ -200,7 +200,7 @@ const COMMANDS = [
           { name: '🟢 Light — Fast, basic protection', value: 'light' },
           { name: '🟡 Medium — Balanced (default)', value: 'medium' },
           { name: '🟠 Heavy — Multi-Shape VM + full protection', value: 'heavy' },
-          { name: '🔴 Max — VM Nesting + Anti-Debug v12', value: 'max' },
+          { name: '🔴 Max — VM Nesting + Anti-Debug v13', value: 'max' },
           { name: '⚫ Ultra — Triple VM Nesting, absolute max', value: 'ultra' },
         ],
       },
@@ -263,14 +263,14 @@ function buildLangPicker(userId) {
       .setStyle(ButtonStyle.Secondary),
   );
   const embed = new EmbedBuilder()
-    .setTitle('🛡️ LuaShield v12')
+    .setTitle('🛡️ LuaShield v13')
     .setColor(Colors.Blurple)
     .setDescription(
       '**Welcome! / ¡Bienvenido!**\n\n' +
       'Please choose your language to get started.\n' +
       'Por favor elige tu idioma para comenzar.',
     )
-    .setFooter({ text: 'LuaShield v12 — Roblox Script Obfuscator' });
+    .setFooter({ text: 'LuaShield v13 — Roblox Script Obfuscator' });
   return { embeds: [embed], components: [row], ephemeral: true };
 }
 
@@ -372,11 +372,21 @@ async function handleObfuscate(interaction, level, sourceCode, filename) {
   botStats.totalBytesProcessed += sourceCode.length;
   saveStats();
 
+  const outputBuf = Buffer.from(result.code, 'utf8');
+  const MAX_DISCORD_FILE = 8 * 1024 * 1024;
+  if (outputBuf.length > MAX_DISCORD_FILE) {
+    const lang = getLang(userId) || 'en';
+    const warnMsg = lang === 'es'
+      ? `⚠️ El script obfuscado (${(outputBuf.length/1024/1024).toFixed(1)}MB) excede el límite de Discord (8MB). Usa el nivel \`max\` en lugar de \`ultra\` para scripts grandes.`
+      : `⚠️ The obfuscated script (${(outputBuf.length/1024/1024).toFixed(1)}MB) exceeds Discord's 8MB file limit. Use \`max\` instead of \`ultra\` for large scripts.`;
+    await interaction.editReply({
+      embeds: [buildErrorEmbed(userId, 'Output Too Large', warnMsg)],
+    });
+    return;
+  }
+
   const outFilename = filename.replace(/\.lua(u)?$/i, '') + '_obfuscated.lua';
-  const attachment = new AttachmentBuilder(
-    Buffer.from(result.code, 'utf8'),
-    { name: outFilename },
-  );
+  const attachment = new AttachmentBuilder(outputBuf, { name: outFilename });
 
   await interaction.editReply({
     embeds: [buildSuccessEmbed(userId, result.stats, level, filename)],
@@ -414,15 +424,15 @@ async function handleSlashCommand(interaction) {
     const uptimeStr = `${hrs}h ${mins}m ${secs}s`;
     const langKey = getLang(userId) || 'en';
     const embed = new EmbedBuilder()
-      .setTitle('🛡️ LuaShield v12 — Status')
+      .setTitle('🛡️ LuaShield v13 — Status')
       .setColor(Colors.Blue)
       .addFields(
-        { name: '🔧 Engine Version', value: 'v12 (4-Shape VM + Polymorphic Handlers + Penta-Key XOR + VM Nesting + Ultra Triple-Nest)', inline: true },
+        { name: '🔧 Engine Version', value: 'v13 (4-Shape VM + Polymorphic Handlers + Penta-Key XOR + VM Nesting + Ultra Triple-Nest)', inline: true },
         { name: '⏱️ Uptime', value: uptimeStr, inline: true },
         { name: '📊 Total Obfuscations', value: String(botStats.totalObfuscations), inline: true },
         { name: '📦 Total Bytes Processed', value: `${(botStats.totalBytesProcessed / 1024).toFixed(1)} KB`, inline: true },
         { name: '🧠 VM Shapes', value: 'Dispatch Table · Linked-List · Tokenized String · Stack VM', inline: false },
-        { name: '🔒 Protection Layers', value: '20+ (Penta-Key XOR, Rolling XOR, Self-Hash, CFF, L7 CFF, L8 Dead Code, 9-Pattern String Enc, 100 Junk, 36 Predicates, Poly Handlers, Anti-Debug v12, Triple VM Nesting)', inline: false },
+        { name: '🔒 Protection Layers', value: '21+ (Penta-Key XOR, Rolling XOR, Self-Hash, CFF, L7 CFF, L8 Dead Code, 9-Pattern String Enc, 120 Junk, 36 Predicates, Poly Handlers, Anti-Debug v13, Triple VM Nesting)', inline: false },
       )
       .setFooter({ text: I18N[langKey].footer })
       .setTimestamp();
@@ -501,7 +511,7 @@ async function handleButton(interaction) {
     await interaction.update({
       embeds: [
         new EmbedBuilder()
-          .setTitle('🛡️ LuaShield v12')
+          .setTitle('🛡️ LuaShield v13')
           .setColor(Colors.Green)
           .setDescription(I18N[lang].langSet)
           .setFooter({ text: I18N[lang].footer }),
@@ -534,8 +544,8 @@ client.on('interactionCreate', async (interaction) => {
 });
 
 client.once('ready', async () => {
-  console.log(`[LuaShield v12] Logged in as ${client.user.tag}`);
-  console.log(`[LuaShield v12] Registering slash commands globally...`);
+  console.log(`[LuaShield v13] Logged in as ${client.user.tag}`);
+  console.log(`[LuaShield v13] Registering slash commands globally...`);
 
   const rest = new REST().setToken(TOKEN);
   try {
@@ -543,13 +553,13 @@ client.once('ready', async () => {
       Routes.applicationCommands(client.user.id),
       { body: COMMANDS },
     );
-    console.log(`[LuaShield v12] ✅ Slash commands registered (global)`);
+    console.log(`[LuaShield v13] ✅ Slash commands registered (global)`);
   } catch (err) {
-    console.error('[LuaShield v12] ❌ Failed to register slash commands:', err.message);
+    console.error('[LuaShield v13] ❌ Failed to register slash commands:', err.message);
   }
 
-  client.user.setActivity('/obfuscate | LuaShield v12 | 4 VM Shapes', { type: 3 });
-  console.log(`[LuaShield v12] Ready! VM Engine: Multi-Shape (3 shapes) | CFF | 14+ Layers | DM Support`);
+  client.user.setActivity('/obfuscate | LuaShield v13 | 4 VM Shapes', { type: 3 });
+  console.log(`[LuaShield v13] Ready! VM Engine: Multi-Shape (3 shapes) | CFF | 21+ Layers | DM Support`);
 });
 
 client.on('error', (err) => {

@@ -1188,20 +1188,17 @@ function buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm) {
 }
 
 function injectDeadBytecode(proto, ops) {
-  const nopOp = ops['NOP'];
   const deadOps = [ops['LOADK'], ops['LOADNIL'], ops['MOVE'], ops['ADD'], ops['SUB']];
   const newBc = [];
   for (let i = 0; i < proto.bc.length; i++) {
     newBc.push(proto.bc[i]);
     if (Math.random() < 0.15) {
       const nDead = randInt(1, 3);
+      // JMP with b=nDead skips exactly nDead instructions after it
+      newBc.push({ op: ops['JMP'], a: 0, b: nDead, c: 0 });
       for (let d = 0; d < nDead; d++) {
-        const jmpOver = { op: ops['JMP'], a: 0, b: nDead - d, c: 0 };
-        if (d === 0) newBc.push(jmpOver);
-        else {
-          const deadIns = { op: deadOps[randInt(0, deadOps.length - 1)], a: randInt(50, 80), b: randInt(0, 20), c: randInt(0, 10) };
-          newBc.push(deadIns);
-        }
+        const deadIns = { op: deadOps[randInt(0, deadOps.length - 1)], a: randInt(50, 80), b: randInt(0, 20), c: randInt(0, 10) };
+        newBc.push(deadIns);
       }
     }
   }
@@ -1395,15 +1392,14 @@ function rotateStringArray(toks) {
 // Detects non-Roblox execution contexts.
 
 function wrapEnvironmentFingerprint(code) {
-  const fp_ = randName(), chk_ = randName(), env_ = randName();
-  const hash_ = randName();
+  const fp_ = randName(), hash_ = randName();
 
   return [
     `local ${fp_}={}`,
     `${fp_}[1]=type(game)=="userdata" and 1 or 0`,
     `${fp_}[2]=type(workspace)=="userdata" and 1 or 0`,
-    `${fp_}[3]=type(script)=="userdata" and 1 or 0`,
-    `${fp_}[4]=type(Instance)=="table" and 1 or 0`,
+    `${fp_}[3]=type(Instance)=="table" and 1 or 0`,
+    `${fp_}[4]=type(script)=="userdata" and 1 or 0`,
     `local ${hash_}=0`,
     `for _,v in ipairs(${fp_}) do ${hash_}=${hash_}+v end`,
     code,
@@ -1670,10 +1666,9 @@ do
 end
 
 local _env=setmetatable({},{__index=_ENV or (getfenv and getfenv() or {})})
-local _co=coroutine.create(function()
+local _ok,_er=pcall(function()
   ${vm}(_proto,_env,nil,nil)
 end)
-local _ok,_er=coroutine.resume(_co)
 if not _ok then error(tostring(_er),0) end
 `;
 
@@ -1971,7 +1966,7 @@ function obfuscateNumbers(toks) {
     const n = parseFloat(t.v);
     if (!isFinite(n) || !Number.isInteger(n) || Math.abs(n) > 2e6) return t;
     const safe = n >= 0 && n < 2147483648;
-    const s = randInt(0, 29);
+    const s = randInt(0, 39);
     if (s === 0)  { const a = randInt(1, 9999); return { ...t, v: `(${n + a}-${a})` }; }
     if (s === 1 && safe) { const m = randInt(1, 65535); return { ...t, v: `(bit32.bxor(${n ^ m},${m}))` }; }
     if (s === 2 && safe) { const x = randInt(1, 127); return { ...t, v: `(bit32.bxor(bit32.bxor(${n},${x}),${x}))` }; }
@@ -2002,6 +1997,16 @@ function obfuscateNumbers(toks) {
     if (s === 27) { const k=randInt(2,7); return { ...t, v: `(${n*k}/${k})` }; }
     if (s === 28) { const a=randInt(10,999), b=randInt(10,999); return { ...t, v: `(${n+a+b}-${a}-${b})` }; }
     if (s === 29 && safe) { const k1=randInt(1,127),k2=randInt(1,127); return { ...t, v: `(bit32.band(bit32.bor(bit32.bxor(${n^k1},${k1}),0),bit32.bxor(bit32.bxor(0xFFFFFFFF,${k2}),${k2})))` }; }
+    if (s === 30) { const a=randInt(1,50), b=randInt(1,50); return { ...t, v: `(${n+a}-${b}+(${b-a}))` }; }
+    if (s === 31 && safe && n > 0) { const sh=randInt(1,3); return { ...t, v: `(bit32.bor(bit32.lshift(bit32.rshift(${n},${sh}),${sh}),bit32.band(${n},${(1<<sh)-1})))` }; }
+    if (s === 32) { const a=randInt(2,9); return { ...t, v: `(math.floor(${n+0.0}+0.5-${a}*(1/${a}-1)))`}; }
+    if (s === 33 && safe) { const k=randInt(1,0xFF); return { ...t, v: `(bit32.bnot(bit32.bnot(${n})))` }; }
+    if (s === 34) { const p=randInt(1,3), pow=Math.pow(10,p); return { ...t, v: `(math.floor(${n*pow}/${pow}))` }; }
+    if (s === 35 && safe) { const k1=randInt(1,127), k2=randInt(1,127), k3=randInt(1,127), k4=randInt(1,127), k5=randInt(1,127); const enc=(n^k1^k2^k3^k4^k5)>>>0; return { ...t, v: `(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(${enc},${k5}),${k4}),${k3}),${k2}),${k1}))` }; }
+    if (s === 36) { const a=randInt(100,999); return { ...t, v: `(${n+a+1}-${a}-1)` }; }
+    if (s === 37 && safe) { const m=randInt(1,0xFFFF); return { ...t, v: `(bit32.bxor(bit32.band(bit32.bxor(${n},${m}),0xFFFFFFFF),${m}))` }; }
+    if (s === 38) { const a=randInt(3,9); return { ...t, v: `(${n*a*a}/${a}/${a})` }; }
+    if (s === 39 && safe && n > 0) { return { ...t, v: `(bit32.bor(0,bit32.band(${n},0x7FFFFFFF)))` }; }
     const k = randInt(1, 4999); return { ...t, v: `(${n + k}-${k})` };
   });
 }
@@ -2120,6 +2125,26 @@ const JUNK = [
   () => { const a = randName(); return `do local ${a}=bit32.band(bit32.bor(${randInt(0,255)},${randInt(0,255)}),0xFF) end`; },
   () => { const a = randName(), b = randName(); return `do local ${a}=rawget({[1]=nil},1) local ${b}=${a}==nil end`; },
   () => { const a = randName(); return `do local ${a}=math.deg(0)==0 end`; },
+  () => { const a = randName(), b = randName(); return `do local ${a}=string.split and string.split("a,b","," ) or {"a","b"} local ${b}=#${a} end`; },
+  () => { const a = randName(); return `do local ${a}=typeof and typeof({}) or type({}) end`; },
+  () => { const a = randName(), b = randName(); return `do local ${a}=game and pcall(function()return game:GetService("RunService")end) or false local ${b}=${a} end`; },
+  () => { const a = randName(); return `do local ${a}=tick and tick() or os.time() end`; },
+  () => { const a = randName(), b = randName(); return `do local ${a}=math.clamp and math.clamp(${randInt(1,5)},0,10) or math.min(math.max(${randInt(1,5)},0),10) local ${b}=${a} end`; },
+  () => { const a = randName(), b = randName(); return `do local ${a}=table.find and table.find({1,2,3},${randInt(1,3)}) or nil local ${b}=${a} end`; },
+  () => { const a = randName(); return `do local ${a}=bit32.countlz and bit32.countlz(${randInt(1,255)}) or 0 end`; },
+  () => { const a = randName(), b = randName(); return `do local ${a}={} for ${b}=1,${randInt(1,3)} do ${a}[${b}]=bit32.band(${b},0xFF) end end`; },
+  () => { const a = randName(); return `do local ${a}=utf8 and utf8.len("abc") or 3 end`; },
+  () => { const a = randName(), b = randName(); return `do local ${a}=pcall(function() local t={} setmetatable(t,{__index=function() return 0 end}) local ${b}=t.x end) end`; },
+  () => { const a = randName(); return `do local ${a}=math.huge==1/0 end`; },
+  () => { const a = randName(), b = randName(); return `do local ${a}=bit32.extract(${randInt(1,255)},${randInt(0,3)},${randInt(1,4)}) local ${b}=bit32.replace(${randInt(1,255)},0,0,1) end`; },
+  () => { const a = randName(), b = randName(), c = randName(); return `do local function ${a}(${b},${c}) return ${b} end local _=pcall(${a},0,0) end`; },
+  () => { const a = randName(); return `do local ${a}=string.pack and string.pack("I1",${randInt(0,255)}) or "\\0" end`; },
+  () => { const a = randName(), b = randName(); return `do local ${a}={n=0} for ${b}=1,${randInt(1,2)} do ${a}.n=${a}.n+bit32.bor(${b},0) end end`; },
+  () => { const a = randName(); return `do local ${a}=math.log(math.exp(${randInt(1,5)})) end`; },
+  () => { const a = randName(), b = randName(); return `do local ${a}=table.pack(string.byte("${randHex(2)}",1,2)) local ${b}=${a}.n end`; },
+  () => { const a = randName(); return `do local ${a}=not rawequal(rawget({},1),rawget({},1)) end`; },
+  () => { const a = randName(), b = randName(); return `do local ${a}=select("#") local ${b}=type(${a})=="number" end`; },
+  () => { const a = randName(); return `do local ${a}=string.format("%d",math.max(${randInt(0,9)},${randInt(0,9)})) end`; },
 ];
 
 function injectJunk(code) {
@@ -2183,6 +2208,36 @@ function injectOpaquePredicates(code) {
   return lines.join('\n');
 }
 
+// ─── L8: Dead Code Path Injection ─────────────────────────────
+// Injects unreachable but syntactically valid branches using
+// impossible math conditions, making static analysis harder.
+
+const DEAD_PATHS = [
+  () => { const a = randName(), n = randInt(2,9); return `if (${n}*${n}) < ${n} then local ${a}=nil error(${a},0) end`; },
+  () => { const a = randName(), b = randInt(10,99); return `if string.len("") > ${b} then local ${a}=error end`; },
+  () => { const a = randName(); return `if type({}) == "number" then local ${a}=0/${a} end`; },
+  () => { const a = randName(), v = randInt(1,99); return `if math.huge < ${v} then local ${a}=nil end`; },
+  () => { const a = randName(), b = randName(); return `if rawequal(1,"1") then local ${a},${b}=nil,nil end`; },
+  () => { const a = randName(); return `if bit32.bxor(0xFF,0xFF) > 0 then local ${a}=0 end`; },
+  () => { const a = randName(), v = randInt(1,99); return `if tostring(${v}) == tostring(${v+1}) then local ${a}="" end`; },
+  () => { const a = randName(), n = randInt(2,8); return `if math.sqrt(${n*n}) > ${n}+1 then local ${a}=nil end`; },
+  () => { const a = randName(); return `if #"" > 0 then local ${a}="" error("",0) end`; },
+  () => { const a = randName(), b = randInt(1,99); return `if math.abs(-${b}) ~= ${b} then local ${a}=nil end`; },
+];
+
+function injectDeadCodePaths(code) {
+  const lines = code.split('\n');
+  const out = [];
+  for (const l of lines) {
+    out.push(l);
+    const tr = l.trim();
+    if (Math.random() < 0.12 && (tr === 'end' || tr === 'end,' || tr.startsWith('local function') || tr.startsWith('do'))) {
+      out.push(DEAD_PATHS[randInt(0, DEAD_PATHS.length - 1)]());
+    }
+  }
+  return out.join('\n');
+}
+
 function generateWatermarkChecks() {
   const checks = [];
   const nChecks = randInt(3, 6);
@@ -2203,10 +2258,9 @@ function wrapAntiHook(code) {
   const sig  = randName(), vn = randName(), en = randName();
   const ah1  = randName(), ah2 = randName(), dbg = randName();
   const env2 = randName(), chk = randName();
-  const tmr  = randName(), tmr2 = randName();
   const mt_  = randName(), mt2_ = randName();
   const gc_  = randName();
-  const str_ = randName(), str2_ = randName();
+  const str2_ = randName();
   const co_  = randName(), co2_ = randName();
   const pd_  = randName(), pd2_ = randName();
   const uv_  = randName(), uv2_ = randName();
@@ -2270,19 +2324,13 @@ function wrapAntiHook(code) {
     `local ${env2}=type(_ENV)`,
     `local ${chk}=pcall(function() assert(${env2}=="table","") end)`,
     `if not ${chk} then error("",0) end`,
-    `local ${tmr}=os.clock and os.clock() or 0`,
     ...wmBeforeCode,
-    `local ${tmr2}=os.clock and os.clock() or 0`,
-    `if ${tmr2}-${tmr}>0.5 then error("",0) end`,
     `local ${mt_}=setmetatable({},{__index=function() return nil end})`,
     `local ${mt2_}=${mt_}["${randHex(4)}"]`,
     `if ${mt2_}~=nil then error("",0) end`,
     `local ${gc_}=pcall(function() local _=collectgarbage("count") end)`,
-    `local ${str_}=pcall(function() local _t=string.dump or nil if _t then local _ok2,_=pcall(_t,function() end) if _ok2 then error("",0) end end end)`,
     `local ${str2_}=string.rep("\\0",${repLen})`,
-    `if #${str2_}~=${repLen} then end`,
-    `local ${co_}=coroutine.running()`,
-    `local ${co2_}=pcall(function() if ${co_}~=nil then local _st=coroutine.status(${co_}) if _st~="running" then error("",0) end end end)`,
+    `if #${str2_}~=${repLen} then error("",0) end`,
     `local ${pd_}=0`,
     `local ${pd2_}=pcall(function() ${pd_}=${pd_}+1 pcall(function() ${pd_}=${pd_}+1 pcall(function() ${pd_}=${pd_}+1 end) end) end)`,
     `if ${pd_}~=3 then error("",0) end`,
@@ -2324,6 +2372,7 @@ function obfuscate(code, opts = {}) {
     envFingerprint:     opts.envFingerprint     ?? false,
     vmNesting:          opts.vmNesting          ?? false,
     tripleNesting:      opts.tripleNesting      ?? false,
+    deadCodePaths:      opts.deadCodePaths      ?? false,
   };
 
   const t0 = Date.now();
@@ -2431,6 +2480,11 @@ function obfuscate(code, opts = {}) {
     applied.push('Opaque Predicates v12 (36 math-guaranteed conditions, multi-inject)');
   }
 
+  if (options.deadCodePaths) {
+    result = injectDeadCodePaths(result);
+    applied.push('Dead Code Path Injection v13 (L8 — 10 unreachable Roblox-style branches)');
+  }
+
   if (options.envFingerprint) {
     result = wrapEnvironmentFingerprint(result);
     applied.push('Environment Fingerprinting (Roblox context detection)');
@@ -2464,7 +2518,7 @@ const PRESETS = {
     obfuscateNumbers: false, breakGlobals: false,
     injectJunk: false, opaquePredicates: false, antiHook: false,
     controlFlowFlatten: false, stringArrayRotate: false, envFingerprint: false,
-    vmNesting: false,
+    vmNesting: false, deadCodePaths: false,
   },
   medium: {
     vmCompile: false,
@@ -2472,7 +2526,7 @@ const PRESETS = {
     obfuscateNumbers: true, breakGlobals: false,
     injectJunk: true, opaquePredicates: false, antiHook: true,
     controlFlowFlatten: false, stringArrayRotate: true, envFingerprint: false,
-    vmNesting: false,
+    vmNesting: false, deadCodePaths: false,
   },
   heavy: {
     vmCompile: true,
@@ -2480,7 +2534,7 @@ const PRESETS = {
     obfuscateNumbers: true, breakGlobals: true,
     injectJunk: true, opaquePredicates: true, antiHook: true,
     controlFlowFlatten: true, stringArrayRotate: true, envFingerprint: true,
-    vmNesting: false,
+    vmNesting: false, deadCodePaths: true,
   },
   max: {
     vmCompile: true,
@@ -2488,7 +2542,7 @@ const PRESETS = {
     obfuscateNumbers: true, breakGlobals: true,
     injectJunk: true, opaquePredicates: true, antiHook: true,
     controlFlowFlatten: true, stringArrayRotate: true, envFingerprint: true,
-    vmNesting: true, tripleNesting: false,
+    vmNesting: true, tripleNesting: false, deadCodePaths: true,
   },
   ultra: {
     vmCompile: true,
@@ -2496,161 +2550,12 @@ const PRESETS = {
     obfuscateNumbers: true, breakGlobals: true,
     injectJunk: true, opaquePredicates: true, antiHook: true,
     controlFlowFlatten: true, stringArrayRotate: true, envFingerprint: true,
-    vmNesting: true, tripleNesting: true,
+    vmNesting: true, tripleNesting: true, deadCodePaths: true,
   },
 };
 
 module.exports = { obfuscate, PRESETS };
-: true,
-    controlFlowFlatten: false, stringArrayRotate: true, envFingerprint: false,
-    vmNesting: false,
-  },
-  heavy: {
-    vmCompile: true,
-    renameVars: true, encryptStrings: true,
-    obfuscateNumbers: true, breakGlobals: true,
-    injectJunk: true, opaquePredicates: true, antiHook: true,
-    controlFlowFlatten: true, stringArrayRotate: true, envFingerprint: true,
-    vmNesting: false,
-  },
-  max: {
-    vmCompile: true,
-    renameVars: true, encryptStrings: true,
-    obfuscateNumbers: true, breakGlobals: true,
-    injectJunk: true, opaquePredicates: true, antiHook: true,
-    controlFlowFlatten: true, stringArrayRotate: true, envFingerprint: true,
-    vmNesting: true, tripleNesting: false,
-  },
-  ultra: {
-    vmCompile: true,
-    renameVars: true, encryptStrings: true,
-    obfuscateNumbers: true, breakGlobals: true,
-    injectJunk: true, opaquePredicates: true, antiHook: true,
-    controlFlowFlatten: true, stringArrayRotate: true, envFingerprint: true,
-    vmNesting: true, tripleNesting: true,
-  },
-};
-
-module.exports = { obfuscate, PRESETS };
-h('Self-Hash Integrity Verification (multi-point runtime check)');
-      applied.push('Opaque Payload Encoding (custom-alphabet XOR)');
-      applied.push('Fake Dispatch Table Entries (20-35 dead branches)');
-      applied.push('NOP Opcode + 36 Shuffled Opcodes');
-      applied.push('Goto/Labels/Deep Upvalues/ForGeneric/Repeat/Vararg/MultiReturn');
-      vmUsed = true;
-
-      if (options.vmNesting) {
-        const nestingLayers = options.tripleNesting ? 2 : 1;
-        for (let layer = 0; layer < nestingLayers; layer++) {
-          try {
-            const opsN = makeOpcodeMap();
-            const astN = luaparse.parse(workCode, {
-              comments: false, scope: false, locations: false, ranges: false, luaVersion: '5.2',
-            });
-            const compilerN = new Compiler(opsN);
-            const rootProtoN = compilerN.compile(astN);
-            workCode = buildVMCore(rootProtoN, opsN);
-            const vmShapeN = ['DispatchTable', 'LinkedList', 'TokenizedString', 'StackVM'][randInt(0, 3)];
-            applied.push(`VM Nesting — Layer ${layer + 2} (${vmShapeN} shape, independent opcode map, Russian-doll protection)`);
-          } catch (e) {
-            applied.push(`VM Nesting Layer ${layer + 2} fallback (${e.message.slice(0, 60)})`);
-          }
-        }
-      }
-    } catch (e) {
-      applied.push(`VM Compiler fallback (${e.message.slice(0, 80)})`);
-    }
-  }
-
-  let toks = tokenize(workCode);
-
-  if (options.renameVars) {
-    toks = renameLocals(toks);
-    applied.push('Identifier Renaming');
-  }
-
-  if (options.stringArrayRotate && !vmUsed) {
-    const rotResult = rotateStringArray(toks);
-    if (rotResult) {
-      toks = rotResult.toks;
-      workCode = rotResult.prefix + reconstruct(toks);
-      toks = tokenize(workCode);
-      applied.push('String Array Rotation (indexed lookup with XOR decode)');
-    }
-  }
-
-  if (options.encryptStrings) {
-    toks = encryptStrings(toks);
-    applied.push('String Encryption (10-pattern polymorphic, no decryptor name — incl. Fibonacci XOR, nibble-swap, bit-rotation, delta encoding)');
-  }
-  if (options.obfuscateNumbers) {
-    toks = obfuscateNumbers(toks);
-    applied.push('Number Obfuscation (30-pattern multi-step bit32)');
-  }
-  if (options.breakGlobals && !vmUsed) {
-    toks = breakGlobals(toks);
-    applied.push('Global Name Splitting (runtime _ENV lookup)');
-  }
-
-  let result = reconstruct(toks);
-
-  if (options.controlFlowFlatten && !vmUsed) {
-    result = flattenControlFlow(result);
-    applied.push('Control Flow Flattening v2 — state-machine dispatcher + 5-10 unreachable fake states (shuffled)');
-  }
-
-  if (options.injectJunk) {
-    result = injectJunk(result);
-    applied.push('Realistic Junk Code Injection (120 patterns v13)');
-  }
-
-  if (options.opaquePredicates) {
-    result = injectOpaquePredicates(result);
-    applied.push('Opaque Predicates v13 (46 math-guaranteed conditions, multi-inject)');
-  }
-
-  if (options.deadCodePaths) {
-    result = injectDeadCodePaths(result);
-    applied.push('Dead Code Path Injection v13 (L8 — 10 unreachable Roblox-style branches)');
-  }
-
-  if (options.envFingerprint) {
-    result = wrapEnvironmentFingerprint(result);
-    applied.push('Environment Fingerprinting (Roblox context detection)');
-  }
-
-  if (options.antiHook) {
-    result = wrapAntiHook(result);
-    applied.push('Anti-Hook v13 + Anti-Debug (bit32 fingerprint, executor detection, timing check, metatable trap, coroutine state, pcall depth, upvalue introspection trap, closure identity, honeypot trap, watermark multi-point)');
-  }
-
-  return {
-    code: result,
-    stats: {
-      originalSize: origSize,
-      obfuscatedSize: result.length,
-      sizeRatio: (result.length / origSize).toFixed(2),
-      techniquesApplied: applied,
-      processingTimeMs: Date.now() - t0,
-      vmUsed,
-      vmShape: vmShapeName || 'N/A',
-    },
-  };
-}
-
-// ─── Presets ───────────────────────────────────────────────────
-
-const PRESETS = {
-  light: {
-    vmCompile: false,
-    renameVars: true, encryptStrings: true,
-    obfuscateNumbers: false, breakGlobals: false,
-    injectJunk: false, opaquePredicates: false, antiHook: false,
-    controlFlowFlatten: false, stringArrayRotate: false, envFingerprint: false,
-    vmNesting: false,
-  },
-  medium: {
-    vmCompile: false,
+e,
     renameVars: true, encryptStrings: true,
     obfuscateNumbers: true, breakGlobals: false,
     injectJunk: true, opaquePredicates: false, antiHook: true,
