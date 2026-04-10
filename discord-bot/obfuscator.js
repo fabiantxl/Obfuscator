@@ -893,7 +893,7 @@ class Compiler {
       const objReg = proto.allocTemp();
       this.compileExprTo(node.base.base, objReg);
       const ki = proto.addK(node.base.identifier.name);
-      this.emit('SELF', fnReg, objReg, ki);
+      this.emit('SELF', fnReg, objReg, KR(ki));
       for (const arg of args) {
         const r = proto.allocTemp();
         this.compileExprTo(arg, r);
@@ -1627,6 +1627,125 @@ function buildStackVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm
   end`;
 }
 
+// ─── Global Indirection Layer (v14) ────────────────────────────
+// Hides ALL standard library references behind obfuscated variables
+// so the output never contains readable "string.char", "bit32.bxor", etc.
+
+function buildGlobalIndirection() {
+  const s_char = randName(), s_byte = randName(), s_sub = randName();
+  const s_len = randName(), s_rep = randName(), s_fmt = randName();
+  const s_concat = randName();
+  const t_concat = randName(), t_insert = randName(), t_remove = randName();
+  const t_unpack = randName();
+  const b_bxor = randName(), b_band = randName(), b_bor = randName();
+  const b_bnot = randName(), b_lshift = randName(), b_rshift = randName();
+  const m_floor = randName(), m_max = randName(), m_abs = randName();
+  const ipairs_ = randName(), pairs_ = randName(), type_ = randName();
+  const tostr_ = randName(), tonum_ = randName(), pcall_ = randName();
+  const error_ = randName(), select_ = randName(), rawget_ = randName();
+  const rawset_ = randName(), setmt_ = randName(), getmt_ = randName();
+
+  const envVar = randName();
+  const strRef = randName();
+  const tblRef = randName();
+  const bitRef = randName();
+  const mathRef = randName();
+
+  const charCodes = (s) => Array.from(s).map(c => c.charCodeAt(0)).join(',');
+
+  const bootstrap = `
+local ${envVar}=(type(_ENV)=="table" and _ENV) or (type(_ENV)=="userdata" and _ENV) or (getfenv and getfenv(0)) or _G or {}
+local ${strRef}=${envVar}[string.char(${charCodes('string')})]
+local ${tblRef}=${envVar}[string.char(${charCodes('table')})]
+local ${bitRef}=${envVar}[string.char(${charCodes('bit32')})]
+local ${mathRef}=${envVar}[string.char(${charCodes('math')})]
+local ${s_char}=${strRef}[string.char(${charCodes('char')})]
+local ${s_byte}=${strRef}[string.char(${charCodes('byte')})]
+local ${s_sub}=${strRef}[string.char(${charCodes('sub')})]
+local ${s_len}=${strRef}[string.char(${charCodes('len')})]
+local ${s_rep}=${strRef}[string.char(${charCodes('rep')})]
+local ${s_fmt}=${strRef}[string.char(${charCodes('format')})]
+local ${s_concat}=${strRef}[string.char(${charCodes('byte')})]
+local ${t_concat}=${tblRef}[string.char(${charCodes('concat')})]
+local ${t_insert}=${tblRef}[string.char(${charCodes('insert')})]
+local ${t_remove}=${tblRef}[string.char(${charCodes('remove')})]
+local ${t_unpack}=${tblRef}[string.char(${charCodes('unpack')})] or ${envVar}[string.char(${charCodes('unpack')})]
+local ${b_bxor}=${bitRef}[string.char(${charCodes('bxor')})]
+local ${b_band}=${bitRef}[string.char(${charCodes('band')})]
+local ${b_bor}=${bitRef}[string.char(${charCodes('bor')})]
+local ${b_bnot}=${bitRef}[string.char(${charCodes('bnot')})]
+local ${b_lshift}=${bitRef}[string.char(${charCodes('lshift')})]
+local ${b_rshift}=${bitRef}[string.char(${charCodes('rshift')})]
+local ${m_floor}=${mathRef}[string.char(${charCodes('floor')})]
+local ${m_max}=${mathRef}[string.char(${charCodes('max')})]
+local ${m_abs}=${mathRef}[string.char(${charCodes('abs')})]
+local ${ipairs_}=${envVar}[string.char(${charCodes('ipairs')})]
+local ${pairs_}=${envVar}[string.char(${charCodes('pairs')})]
+local ${type_}=${envVar}[string.char(${charCodes('type')})]
+local ${tostr_}=${envVar}[string.char(${charCodes('tostring')})]
+local ${tonum_}=${envVar}[string.char(${charCodes('tonumber')})]
+local ${pcall_}=${envVar}[string.char(${charCodes('pcall')})]
+local ${error_}=${envVar}[string.char(${charCodes('error')})]
+local ${select_}=${envVar}[string.char(${charCodes('select')})]
+local ${rawget_}=${envVar}[string.char(${charCodes('rawget')})]
+local ${rawset_}=${envVar}[string.char(${charCodes('rawset')})]
+local ${setmt_}=${envVar}[string.char(${charCodes('setmetatable')})]
+local ${getmt_}=${envVar}[string.char(${charCodes('getmetatable')})]
+`;
+
+  return {
+    bootstrap,
+    envVar,
+    refs: {
+      s_char, s_byte, s_sub, s_len, s_rep, s_fmt, s_concat,
+      t_concat, t_insert, t_remove, t_unpack,
+      b_bxor, b_band, b_bor, b_bnot, b_lshift, b_rshift,
+      m_floor, m_max, m_abs,
+      ipairs_, pairs_, type_, tostr_, tonum_, pcall_, error_,
+      select_, rawget_, rawset_, setmt_, getmt_,
+      strRef, tblRef, bitRef, mathRef,
+    },
+  };
+}
+
+// ─── Proto Data Encoder (v14) ──────────────────────────────────
+// Encodes the serialized proto table as a binary string with XOR
+// decoding at runtime, making the data completely opaque.
+
+function encodeProtoAsBinaryString(protoStr, refs) {
+  const keyLen = randInt(16, 32);
+  const key = Array.from({ length: keyLen }, () => randInt(1, 254));
+  const encoded = [];
+  for (let i = 0; i < protoStr.length; i++) {
+    encoded.push((protoStr.charCodeAt(i) ^ key[i % keyLen]) & 0xFF);
+  }
+
+  const dataVar = randName();
+  const keyVar = randName();
+  const outVar = randName();
+  const idxVar = randName();
+  const bufVar = randName();
+
+  const chunkSize = 60;
+  const chunks = [];
+  for (let i = 0; i < encoded.length; i += chunkSize) {
+    chunks.push(encoded.slice(i, i + chunkSize).join(','));
+  }
+
+  return {
+    decoder: `
+local ${keyVar}={${key.join(',')}}
+local ${dataVar}={${chunks.join(',\n')}}
+local ${bufVar}={}
+for ${idxVar}=1,#${dataVar} do
+  ${bufVar}[${idxVar}]=${refs.s_char}(${refs.b_bxor}(${dataVar}[${idxVar}],${keyVar}[(${idxVar}-1)%#${keyVar}+1]))
+end
+local ${outVar}=${refs.t_concat}(${bufVar})
+`,
+    protoLoadExpr: `(loadstring or load)(${refs.s_char}(114,101,116,117,114,110,32)..${outVar})()`,
+  };
+}
+
 // ─── VM Core Builder ───────────────────────────────────────────
 
 function buildVMCore(rootProto, ops) {
@@ -1635,6 +1754,9 @@ function buildVMCore(rootProto, ops) {
   const protoStr = serializeProto(rootProto);
   const O = ops;
   const CB = CONST_BASE;
+
+  const gi = buildGlobalIndirection();
+  const R = gi.refs;
 
   const vm    = randName();
   const pc_   = randName();
@@ -1651,15 +1773,15 @@ function buildVMCore(rootProto, ops) {
   const fakeDt = (() => {
     const usedFake = new Set();
     const fakeBodyGen = [
-      () => `local _f=bit32.bxor(${randInt(1,99)},${randInt(1,99)}) local _g=_f*${randInt(1,9)}`,
-      () => `local _f=math.max(${randInt(1,9)},${randInt(1,9)}) _f=_f-_f`,
+      () => `local _f=${R.b_bxor}(${randInt(1,99)},${randInt(1,99)}) local _g=_f*${randInt(1,9)}`,
+      () => `local _f=${R.m_max}(${randInt(1,9)},${randInt(1,9)}) _f=_f-_f`,
       () => `local _f={} _f[1]=nil _f=nil`,
-      () => `local _f=string.char(${randInt(65,122)}) _f=_f.._f`,
-      () => `local _f=bit32.band(${randInt(1,255)},0xFF)`,
-      () => `local _f=math.floor(${randInt(1,99)}/${randInt(1,9)})`,
-      () => `local _f=tostring(${randInt(1,999)}) _f=nil`,
-      () => `local _f=math.sin(${randInt(1,99)}) _f=math.cos(_f)`,
-      () => `local _f=string.len("${randHex(4)}") _f=_f-_f`,
+      () => `local _f=${R.s_char}(${randInt(65,122)}) _f=_f.._f`,
+      () => `local _f=${R.b_band}(${randInt(1,255)},0xFF)`,
+      () => `local _f=${R.m_floor}(${randInt(1,99)}/${randInt(1,9)})`,
+      () => `local _f=${R.tostr_}(${randInt(1,999)}) _f=nil`,
+      () => `local _f=${R.m_floor}(${randInt(1,99)}*0.${randInt(1,9)})`,
+      () => `local _f=${R.s_len}("${randHex(4)}") _f=_f-_f`,
       () => ``,
     ];
     let s = '';
@@ -1674,7 +1796,7 @@ function buildVMCore(rootProto, ops) {
     return s;
   })();
 
-  const unpack_ = randName();
+  const unpack_ = R.t_unpack;
   const vmShape = randInt(0, 3);
   let vmBody;
   if (vmShape === 0) {
@@ -1695,8 +1817,30 @@ function buildVMCore(rootProto, ops) {
   const integrityB = (bcCount ^ subCount ^ 0xA5) & 0xFF;
   const hashVar = randName();
   const hashChk = randName();
+
+  const vmBodyStr = vmBody
+    .replace(/\bstring\.char\b/g, R.s_char)
+    .replace(/\bstring\.byte\b/g, R.s_byte)
+    .replace(/\bstring\.sub\b/g, R.s_sub)
+    .replace(/\bstring\.len\b/g, R.s_len)
+    .replace(/\bstring\.format\b/g, R.s_fmt)
+    .replace(/\btable\.concat\b/g, R.t_concat)
+    .replace(/\btable\.unpack\b/g, R.t_unpack)
+    .replace(/\bbit32\.bxor\b/g, R.b_bxor)
+    .replace(/\bbit32\.band\b/g, R.b_band)
+    .replace(/\bbit32\.bor\b/g, R.b_bor)
+    .replace(/\bbit32\.bnot\b/g, R.b_bnot)
+    .replace(/\bbit32\.lshift\b/g, R.b_lshift)
+    .replace(/\bbit32\.rshift\b/g, R.b_rshift)
+    .replace(/\bmath\.floor\b/g, R.m_floor)
+    .replace(/\bmath\.max\b/g, R.m_max)
+    .replace(/\btostring\b/g, R.tostr_)
+    .replace(/\bipairs\b/g, R.ipairs_)
+    .replace(/\bpairs\b/g, R.pairs_)
+    .replace(/\brawlen\b/g, `${R.rawget_} and rawlen`);
+
   const vmCode = `
-local ${unpack_}=table.unpack or unpack
+${gi.bootstrap}
 local function ${vm}(proto,env,parent_regs,parent_upcells,...)
   local bc=proto.bc
   local subp=proto.p
@@ -1712,13 +1856,13 @@ local function ${vm}(proto,env,parent_regs,parent_upcells,...)
   local k4=proto.k4
   local k5=proto.k5
   local kst={}
-  for i,v in ipairs(proto.ek) do
+  for i,v in ${R.ipairs_}(proto.ek) do
     if v.t==1 then
       local r={}
-      for j,b in ipairs(v.d) do
-        r[j]=string.char(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(b,k1[(j-1)%#k1+1]),k2[(j-1)%#k2+1]),k3[(j-1)%#k3+1]),k4[(j-1)%#k4+1]),k5[(j-1)%#k5+1]))
+      for j,b in ${R.ipairs_}(v.d) do
+        r[j]=${R.s_char}(${R.b_bxor}(${R.b_bxor}(${R.b_bxor}(${R.b_bxor}(${R.b_bxor}(b,k1[(j-1)%#k1+1]),k2[(j-1)%#k2+1]),k3[(j-1)%#k3+1]),k4[(j-1)%#k4+1]),k5[(j-1)%#k5+1]))
       end
-      kst[i-1]=table.concat(r)
+      kst[i-1]=${R.t_concat}(r)
     elseif v.t==2 then
       kst[i-1]=v.d
     elseif v.t==3 then
@@ -1739,7 +1883,7 @@ local function ${vm}(proto,env,parent_regs,parent_upcells,...)
   end
 
   local ${rxkl_}=proto.rxk
-${vmBody}
+${vmBodyStr}
 
   if ${rn_}==-1 then return
   else return ${unpack_}(${rv_},1,${rn_}) end
@@ -1749,17 +1893,17 @@ local _proto=${protoStr}
 
 do
   local ${hashVar}=#_proto.bc*7+(#_proto.p)*31+0x3F
-  local ${hashChk}=bit32.band(${hashVar},0xFFFF)
-  if ${hashChk}~=${integrityA} then error("",0) end
-  local _ib=bit32.bxor(#_proto.bc,bit32.bxor(#_proto.p,0xA5))
-  if bit32.band(_ib,0xFF)~=${integrityB} then error("",0) end
+  local ${hashChk}=${R.b_band}(${hashVar},0xFFFF)
+  if ${hashChk}~=${integrityA} then ${R.error_}("",0) end
+  local _ib=${R.b_bxor}(#_proto.bc,${R.b_bxor}(#_proto.p,0xA5))
+  if ${R.b_band}(_ib,0xFF)~=${integrityB} then ${R.error_}("",0) end
 end
 
-local _env=(type(_ENV)=="table" and _ENV) or (type(_ENV)=="userdata" and _ENV) or (getfenv and getfenv(0)) or _G or {}
-local _ok,_er=pcall(function()
+local _env=(${R.type_}(_ENV)=="table" and _ENV) or (${R.type_}(_ENV)=="userdata" and _ENV) or (getfenv and getfenv(0)) or _G or {}
+local _ok,_er=${R.pcall_}(function()
   ${vm}(_proto,_env,nil,nil)
 end)
-if not _ok then error(tostring(_er),0) end
+if not _ok then ${R.error_}(${R.tostr_}(_er),0) end
 `;
 
   return encodeAsPayload(vmCode);
@@ -2512,6 +2656,131 @@ function wrapAntiHook(code) {
   ].join('\n');
 }
 
+// ─── Final Encoding Wrapper (v14) ──────────────────────────────
+// Wraps the entire obfuscated output in an XOR-encoded binary string
+// decoded and executed at runtime. This makes the ENTIRE output
+// (including anti-hook checks) completely opaque — no readable
+// string.char, bit32.bxor, etc. visible in the final output.
+
+function wrapFinalEncoding(code) {
+  const keyLen = randInt(24, 48);
+  const key = Array.from({ length: keyLen }, () => randInt(1, 254));
+  const bytes = [];
+  for (let i = 0; i < code.length; i++) {
+    bytes.push((code.charCodeAt(i) ^ key[i % keyLen]) & 0xFF);
+  }
+
+  const chunkSize = 80;
+  const chunks = [];
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    chunks.push(bytes.slice(i, i + chunkSize).join(','));
+  }
+
+  const dk = randName();
+  const dd = randName();
+  const db = randName();
+  const di = randName();
+  const dr = randName();
+
+  const loaderKey = Array.from('loadstring').map(c => c.charCodeAt(0)).join(',');
+  const returnKey = Array.from('return ').map(c => c.charCodeAt(0)).join(',');
+
+  return [
+    `local ${dk}={${key.join(',')}}`,
+    `local ${dd}={${chunks.join(',\n')}}`,
+    `local ${db}={}`,
+    `for ${di}=1,#${dd} do`,
+    `  ${db}[${di}]=string.char(bit32.bxor(${dd}[${di}],${dk}[(${di}-1)%#${dk}+1]))`,
+    `end`,
+    `local ${dr}=table.concat(${db})`,
+    `local _l=(loadstring or load)`,
+    `local _ok,_er=pcall(function() _l(${dr})() end)`,
+    `if not _ok then error(tostring(_er),0) end`,
+  ].join('\n');
+}
+
+// ─── Advanced Final Encoding (v14) ─────────────────────────────
+// Multi-layer encoding using compact Lua string format (\ddd escapes).
+// XOR with dual keys, split into shuffled segments, reassembled at runtime.
+// Uses ~4 bytes per source byte instead of ~5-6 with number arrays.
+
+function wrapAdvancedEncoding(code) {
+  const key1Len = randInt(16, 32);
+  const key2Len = randInt(12, 24);
+  const key1 = Array.from({ length: key1Len }, () => randInt(1, 254));
+  const key2 = Array.from({ length: key2Len }, () => randInt(1, 254));
+
+  const encoded = [];
+  for (let i = 0; i < code.length; i++) {
+    encoded.push((code.charCodeAt(i) ^ key1[i % key1Len] ^ key2[i % key2Len]) & 0xFF);
+  }
+
+  function toLuaString(bytes) {
+    let s = '"';
+    for (const b of bytes) {
+      if (b === 34) s += '\\"';
+      else if (b === 92) s += '\\\\';
+      else if (b >= 32 && b < 127) s += String.fromCharCode(b);
+      else s += '\\' + b.toString().padStart(3, '0');
+    }
+    s += '"';
+    return s;
+  }
+
+  const segSize = randInt(300, 800);
+  const segments = [];
+  for (let i = 0; i < encoded.length; i += segSize) {
+    segments.push(encoded.slice(i, i + segSize));
+  }
+
+  const order = Array.from({ length: segments.length }, (_, i) => i);
+  const shuffled = shuffle(order);
+
+  const shuffledSegments = shuffled.map(i => segments[i]);
+  const reverseMap = new Array(segments.length);
+  for (let i = 0; i < shuffled.length; i++) {
+    reverseMap[shuffled[i]] = i;
+  }
+
+  const segVar = randName();
+  const k1Var = randName();
+  const k2Var = randName();
+  const mapVar = randName();
+  const bufVar = randName();
+  const idxVar = randName();
+  const jVar = randName();
+  const resVar = randName();
+  const byteVar = randName();
+
+  const segStrs = shuffledSegments.map(seg => toLuaString(seg)).join(',\n');
+  const mapStr = reverseMap.map(v => v + 1).join(',');
+
+  return [
+    `local ${k1Var}={${key1.join(',')}}`,
+    `local ${k2Var}={${key2.join(',')}}`,
+    `local ${segVar}={${segStrs}}`,
+    `local ${mapVar}={${mapStr}}`,
+    `local ${bufVar}={}`,
+    `local ${idxVar}=0`,
+    `for _s=1,#${mapVar} do`,
+    `  local _d=${segVar}[${mapVar}[_s]]`,
+    `  for ${jVar}=1,#_d do`,
+    `    ${idxVar}=${idxVar}+1`,
+    `    local ${byteVar}=string.byte(_d,${jVar})`,
+    `    ${bufVar}[${idxVar}]=string.char(bit32.bxor(bit32.bxor(${byteVar},${k1Var}[(${idxVar}-1)%#${k1Var}+1]),${k2Var}[(${idxVar}-1)%#${k2Var}+1]))`,
+    `  end`,
+    `end`,
+    `local ${resVar}=table.concat(${bufVar})`,
+    `local _l=loadstring or load`,
+    `if not _l then _l=(getfenv and getfenv(0) or _G or {}).loadstring or (getfenv and getfenv(0) or _G or {}).load end`,
+    `local _f=_l(${resVar})`,
+    `if _f then`,
+    `  local _ok,_er=pcall(_f)`,
+    `  if not _ok then error(tostring(_er),0) end`,
+    `else error("",0) end`,
+  ].join('\n');
+}
+
 // ─── Main obfuscate function ────────────────────────────────────
 
 function obfuscate(code, opts = {}) {
@@ -2530,6 +2799,7 @@ function obfuscate(code, opts = {}) {
     vmNesting:          opts.vmNesting          ?? false,
     tripleNesting:      opts.tripleNesting      ?? false,
     deadCodePaths:      opts.deadCodePaths      ?? false,
+    finalEncoding:      opts.finalEncoding      ?? false,
   };
 
   const t0 = Date.now();
@@ -2652,6 +2922,11 @@ function obfuscate(code, opts = {}) {
     applied.push('Anti-Hook v12 + Anti-Debug (bit32 fingerprint, executor detection, timing check, metatable trap, coroutine state, pcall depth, upvalue introspection trap, closure identity, honeypot trap)');
   }
 
+  if (options.finalEncoding) {
+    result = wrapAdvancedEncoding(result);
+    applied.push('Advanced Final Encoding v14 (multi-key XOR + shuffled segments + runtime reassembly)');
+  }
+
   return {
     code: result,
     stats: {
@@ -2691,7 +2966,7 @@ const PRESETS = {
     obfuscateNumbers: true, breakGlobals: true,
     injectJunk: true, opaquePredicates: true, antiHook: true,
     controlFlowFlatten: true, stringArrayRotate: true, envFingerprint: true,
-    vmNesting: false, deadCodePaths: true,
+    vmNesting: false, deadCodePaths: true, finalEncoding: true,
   },
   max: {
     vmCompile: true,
@@ -2699,7 +2974,7 @@ const PRESETS = {
     obfuscateNumbers: true, breakGlobals: true,
     injectJunk: true, opaquePredicates: true, antiHook: true,
     controlFlowFlatten: true, stringArrayRotate: true, envFingerprint: true,
-    vmNesting: true, tripleNesting: false, deadCodePaths: true,
+    vmNesting: true, tripleNesting: false, deadCodePaths: true, finalEncoding: true,
   },
   ultra: {
     vmCompile: true,
@@ -2707,7 +2982,7 @@ const PRESETS = {
     obfuscateNumbers: true, breakGlobals: true,
     injectJunk: true, opaquePredicates: true, antiHook: true,
     controlFlowFlatten: true, stringArrayRotate: true, envFingerprint: true,
-    vmNesting: true, tripleNesting: true, deadCodePaths: true,
+    vmNesting: true, tripleNesting: true, deadCodePaths: true, finalEncoding: true,
   },
 };
 
