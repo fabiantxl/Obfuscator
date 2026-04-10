@@ -1163,12 +1163,19 @@ function buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_) {
   end
   ${dt_}[${O.CLOSURE}]=function(a,b,c)
     local sp=subp[b+1]
-    local snap={}
-    local _mx=0
-    if sp.uv then for _,uv in ipairs(sp.uv) do if uv.is==1 and uv.ix>_mx then _mx=uv.ix end end end
-    for i=0,math.max(_mx,a)+10 do snap[i]=regs[i] end
+    local child_upc={}
+    if sp.uv then
+      for i,uv in ipairs(sp.uv) do
+        if uv.is==1 then
+          if not _regcells[uv.ix] then _regcells[uv.ix]={val=regs[uv.ix]} end
+          child_upc[i-1]=_regcells[uv.ix]
+        elseif uv.is==0 then
+          child_upc[i-1]=upcells[uv.ix]
+        end
+      end
+    end
     regs[a]=function(...)
-      return ${vm}(sp,env,snap,upcells,...)
+      return ${vm}(sp,env,nil,child_upc,...)
     end
   end
   ${dt_}[${O.SETLIST}]=function(a,b,c)
@@ -1500,12 +1507,14 @@ function buildDispatchTableVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_,
   ${fakeDt}
 
   while true do
+    for _ri,_cl in pairs(_regcells) do regs[_ri]=_cl.val end
     local ${idx_}=${pc_}[1]
     local ${ins_}=bc[${idx_}]
     ${pc_}[1]=${idx_}+1
     local ${op_}=bit32.bxor(${ins_}[1],${rxkl_}[((${idx_}-1)%#${rxkl_})+1])
     local ${h_}=${dt_}[${op_}]
     if ${h_} then ${h_}(${ins_}[2],${ins_}[3],${ins_}[4]) end
+    for _ri,_cl in pairs(_regcells) do _cl.val=regs[_ri] end
     if ${rn_}~=0 then break end
   end`;
 }
@@ -1528,10 +1537,12 @@ function buildLinkedListVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op
   local ${cur_}=${node_}[1]
   local ${exec_}=1
   while ${cur_} do
+    for _ri,_cl in pairs(_regcells) do regs[_ri]=_cl.val end
     local ${ins_}=${cur_}.d
     local ${op_}=bit32.bxor(${ins_}[1],${rxkl_}[((${exec_}-1)%#${rxkl_})+1])
     local ${h_}=${dt_}[${op_}]
     if ${h_} then ${h_}(${ins_}[2],${ins_}[3],${ins_}[4]) end
+    for _ri,_cl in pairs(_regcells) do _cl.val=regs[_ri] end
     if ${rn_}~=0 then break end
     ${exec_}=${pc_}[1]
     ${cur_}=${node_}[${exec_}]
@@ -1560,7 +1571,7 @@ function buildStringVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, v
   local ${len_}=table.concat(${buf_})
 
   local function ${rd_}(${pos_})
-    local b1,b2,b3,b4,b5,b6,b7=string.byte(${len_},(${pos_}-1)*7+1,(${pos_}-1)*7+7)
+    local b1,b2,b3,b4,b5,b6,b7=string.byte(${len_},(${pos_}-1)*8+1,(${pos_}-1)*8+7)
     local sB=math.floor(b2 or 0)+math.floor(b5 or 0)*256
     local sC=math.floor(b3 or 0)+math.floor(b6 or 0)*256
     local sD=math.floor(b4 or 0)+math.floor(b7 or 0)*256
@@ -1570,12 +1581,14 @@ function buildStringVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, v
   end
 
   while true do
+    for _ri,_cl in pairs(_regcells) do regs[_ri]=_cl.val end
     local ${idx_}=${pc_}[1]
     ${pc_}[1]=${idx_}+1
     local ${op_},a,b,c=${rd_}(${idx_})
     ${op_}=bit32.bxor(${op_},${rxkl_}[((${idx_}-1)%#${rxkl_})+1])
     local ${h_}=${dt_}[${op_}]
     if ${h_} then ${h_}(a,b,c) end
+    for _ri,_cl in pairs(_regcells) do _cl.val=regs[_ri] end
     if ${rn_}~=0 then break end
   end`;
 }
@@ -1601,6 +1614,7 @@ function buildStackVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm
   end
 
   while ${sp_}>0 do
+    for _ri,_cl in pairs(_regcells) do regs[_ri]=_cl.val end
     local ${idx_}=${pc_}[1]
     if ${idx_}>#bc then break end
     local ${ins_}=bc[${idx_}]
@@ -1608,6 +1622,7 @@ function buildStackVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm
     local ${op_}=bit32.bxor(${ins_}[1],${rxkl_}[((${idx_}-1)%#${rxkl_})+1])
     local ${h_}=${dt_}[${op_}]
     if ${h_} then ${h_}(${ins_}[2],${ins_}[3],${ins_}[4]) end
+    for _ri,_cl in pairs(_regcells) do _cl.val=regs[_ri] end
     if ${rn_}~=0 then break end
   end`;
 }
@@ -1715,16 +1730,9 @@ local function ${vm}(proto,env,parent_regs,parent_upcells,...)
 
   for i=1,proto.np do regs[i-1]=va[i] end
 
-  local upcells={}
-  if proto.uv then
-    for i,uv in ipairs(proto.uv) do
-      if uv.is==1 and parent_regs then
-        upcells[i-1]={val=parent_regs[uv.ix]}
-      elseif uv.is==0 and parent_upcells then
-        upcells[i-1]=parent_upcells[uv.ix]
-      end
-    end
-  end
+  local upcells=parent_upcells or {}
+
+  local _regcells={}
 
   local function ${rk_}(x)
     if x>=${CB} then return kst[x-${CB}] else return regs[x] end
@@ -2260,18 +2268,20 @@ function injectJunk(code) {
   const lines = code.split('\n'), out = [];
   let braceDepth = 0;
   let lastMeaningful = '';
-  for (const l of lines) {
+  for (let li = 0; li < lines.length; li++) {
+    const l = lines[li];
     out.push(l);
     braceDepth += netBracesOnLine(l);
     if (braceDepth < 0) braceDepth = 0;
     const tr = l.trim();
     if (tr !== '') lastMeaningful = tr;
-    // After return/break/goto in the same block, no statements are allowed
-    const afterBlockTerminator = lastMeaningful.startsWith('return') ||
+    const afterBlockTerminator = lastMeaningful.startsWith('return') || /\breturn\s*$/.test(lastMeaningful) ||
       lastMeaningful === 'break' || lastMeaningful.startsWith('goto ');
     if (braceDepth === 0 && !afterBlockTerminator && Math.random() < 0.25 &&
         (tr.endsWith('end') || tr.startsWith('local ') || tr === '')) {
-      out.push(JUNK[randInt(0, JUNK.length - 1)]());
+      const nextLine = (li + 1 < lines.length) ? lines[li + 1].trim() : '';
+      const nextIsBlock = nextLine.startsWith('else') || nextLine.startsWith('elseif');
+      if (!nextIsBlock) out.push(JUNK[randInt(0, JUNK.length - 1)]());
     }
   }
   return out.join('\n');
@@ -2326,8 +2336,10 @@ function injectOpaquePredicates(code) {
     if (predBraceDepth < 0) predBraceDepth = 0;
     const inRange = i > lines.length * 0.05 && i < lines.length * 0.95;
     const tr = lines[i].trim();
-    const isTerminator = tr.startsWith('return') || tr === 'break' || tr.startsWith('goto ');
-    if (predBraceDepth === 0 && inRange && !isTerminator) candidates.push(i);
+    const isTerminator = tr.startsWith('return') || /\breturn\s*$/.test(tr) || tr === 'break' || tr.startsWith('goto ');
+    const nextTr = (i + 1 < lines.length) ? lines[i + 1].trim() : '';
+    const nextIsElse = nextTr.startsWith('else') || nextTr.startsWith('elseif');
+    if (predBraceDepth === 0 && inRange && !isTerminator && !nextIsElse) candidates.push(i);
   }
   if (candidates.length === 0) return lines.join('\n');
   // Pick nPreds unique safe positions, no duplicates
