@@ -1,4 +1,4 @@
-# LuaShield — Roblox Lua Obfuscator (v13.2 Engine + Discord Bot)
+# LuaShield — Roblox Lua Obfuscator (v13.5 Engine + Discord Bot)
 
 ## MISSION
 Build the **best Lua/Luau obfuscator for Roblox** — surpass Luraph in every measurable dimension:
@@ -13,13 +13,12 @@ strength, unpredictability, anti-analysis, and coverage of Lua AST nodes.
 
 | File | Purpose |
 |------|---------|
-| `discord-bot/obfuscator.js` | **PRIMARY ENGINE (v13.2)** — ~2640 lines, the obfuscator |
+| `discord-bot/obfuscator.js` | **PRIMARY ENGINE (v13.5)** — ~3100 lines, the obfuscator |
 | `discord-bot/bot.js` | Discord bot — slash commands, DM support, EN/ES i18n |
 | `discord-bot/package.json` | Bot dependencies: discord.js, dotenv, luaparse |
 | `discord-bot/.env.example` | Copy to `.env` and add `DISCORD_BOT_TOKEN` |
-| `discord-bot/REPORT.md` | Technical report from previous agent sessions |
-| `artifacts/api-server/src/lib/obfuscator.js` | Mirror copy of engine (keep in sync with discord-bot/) |
-| `discord-bot/attached_assets/` | Sample Lua scripts for testing the obfuscator |
+| `discord-bot/REPORT.md` | Technical report — READ THIS BEFORE EDITING |
+| `discord-bot/attached_assets/` | Sample Lua scripts for testing |
 
 ---
 
@@ -35,11 +34,44 @@ node bot.js
 
 ---
 
-## ENGINE ARCHITECTURE — obfuscator.js (v13.2)
+## ENGINE VERSION: v13.5 — CRITICAL RUNTIME FIXES
+
+### What Was Fixed in v13.5 (THIS SESSION)
+
+1. **CALL c=1 not resetting `top_` (Stack Overflow — Line 264)**
+   - After CALL with c=1 (discard results), `top_` was stale, causing RETURN/CALL/SETLIST b=0 to iterate garbage
+   - Fix: `top_ = a` after c=1, `top_ = a + c - 2` after c>1
+
+2. **RETURN b=0 with stale top_ (Line 264)**
+   - Added bounds guard: `if top_ < a then top_ = a-1 end`
+   - Fixed return value indexing to be 1-based from register a
+
+3. **VM dispatch loop nil-index (crash on bc[idx] = nil)**
+   - Added `if idx_ > #bc then break end` + `if not ins_ then break end` guards in all VM shapes
+
+4. **VARARG nil-guard (Line 8 crash)**
+   - Added `local _np = proto.np or 0`, `local _van = van_ or 0`
+   - Clears registers beyond vararg range to prevent stale data
+
+5. **CALL fn type check**
+   - Descriptive error when non-function is called instead of cryptic nil-index
+
+### New Feature: Debug Mode
+- `PRESETS.debug` — VM only, no obfuscation, prints opcode trace to Roblox console (F9)
+- Use `debug` level in `/obfuscate` bot command to diagnose runtime issues
+- `_VMDBG=true` global enables opcode tracing in DispatchTable VM
+
+### HTTP API (api-server)
+- `POST /api/obfuscate` body: `{ code: string, level: string }` → `{ obfuscated, stats }`
+- `GET /api/presets` → `{ presets: string[] }`
+
+---
+
+## ENGINE ARCHITECTURE — obfuscator.js (v13.5)
 
 ### Protection Layers (9+ total)
 
-#### LAYER A — VM Bytecode Compiler (v13.2)
+#### LAYER A — VM Bytecode Compiler (v13.5)
 4 VM shapes randomly selected per run:
 - Dispatch Table (original)
 - Linked-List (instructions as linked table nodes)
@@ -57,7 +89,8 @@ Key properties:
 - **Polymorphic Opcode Handlers** (multiple equivalent implementations)
 - **Fake Dispatch Table Entries** (20-35 dead branches)
 - **VM Nesting** (Russian doll VMs for max/ultra levels)
-- **SELF opcode FIXED (v13)** — `kst[c]` → `rk_(c)` for correct method calls
+- **Bounds-checked VM loop** (no nil-index on past-end PC)
+- **Stack integrity** (top_ reset after every CALL, VARARG nil-guarded)
 
 #### LAYER B — Token Passes
 | Pass | Technique | Min level |
@@ -69,85 +102,67 @@ Key properties:
 | L4 | Globals broken at runtime (_ENV concat lookup) | heavy |
 | L5 | 100+ realistic junk code patterns (Roblox-specific) | medium |
 | L6 | 36 opaque predicates | heavy |
-| L7 | Control flow flattening (state-machine dispatcher) — FIXED v13.2 | heavy |
+| L7 | Control flow flattening (state-machine dispatcher) | heavy |
 | L8 | Dead code path injection (unreachable branches) | heavy |
 
 #### LAYER C — Anti-Hook + Anti-Debug Wrapper (v13)
 - `bit32.bxor(0x41, 0x00)` fingerprint check
 - `string.char(72)` consistency check
 - `pcall` debug library detection
-- Robust `_ENV` type check (compatible with Roblox executors: "table"|"nil"|"userdata")
-- Multi-layer `pcall` depth validation (soft check: >=1)
+- Robust `_ENV` type check
+- Multi-layer `pcall` depth validation
 - Metatable traps and honeypot detection
 - Upvalue introspection trap
-- Function type check (`type()` based)
 - Stack depth validation
-- Fake bytecode signature
-- Multi-point watermark verification
 
 ---
 
 ## PRESETS (obfuscator.js)
 
 ```javascript
+PRESETS.debug  — VM only + opcode trace (for debugging in Roblox F9 console)
 PRESETS.light  — rename + strings
 PRESETS.medium — + numbers + junk + antiHook + stringArrayRotate
-PRESETS.heavy  — + vmCompile + breakGlobals + opaquePredicates + envFingerprint + deadCodePaths + controlFlowFlatten
+PRESETS.heavy  — + vmCompile + breakGlobals + opaquePredicates + envFingerprint + deadCodePaths + controlFlowFlatten + finalEncoding
 PRESETS.max    — heavy + vmNesting (double VM)
-PRESETS.ultra  — max + tripleNesting (triple VM)
+PRESETS.ultra  — heavy + tripleNesting (triple VM)
 ```
 
 ---
 
-## INTERNAL NOTES FOR AGENTS
+## SYNC RULE
+The engine lives in ONE place only: `discord-bot/obfuscator.js`. The bot loads it directly via `require('./obfuscator')`. Do not mirror it anywhere else.
 
-### Critical implementation details in obfuscator.js
+---
 
-- **Compiler class** (line ~231): `compile(ast)` → returns root `Proto`
-- **Proto class** (line ~168): holds `bc[]`, `k[]`, `upvals[]`, `subProtos[]`, `gotoList[]`, `labelMap{}`
-- **`makeOpcodeMap()`**: creates random permutation of 36 opcode names → integers
-- **`buildVMCore(rootProto, ops)`**: orchestrates VM code generation
-- **`serializeProto(proto)`**: serializes Proto to Lua table string
-- **`encryptConstants(kst)`**: returns `{ encK, k1..k5 }` with penta rotating keys (NO fakePositions field)
-- **`wrapAntiHook(code)`**: wraps code in anti-debug shell
-- **`injectDeadBytecode(proto, ops)`**: injects dead instructions WITH jump remapping
-- **`insertNopPadding(proto, ops)`**: inserts NOPs WITH jump remapping
-- **`flattenControlFlow(code)`**: uses if-elseif-else-end chain (FIXED v13.2, NOT else/if)
-- **`obfuscate(code, opts)`**: main entry point, returns `{ code, stats }`
-- **`PRESETS`**: exported object with light/medium/heavy/max/ultra option sets
-- **`module.exports = { obfuscate, PRESETS }`**: CommonJS export
-
-### Goto backpatching
-- `proto.gotoList` = array of `{ idx, label }` for forward gotos
-- `proto.labelMap` = Map for defined labels
-- After compiling a function body, forward gotos are resolved
-
-### Upvalue chain (deep)
-- `resolveUpval(name)` recursively walks parent protos
-- Returns upval index >= 0 if found
-- CLOSURE opcode passes `parent_upcells` to child VM functions
-
-### SELF opcode (v13 fixed)
-- `SELF` instruction: `regs[a+1]=regs[b]; regs[a]=regs[b][rk_(c)]`
-- `c` is RK-encoded (can be register index or constant index)
-
-### VM _env setup (v13 fixed)
-- Uses `(type(_ENV)=="table" and _ENV) or (type(_ENV)=="userdata" and _ENV) or ...`
-- No setmetatable proxy
-
-### DO NOT DO
+## DO NOT DO
 - Do not create web interfaces, React apps, or any UI
 - Do not move the project to TypeScript (it's intentionally CommonJS/plain JS)
 - Do not add databases or user accounts
 - Do not change the Discord bot's EN/ES behavior without keeping both languages
 - Do not break the `module.exports = { obfuscate, PRESETS }` interface
-- Do not use `else\nif` in generated Lua — always use `elseif`
-- Do not reference `insertPositions` in `encryptConstants` — it doesn't exist
+- Do not remove `loadstring` and `load` from the non-BREAKABLE set (they're executor-injected)
 
-### SYNC RULE
-The engine exists in TWO places:
-1. `discord-bot/obfuscator.js` — **primary, what the bot uses**
-2. `artifacts/api-server/src/lib/obfuscator.js` — mirror copy
+---
+
+## Stack
+
+- **Monorepo tool**: pnpm workspaces
+- **Node.js version**: 24
+- **Package manager**: pnpm
+- **TypeScript version**: 5.9 (api-server only)
+- **API framework**: Express 5
+- **Database**: PostgreSQL + Drizzle ORM (api-server, not used by obfuscator)
+- **Build**: esbuild (CJS bundle)
+
+## Key Commands
+
+- `pnpm --filter @workspace/api-server run dev` — run API server locally
+- `cd discord-bot && node bot.js` — run Discord bot
+- `cp discord-bot/obfuscator.js artifacts/api-server/src/lib/obfuscator.js` — sync engine
+
+See REPORT.md for full technical details and history.
+ts/api-server/src/lib/obfuscator.js` — mirror copy
 
 After editing the engine, always copy to both locations:
 ```bash

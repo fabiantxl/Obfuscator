@@ -1177,6 +1177,7 @@ function buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_, top_,
   ${dt_}[${O.JMP}]=function(a,b,c) ${pc_}[1]=${pc_}[1]+b end
   ${dt_}[${O.CALL}]=function(a,b,c)
     local fn=regs[a]
+    if type(fn)~="function" then error("VM CALL: reg["..a.."] is "..type(fn)..", expected function",0) end
     local args={}
     if b==0 then
       for i=a+1,${top_} do args[#args+1]=regs[i] end
@@ -1189,16 +1190,21 @@ function buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_, top_,
       ${top_}=a+#rs-1
     elseif c==1 then
       fn(${up_}(args))
+      ${top_}=a
     else
       local rs={fn(${up_}(args))}
       for i=0,c-2 do regs[a+i]=rs[i+1] end
+      ${top_}=a+c-2
     end
   end
   ${dt_}[${O.RETURN}]=function(a,b,c)
     if b==1 then ${rn_}=-1
     elseif b==0 then
-      for i=a,${top_} do ${rv_}[#${rv_}+1]=regs[i] end
-      ${rn_}=#${rv_}
+      local _top=${top_}
+      if _top<a then _top=a-1 end
+      for i=a,_top do ${rv_}[i-a+1]=regs[i] end
+      ${rn_}=_top-a+1
+      if ${rn_}<0 then ${rn_}=0 end
     else
       for i=0,b-2 do ${rv_}[i+1]=regs[a+i] end
       ${rn_}=b-1
@@ -1258,13 +1264,16 @@ function buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_, top_,
     if cell then cell.val=regs[a] end
   end
   ${dt_}[${O.VARARG}]=function(a,b,c)
-    local nva=math.max(0,${van_}-proto.np)
+    local _np=proto.np or 0
+    local _van=${van_} or 0
+    local nva=math.max(0,_van-_np)
     if c==0 then
-      for i=1,nva do regs[a+i-1]=va[proto.np+i] end
+      for i=1,nva do regs[a+i-1]=va[_np+i] end
+      for i=nva+1,8 do regs[a+i-1]=nil end
       ${top_}=a+nva-1
     else
       local nout=c-1
-      for i=1,nout do regs[a+i-1]=va[proto.np+i] end
+      for i=1,nout do regs[a+i-1]=(i<=nva and va[_np+i] or nil) end
     end
   end
   ${dt_}[${O.NOP}]=function(a,b,c) end`;
@@ -1580,8 +1589,9 @@ function encodeAsPayload(vmCode) {
 // Shape 2: Linked-List (instructions as linked table nodes)
 // Shape 3: Switch-Case Emulation (nested if-elseif with scrambled order)
 
-function buildDispatchTableVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt, unpack_, top_, van_) {
+function buildDispatchTableVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt, unpack_, top_, van_, debugMode) {
   const handlers = buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_, top_, van_);
+  const dbgLine = debugMode ? `    if _VMDBG then print("[VM-DBG] pc="..${idx_}.." op="..${op_}.." a="..(${ins_}[2] or 0).." b="..(${ins_}[3] or 0).." c="..(${ins_}[4] or 0)) end` : '';
   return `
   ${handlers}
   ${fakeDt}
@@ -1589,9 +1599,12 @@ function buildDispatchTableVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_,
   while true do
     for _ri,_cl in pairs(_regcells) do regs[_ri]=_cl.val end
     local ${idx_}=${pc_}[1]
+    if ${idx_}>#bc then break end
     local ${ins_}=bc[${idx_}]
+    if not ${ins_} then break end
     ${pc_}[1]=${idx_}+1
     local ${op_}=bit32.bxor(${ins_}[1],${rxkl_}[((${idx_}-1)%#${rxkl_})+1])
+    ${dbgLine}
     local ${h_}=${dt_}[${op_}]
     if ${h_} then ${h_}(${ins_}[2],${ins_}[3],${ins_}[4]) end
     for _ri,_cl in pairs(_regcells) do _cl.val=regs[_ri] end
@@ -1663,6 +1676,7 @@ function buildStringVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, v
   while true do
     for _ri,_cl in pairs(_regcells) do regs[_ri]=_cl.val end
     local ${idx_}=${pc_}[1]
+    if ${idx_}>#bc then break end
     ${pc_}[1]=${idx_}+1
     local ${op_},a,b,c=${rd_}(${idx_})
     ${op_}=bit32.bxor(${op_},${rxkl_}[((${idx_}-1)%#${rxkl_})+1])
@@ -1828,7 +1842,7 @@ local ${outVar}=${refs.t_concat}(${bufVar})
 
 // ─── VM Core Builder ───────────────────────────────────────────
 
-function buildVMCore(rootProto, ops) {
+function buildVMCore(rootProto, ops, debugMode) {
   insertNopPadding(rootProto, ops);
   injectDeadBytecode(rootProto, ops);
   const protoStr = serializeProto(rootProto);
@@ -1882,7 +1896,7 @@ function buildVMCore(rootProto, ops) {
   const vmShape = randInt(0, 3);
   let vmBody;
   if (vmShape === 0) {
-    vmBody = buildDispatchTableVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt, unpack_, top_, van_);
+    vmBody = buildDispatchTableVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt, unpack_, top_, van_, debugMode);
   } else if (vmShape === 1) {
     vmBody = buildLinkedListVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt, unpack_, top_, van_);
   } else if (vmShape === 2) {
@@ -1985,6 +1999,7 @@ do
 end
 
 local _env=(${R.type_}(_ENV)=="table" and _ENV) or (${R.type_}(_ENV)=="userdata" and _ENV) or (getfenv and getfenv(0)) or _G or {}
+${debugMode ? '_VMDBG=true -- LuaShield Debug Mode: prints opcode trace to console (F9)' : ''}
 local _ok,_er=${R.pcall_}(function()
   ${vm}(_proto,_env,nil,nil)
 end)
@@ -2885,6 +2900,7 @@ function obfuscate(code, opts = {}) {
     tripleNesting:      opts.tripleNesting      ?? false,
     deadCodePaths:      opts.deadCodePaths      ?? false,
     finalEncoding:      opts.finalEncoding      ?? false,
+    debugMode:          opts.debugMode          ?? false,
   };
 
   const t0 = Date.now();
@@ -2907,7 +2923,7 @@ function obfuscate(code, opts = {}) {
       });
       const compiler = new Compiler(ops);
       const rootProto = compiler.compile(ast);
-      workCode = buildVMCore(rootProto, ops);
+      workCode = buildVMCore(rootProto, ops, options.debugMode);
       vmShapeName = ['DispatchTable', 'LinkedList', 'TokenizedString', 'StackVM'][randInt(0, 3)];
       applied.push(`VM Bytecode Compiler v12 (${vmShapeName} shape, polymorphic handlers, shuffled opcodes, coroutine execution)`);
       applied.push('Penta-Key XOR Constant Encryption (five independent rotating keys)');
@@ -3029,6 +3045,15 @@ function obfuscate(code, opts = {}) {
 // ─── Presets ───────────────────────────────────────────────────
 
 const PRESETS = {
+  debug: {
+    vmCompile: true,
+    renameVars: false, encryptStrings: false,
+    obfuscateNumbers: false, breakGlobals: false,
+    injectJunk: false, opaquePredicates: false, antiHook: false,
+    controlFlowFlatten: false, stringArrayRotate: false, envFingerprint: false,
+    vmNesting: false, deadCodePaths: false, finalEncoding: false,
+    debugMode: true,
+  },
   light: {
     vmCompile: false,
     renameVars: true, encryptStrings: true,
