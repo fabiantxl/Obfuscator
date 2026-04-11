@@ -2893,7 +2893,7 @@ function obfuscate(code, opts = {}) {
     toks = encryptStrings(toks);
     applied.push('String Encryption (9-pattern polymorphic, no decryptor name)');
   }
-  if (options.obfuscateNumbers) {
+  if (options.obfuscateNumbers && !vmUsed) {
     toks = obfuscateNumbers(toks);
     applied.push('Number Obfuscation (30-pattern multi-step bit32)');
   }
