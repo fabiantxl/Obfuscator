@@ -276,11 +276,12 @@ class Compiler {
     const proto = this.cur;
     const tmpRegs = [];
 
-    if (node.variables.length > 1 && node.init.length === 1 &&
-        (node.init[0].type === 'CallExpression' || node.init[0].type === 'StringCallExpression')) {
+    const initExpr = node.init.length === 1 ? node.init[0] : null;
+    const isMultiRetInit = initExpr && (initExpr.type === 'CallExpression' || initExpr.type === 'StringCallExpression' || initExpr.type === 'TableCallExpression');
+    if (node.variables.length > 1 && isMultiRetInit) {
       const base = proto.nextReg;
       for (let i = 0; i < node.variables.length; i++) tmpRegs.push(base + i);
-      this.compileCallMultiRet(node.init[0], base, node.variables.length);
+      this.compileCallMultiRet(initExpr, base, node.variables.length);
     } else {
       for (let i = 0; i < node.variables.length; i++) {
         const r = proto.allocTemp();
@@ -305,9 +306,10 @@ class Compiler {
     const base = proto.nextReg;
     const tmpRegs = [];
 
-    if (node.variables.length > 1 && node.init.length === 1 &&
-        (node.init[0].type === 'CallExpression' || node.init[0].type === 'StringCallExpression')) {
-      this.compileCallMultiRet(node.init[0], base, node.variables.length);
+    const initExpr = node.init.length === 1 ? node.init[0] : null;
+    const isMultiRetInit = initExpr && (initExpr.type === 'CallExpression' || initExpr.type === 'StringCallExpression' || initExpr.type === 'TableCallExpression');
+    if (node.variables.length > 1 && isMultiRetInit) {
+      this.compileCallMultiRet(initExpr, base, node.variables.length);
       for (let i = 0; i < node.variables.length; i++) tmpRegs.push(base + i);
     } else {
       for (let i = 0; i < node.init.length; i++) {
@@ -337,12 +339,26 @@ class Compiler {
     if (node.type === 'StringCallExpression') args = [node.argument];
     if (node.type === 'TableCallExpression') args = [node.argument];
 
+    const lastArg = args.length > 0 ? args[args.length - 1] : null;
+    const lastIsMulti = lastArg && (lastArg.type === 'VarargLiteral' ||
+      lastArg.type === 'CallExpression' || lastArg.type === 'StringCallExpression' ||
+      lastArg.type === 'TableCallExpression');
+
     this.compileExprTo(node.base, fnReg);
-    for (const arg of args) {
+    for (let i = 0; i < args.length; i++) {
       const r = proto.allocTemp();
-      this.compileExprTo(arg, r);
+      if (i === args.length - 1 && lastIsMulti) {
+        if (lastArg.type === 'VarargLiteral') {
+          this.emit('VARARG', r, 0, 0);
+        } else {
+          this.compileCall(lastArg, r, 0);
+        }
+      } else {
+        this.compileExprTo(args[i], r);
+      }
     }
-    this.emit('CALL', fnReg, args.length + 1, nRet + 1);
+    const bVal = lastIsMulti ? 0 : args.length + 1;
+    this.emit('CALL', fnReg, bVal, nRet + 1);
     proto.nextReg = Math.max(savedNext, destBase + nRet);
   }
 
@@ -566,14 +582,24 @@ class Compiler {
     }
     const base = proto.nextReg;
     const regs = [];
-    for (const arg of node.arguments) {
+    const lastArg = node.arguments[node.arguments.length - 1];
+    const isVarCall = lastArg.type === 'CallExpression' || lastArg.type === 'StringCallExpression' || lastArg.type === 'TableCallExpression';
+    const isVararg = lastArg.type === 'VarargLiteral';
+    const isMulti = isVarCall || isVararg;
+    for (let i = 0; i < node.arguments.length; i++) {
       const r = proto.allocTemp();
-      this.compileExprTo(arg, r);
+      if (i === node.arguments.length - 1 && isMulti) {
+        if (isVararg) {
+          this.emit('VARARG', r, 0, 0);
+        } else {
+          this.compileCall(lastArg, r, 0);
+        }
+      } else {
+        this.compileExprTo(node.arguments[i], r);
+      }
       regs.push(r);
     }
-    const lastArg = node.arguments[node.arguments.length - 1];
-    const isVarCall = lastArg.type === 'CallExpression' || lastArg.type === 'StringCallExpression';
-    this.emit('RETURN', regs[0], isVarCall ? 0 : regs.length + 1);
+    this.emit('RETURN', regs[0], isMulti ? 0 : regs.length + 1);
     proto.freeRegsTo(base);
   }
 
@@ -889,28 +915,51 @@ class Compiler {
     if (node.type === 'StringCallExpression') args = [node.argument];
     if (node.type === 'TableCallExpression') args = [node.argument];
 
+    const lastArg = args.length > 0 ? args[args.length - 1] : null;
+    const lastIsMulti = lastArg && (lastArg.type === 'VarargLiteral' ||
+      lastArg.type === 'CallExpression' || lastArg.type === 'StringCallExpression' ||
+      lastArg.type === 'TableCallExpression');
+
     if (node.base.type === 'MemberExpression' && node.base.indexType === ':') {
       const objReg = proto.allocTemp();
       this.compileExprTo(node.base.base, objReg);
       const ki = proto.addK(node.base.identifier.name);
       this.emit('SELF', fnReg, objReg, KR(ki));
-      for (const arg of args) {
+      for (let i = 0; i < args.length; i++) {
         const r = proto.allocTemp();
-        this.compileExprTo(arg, r);
+        if (i === args.length - 1 && lastIsMulti) {
+          if (lastArg.type === 'VarargLiteral') {
+            this.emit('VARARG', r, 0, 0);
+          } else {
+            this.compileCall(lastArg, r, 0);
+          }
+        } else {
+          this.compileExprTo(args[i], r);
+        }
       }
       const nargs = args.length + 1;
-      this.emit('CALL', fnReg, nargs + 1, nret);
+      const bVal = lastIsMulti ? 0 : nargs + 1;
+      this.emit('CALL', fnReg, bVal, nret);
       if (nret === 2 && dest !== fnReg) this.emit('MOVE', dest, fnReg);
       proto.freeRegsTo(base);
       return;
     }
 
     this.compileExprTo(node.base, fnReg);
-    for (const arg of args) {
+    for (let i = 0; i < args.length; i++) {
       const r = proto.allocTemp();
-      this.compileExprTo(arg, r);
+      if (i === args.length - 1 && lastIsMulti) {
+        if (lastArg.type === 'VarargLiteral') {
+          this.emit('VARARG', r, 0, 0);
+        } else {
+          this.compileCall(lastArg, r, 0);
+        }
+      } else {
+        this.compileExprTo(args[i], r);
+      }
     }
-    this.emit('CALL', fnReg, args.length + 1, nret);
+    const bVal = lastIsMulti ? 0 : args.length + 1;
+    this.emit('CALL', fnReg, bVal, nret);
     if (nret === 2 && dest !== fnReg) this.emit('MOVE', dest, fnReg);
     proto.freeRegsTo(base);
   }
@@ -946,16 +995,26 @@ class Compiler {
       }
     }
 
-    let arrayCount = 0;
-    for (const field of node.fields) {
-      if (field.type === 'TableValue') {
-        const r = proto.allocTemp();
-        this.compileExprTo(field.value, r);
-        arrayCount++;
+    const arrayFields = node.fields.filter(f => f.type === 'TableValue');
+    let lastIsMulti = false;
+    for (let i = 0; i < arrayFields.length; i++) {
+      const fv = arrayFields[i].value;
+      const isLast = i === arrayFields.length - 1;
+      const isMulti = fv.type === 'VarargLiteral' || fv.type === 'CallExpression' || fv.type === 'StringCallExpression' || fv.type === 'TableCallExpression';
+      const r = proto.allocTemp();
+      if (isLast && isMulti) {
+        if (fv.type === 'VarargLiteral') {
+          this.emit('VARARG', r, 0, 0);
+        } else {
+          this.compileCall(fv, r, 0);
+        }
+        lastIsMulti = true;
+      } else {
+        this.compileExprTo(fv, r);
       }
     }
 
-    if (arrayCount > 0) this.emit('SETLIST', dest, arrayCount, 1);
+    if (arrayFields.length > 0) this.emit('SETLIST', dest, lastIsMulti ? 0 : arrayFields.length, 1);
     proto.freeRegsTo(base);
   }
 }
@@ -1088,7 +1147,7 @@ function generatePolymorphicMove() {
   return variants[randInt(0, variants.length - 1)];
 }
 
-function buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_) {
+function buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_, top_, van_) {
   const up_ = unpack_ || 'table.unpack';
   return `
   ${dt_}[${O.LOADK}]=function(a,b,c) regs[a]=kst[b] end
@@ -1110,7 +1169,7 @@ function buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_) {
   ${dt_}[${O.CONCAT}]=function(a,b,c) local p={} for i=b,c do p[#p+1]=tostring(regs[i]) end regs[a]=table.concat(p) end
   ${dt_}[${O.NOT}]=function(a,b,c) ${generatePolymorphicNot()} end
   ${dt_}[${O.UNM}]=function(a,b,c) regs[a]=-regs[b] end
-  ${dt_}[${O.LEN}]=function(a,b,c) ${generatePolymorphicLen()} end
+  ${dt_}[${O.LEN}]=function(a,b,c) regs[a]=#regs[b] end
   ${dt_}[${O.EQ}]=function(a,b,c) if(${rk_}(b)==${rk_}(c))~=(a~=0) then ${pc_}[1]=${pc_}[1]+1 end end
   ${dt_}[${O.LT}]=function(a,b,c) if(${rk_}(b)<${rk_}(c))~=(a~=0) then ${pc_}[1]=${pc_}[1]+1 end end
   ${dt_}[${O.LE}]=function(a,b,c) if(${rk_}(b)<=${rk_}(c))~=(a~=0) then ${pc_}[1]=${pc_}[1]+1 end end
@@ -1120,14 +1179,14 @@ function buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_) {
     local fn=regs[a]
     local args={}
     if b==0 then
-      local i=a+1
-      while regs[i]~=nil do args[#args+1]=regs[i] i=i+1 end
+      for i=a+1,${top_} do args[#args+1]=regs[i] end
     elseif b~=1 then
       for i=a+1,a+b-1 do args[#args+1]=regs[i] end
     end
     if c==0 then
       local rs={fn(${up_}(args))}
-      for i,v in ipairs(rs) do regs[a+i-1]=v end
+      for i=1,#rs do regs[a+i-1]=rs[i] end
+      ${top_}=a+#rs-1
     elseif c==1 then
       fn(${up_}(args))
     else
@@ -1138,8 +1197,7 @@ function buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_) {
   ${dt_}[${O.RETURN}]=function(a,b,c)
     if b==1 then ${rn_}=-1
     elseif b==0 then
-      local i=a
-      while regs[i]~=nil do ${rv_}[#${rv_}+1]=regs[i] i=i+1 end
+      for i=a,${top_} do ${rv_}[#${rv_}+1]=regs[i] end
       ${rn_}=#${rv_}
     else
       for i=0,b-2 do ${rv_}[i+1]=regs[a+i] end
@@ -1185,7 +1243,11 @@ function buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_) {
     end
   end
   ${dt_}[${O.SETLIST}]=function(a,b,c)
-    for i=1,b do regs[a][i]=regs[a+i] end
+    if b==0 then
+      for i=a+1,${top_} do regs[a][i-a]=regs[i] end
+    else
+      for i=1,b do regs[a][i]=regs[a+i] end
+    end
   end
   ${dt_}[${O.GETUPVAL}]=function(a,b,c)
     local cell=upcells[b]
@@ -1196,8 +1258,14 @@ function buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_) {
     if cell then cell.val=regs[a] end
   end
   ${dt_}[${O.VARARG}]=function(a,b,c)
-    local nout=(c==0) and math.max(0,#va-proto.np) or (c-1)
-    for i=1,nout do regs[a+i-1]=va[proto.np+i] end
+    local nva=math.max(0,${van_}-proto.np)
+    if c==0 then
+      for i=1,nva do regs[a+i-1]=va[proto.np+i] end
+      ${top_}=a+nva-1
+    else
+      local nout=c-1
+      for i=1,nout do regs[a+i-1]=va[proto.np+i] end
+    end
   end
   ${dt_}[${O.NOP}]=function(a,b,c) end`;
 }
@@ -1512,8 +1580,8 @@ function encodeAsPayload(vmCode) {
 // Shape 2: Linked-List (instructions as linked table nodes)
 // Shape 3: Switch-Case Emulation (nested if-elseif with scrambled order)
 
-function buildDispatchTableVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt, unpack_) {
-  const handlers = buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_);
+function buildDispatchTableVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt, unpack_, top_, van_) {
+  const handlers = buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_, top_, van_);
   return `
   ${handlers}
   ${fakeDt}
@@ -1531,11 +1599,11 @@ function buildDispatchTableVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_,
   end`;
 }
 
-function buildLinkedListVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt, unpack_) {
+function buildLinkedListVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt, unpack_, top_, van_) {
   const node_ = randName();
   const cur_ = randName();
   const exec_ = randName();
-  const handlers = buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_);
+  const handlers = buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_, top_, van_);
   return `
   ${handlers}
   ${fakeDt}
@@ -1561,12 +1629,12 @@ function buildLinkedListVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op
   end`;
 }
 
-function buildStringVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt, unpack_) {
+function buildStringVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt, unpack_, top_, van_) {
   const buf_ = randName();
   const len_ = randName();
   const pos_ = randName();
   const rd_ = randName();
-  const handlers = buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_);
+  const handlers = buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_, top_, van_);
   return `
   ${handlers}
   ${fakeDt}
@@ -1605,12 +1673,12 @@ function buildStringVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, v
   end`;
 }
 
-function buildStackVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt, unpack_) {
+function buildStackVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt, unpack_, top_, van_) {
   const stk_ = randName();
   const sp_ = randName();
   const push_ = randName();
   const pop_ = randName();
-  const handlers = buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_);
+  const handlers = buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_, top_, van_);
   return `
   ${handlers}
   ${fakeDt}
@@ -1809,16 +1877,18 @@ function buildVMCore(rootProto, ops) {
   })();
 
   const unpack_ = R.t_unpack;
+  const top_ = randName();
+  const van_ = randName();
   const vmShape = randInt(0, 3);
   let vmBody;
   if (vmShape === 0) {
-    vmBody = buildDispatchTableVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt, unpack_);
+    vmBody = buildDispatchTableVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt, unpack_, top_, van_);
   } else if (vmShape === 1) {
-    vmBody = buildLinkedListVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt, unpack_);
+    vmBody = buildLinkedListVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt, unpack_, top_, van_);
   } else if (vmShape === 2) {
-    vmBody = buildStringVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt, unpack_);
+    vmBody = buildStringVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt, unpack_, top_, van_);
   } else {
-    vmBody = buildStackVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt, unpack_);
+    vmBody = buildStackVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt, unpack_, top_, van_);
   }
 
   const shapeNames = ['DispatchTable', 'LinkedList', 'TokenizedString', 'StackVM'];
@@ -1849,7 +1919,8 @@ function buildVMCore(rootProto, ops) {
     .replace(/\btostring\b/g, R.tostr_)
     .replace(/\bipairs\b/g, R.ipairs_)
     .replace(/\bpairs\b/g, R.pairs_)
-    .replace(/\brawlen\b/g, `${R.rawget_} and rawlen`);
+    .replace(/\bselect\b/g, R.select_)
+    .replace(/\bmath\.abs\b/g, R.m_abs);
 
   const vmCode = `
 ${gi.bootstrap}
@@ -1859,6 +1930,8 @@ local function ${vm}(proto,env,parent_regs,parent_upcells,...)
   local ${pc_}={1}
   local regs={}
   local va={...}
+  local ${van_}=${R.select_}("#",...)
+  local ${top_}=0
   local ${rv_}={}
   local ${rn_}=0
 
