@@ -1007,8 +1007,14 @@ function encryptConstants(kArr) {
     parts.push(fc);
   }
 
+  const EK_CHUNK = 15;
+  const ekLines = [];
+  for (let i = 0; i < parts.length; i += EK_CHUNK) {
+    ekLines.push(parts.slice(i, i + EK_CHUNK).join(','));
+  }
+
   return {
-    encK: `{${parts.join(',')}}`,
+    encK: `{\n${ekLines.join(',\n')}\n}`,
     k1: `{${k1.join(',')}}`,
     k2: `{${k2.join(',')}}`,
     k3: `{${k3.join(',')}}`,
@@ -1272,15 +1278,21 @@ function serializeProto(proto) {
   const rxkLen = randInt(6, 14);
   const rxk = Array.from({ length: rxkLen }, () => randInt(1, 127));
 
-  const instr = proto.bc.map(({ op, a, b, c }, i) => {
+  const instrItems = proto.bc.map(({ op, a, b, c }, i) => {
     const k = rxk[i % rxkLen];
     return `{${op ^ k},${a},${b},${c}}`;
-  }).join(',');
+  });
+  const CHUNK = 30;
+  const instrLines = [];
+  for (let i = 0; i < instrItems.length; i += CHUNK) {
+    instrLines.push(instrItems.slice(i, i + CHUNK).join(','));
+  }
+  const instr = instrLines.join(',\n');
 
   const { encK, k1, k2, k3, k4, k5 } = encryptConstants(proto.k);
-  const subProtos = proto.subp.map(p => serializeProto(p)).join(',');
+  const subProtos = proto.subp.map(p => serializeProto(p)).join(',\n');
   const upvalsStr = proto.upvals.map(u => `{is=${u.instack ? 1 : 0},ix=${u.idx}}`).join(',');
-  return `{bc={${instr}},ek=${encK},k1=${k1},k2=${k2},k3=${k3},k4=${k4},k5=${k5},rxk={${rxk.join(',')}},p={${subProtos}},np=${proto.np},va=${proto.va ? 1 : 0},uv={${upvalsStr}}}`;
+  return `{bc={\n${instr}\n},ek=${encK},\nk1=${k1},k2=${k2},k3=${k3},k4=${k4},k5=${k5},\nrxk={${rxk.join(',')}},\np={${subProtos}},np=${proto.np},va=${proto.va ? 1 : 0},uv={${upvalsStr}}}`;
 }
 
 // ─── Self-Hash Verification (v9) ────────────────────────────────
