@@ -2688,32 +2688,22 @@ function wrapAntiHook(code) {
   const repLen = randInt(4,8);
 
   return [
-    `--[[ `,
-    `    ╔══════════════════════════════════════════════════════════╗`,
-    `    ║                                                          ║`,
-    `    ║   ██╗     ██╗   ██╗ █████╗ ███████╗██╗  ██╗██╗██████╗   ║`,
-    `    ║   ██║     ██║   ██║██╔══██╗██╔════╝██║  ██║██║██╔═══╝   ║`,
-    `    ║   ██║     ██║   ██║███████║███████╗███████║██║██████╗    ║`,
-    `    ║   ██║     ██║   ██║██╔══██║╚════██║██╔══██║██║██╔═══╝   ║`,
-    `    ║   ███████╗╚██████╔╝██║  ██║███████║██║  ██║██║██████╗   ║`,
-    `    ║   ╚══════╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═╝╚═════╝   ║`,
-    `    ║                                                          ║`,
-    `    ║      ╔═╗╦ ╦╦╔═╗╦  ╔╦╗  Protection Engine v${ver}      ║`,
-    `    ║      ╚═╗╠═╣║║╣ ║   ║║  Powered by LuaShield            ║`,
-    `    ║      ╚═╝╩ ╩╩╚═╝╩═╝╚═╝  github.com/fabiantxl            ║`,
-    `    ║                                                          ║`,
-    `    ║   ┌──────────────────────────────────────────┐           ║`,
-    `    ║   │  Build: ${hashA}-${hashB}          │           ║`,
-    `    ║   │  Time:  ${new Date(ts).toISOString().slice(0,19)}Z          │           ║`,
-    `    ║   │  Mode:  Enterprise Protection          │           ║`,
-    `    ║   └──────────────────────────────────────────┘           ║`,
-    `    ║                                                          ║`,
-    `    ║   ⚠  This script is protected by LuaShield.             ║`,
-    `    ║   ⚠  Unauthorized modification or redistribution        ║`,
-    `    ║      is strictly prohibited.                             ║`,
-    `    ║                                                          ║`,
-    `    ╚══════════════════════════════════════════════════════════╝`,
-    `]]`,
+    `--[[`,
+    `    +============================================================+`,
+    `    |                                                            |`,
+    `    |   LuaShield Protection Engine v${ver}                  |`,
+    `    |   Powered by LuaShield -- github.com/fabiantxl            |`,
+    `    |                                                            |`,
+    `    |   Build: ${hashA}-${hashB}                             |`,
+    `    |   Time:  ${new Date(ts).toISOString().slice(0,19)}Z                      |`,
+    `    |   Mode:  Enterprise Protection                             |`,
+    `    |                                                            |`,
+    `    |   This script is protected by LuaShield.                  |`,
+    `    |   Unauthorized modification or redistribution             |`,
+    `    |   is strictly prohibited.                                 |`,
+    `    |                                                            |`,
+    `    +============================================================+`,
+    `--]]`,
     `local ${sig}={_bc={${bc}},_v="${ver}",_id="${randHex(16)}",_ts=${ts},_wm="${randHex(8)}",_ck="${randHex(12)}"}`,
     `local ${vn}=string.char(bit32.bxor(0x${(65 ^ randInt(1, 10)).toString(16).padStart(2, '0')},${randInt(1, 10)}))`,
     ...wmDecls,
@@ -2765,9 +2755,10 @@ function wrapAntiHook(code) {
 function wrapFinalEncoding(code) {
   const keyLen = randInt(24, 48);
   const key = Array.from({ length: keyLen }, () => randInt(1, 254));
+  const codeBytes = Buffer.from(code, 'utf8');
   const bytes = [];
-  for (let i = 0; i < code.length; i++) {
-    bytes.push((code.charCodeAt(i) ^ key[i % keyLen]) & 0xFF);
+  for (let i = 0; i < codeBytes.length; i++) {
+    bytes.push((codeBytes[i] ^ key[i % keyLen]) & 0xFF);
   }
 
   const chunkSize = 80;
@@ -2810,9 +2801,10 @@ function wrapAdvancedEncoding(code) {
   const key1 = Array.from({ length: key1Len }, () => randInt(1, 254));
   const key2 = Array.from({ length: key2Len }, () => randInt(1, 254));
 
+  const codeBytes = Buffer.from(code, 'utf8');
   const encoded = [];
-  for (let i = 0; i < code.length; i++) {
-    encoded.push((code.charCodeAt(i) ^ key1[i % key1Len] ^ key2[i % key2Len]) & 0xFF);
+  for (let i = 0; i < codeBytes.length; i++) {
+    encoded.push((codeBytes[i] ^ key1[i % key1Len] ^ key2[i % key2Len]) & 0xFF);
   }
 
   function toLuaString(bytes) {
@@ -3055,6 +3047,49 @@ const PRESETS = {
     debugMode: true,
   },
   light: {
+    vmCompile: false,
+    renameVars: true, encryptStrings: true,
+    obfuscateNumbers: false, breakGlobals: false,
+    injectJunk: false, opaquePredicates: false, antiHook: false,
+    controlFlowFlatten: false, stringArrayRotate: false, envFingerprint: false,
+    vmNesting: false, deadCodePaths: false,
+  },
+  medium: {
+    vmCompile: false,
+    renameVars: true, encryptStrings: true,
+    obfuscateNumbers: true, breakGlobals: false,
+    injectJunk: true, opaquePredicates: false, antiHook: true,
+    controlFlowFlatten: false, stringArrayRotate: true, envFingerprint: false,
+    vmNesting: false, deadCodePaths: false,
+  },
+  heavy: {
+    vmCompile: true,
+    renameVars: true, encryptStrings: true,
+    obfuscateNumbers: true, breakGlobals: true,
+    injectJunk: true, opaquePredicates: true, antiHook: true,
+    controlFlowFlatten: true, stringArrayRotate: true, envFingerprint: true,
+    vmNesting: false, deadCodePaths: true, finalEncoding: true,
+  },
+  max: {
+    vmCompile: true,
+    renameVars: true, encryptStrings: true,
+    obfuscateNumbers: true, breakGlobals: true,
+    injectJunk: true, opaquePredicates: true, antiHook: true,
+    controlFlowFlatten: true, stringArrayRotate: true, envFingerprint: true,
+    vmNesting: true, tripleNesting: false, deadCodePaths: true, finalEncoding: true,
+  },
+  ultra: {
+    vmCompile: true,
+    renameVars: true, encryptStrings: true,
+    obfuscateNumbers: true, breakGlobals: true,
+    injectJunk: true, opaquePredicates: true, antiHook: true,
+    controlFlowFlatten: true, stringArrayRotate: true, envFingerprint: true,
+    vmNesting: true, tripleNesting: true, deadCodePaths: true, finalEncoding: true,
+  },
+};
+
+module.exports = { obfuscate, PRESETS };
+{
     vmCompile: false,
     renameVars: true, encryptStrings: true,
     obfuscateNumbers: false, breakGlobals: false,
