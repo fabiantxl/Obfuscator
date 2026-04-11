@@ -909,6 +909,7 @@ class Compiler {
   compileCall(node, dest, nret) {
     const proto = this.cur;
     const base = proto.nextReg;
+    if (nret === 0) proto.nextReg = dest;
     const fnReg = proto.allocTemp();
 
     let args = node.arguments || [];

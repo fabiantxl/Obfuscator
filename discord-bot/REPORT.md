@@ -1,5 +1,5 @@
 # LuaShield Obfuscator — State Report
-**Version:** v13.9
+**Version:** v14.0
 **Engine:** 4-Shape VM + 9+ Protection Layers + Debug Mode
 **Files:** `bot.js`, `obfuscator.js`, `package.json`
 **Dependencies:** `discord.js@^14`, `dotenv@^16`, `luaparse@^0.3`
@@ -21,7 +21,43 @@
 
 ---
 
-## What Was Fixed (v13.9 — This Session)
+## What Was Fixed (v14.0 — This Session)
+
+### CRITICAL: compileCall() Multi-Return Register Misalignment — Nested Calls at Wrong Register
+
+**Root Cause:**
+In `compileCall()`, when a call expression is used as the last argument of another call (multi-return context, `nret=0`), the compiler allocated a new `fnReg` register AFTER the caller's `dest` register. The CALL opcode puts results at `fnReg`, but the outer call expected them at `dest`. Since `fnReg !== dest`, the outer call read uninitialized/stale register values instead of the actual return values.
+
+**Symptom in Roblox:**
+`invalid argument #1 to 'httpget' (Instance expected, got string)` — The pattern `loadstring(game:HttpGet(url))()` was affected. The `loadstring` call received `nil` (uninitialized register) instead of the HTTP response (stored one register too high). This caused cascading failures.
+
+**How It Was Found:**
+Traced the bytecode compilation of `loadstring(game:HttpGet(repo .. "Library.lua"))()`:
+- Outer `loadstring()` allocates R4 as destination for `game:HttpGet()` result
+- Inner `compileCall(httpGetCall, dest=R4, nret=0)` allocates `fnReg=R5`
+- CALL puts HttpGet result at R5, but loadstring CALL (with b=0) reads from R4 (nil)
+- `loadstring(nil)` returns nil → `nil()` → crash
+
+**Fix (1 line, line 915 in obfuscator.js):**
+```javascript
+if (nret === 0) proto.nextReg = dest;
+```
+Added before `const fnReg = proto.allocTemp();` in `compileCall()`. This ensures that for multi-return calls, `fnReg === dest`, matching the approach already used in `compileCallMultiRet()`.
+
+**Affected patterns (all fixed):**
+- `loadstring(game:HttpGet(url))()` — the reported error
+- `tostring(obj:Method(arg))` — nested method call as arg
+- `print(tostring(game:HttpGet("url")))` — deep nesting
+- Any pattern where a call expression is the last argument of another call
+
+**Tested Results (v14.0):**
+- All 6 presets: valid Lua ✓ (tested with 8 complex nested-call patterns)
+- `thebutton.txt` regenerated with `heavy` preset (342 KB)
+- Synced to `artifacts/api-server/src/lib/obfuscator.js`
+
+---
+
+## What Was Fixed (v13.9 — Previous Session)
 
 ### CRITICAL: Dispatch Table Never Initialized — `attempt to index nil with number` at Runtime
 

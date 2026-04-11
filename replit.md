@@ -1,4 +1,4 @@
-# LuaShield — Roblox Lua Obfuscator (v13.9 Engine + Discord Bot)
+# LuaShield — Roblox Lua Obfuscator (v14.0 Engine + Discord Bot)
 
 ## MISSION
 Build the **best Lua/Luau obfuscator for Roblox** — surpass Luraph in every measurable dimension:
@@ -13,7 +13,7 @@ strength, unpredictability, anti-analysis, and coverage of Lua AST nodes.
 
 | File | Purpose |
 |------|---------|
-| `discord-bot/obfuscator.js` | **PRIMARY ENGINE (v13.9)** — ~3092 lines, the obfuscator |
+| `discord-bot/obfuscator.js` | **PRIMARY ENGINE (v14.0)** — ~3125 lines, the obfuscator |
 | `discord-bot/bot.js` | Discord bot — slash commands, DM support, EN/ES i18n |
 | `discord-bot/package.json` | Bot dependencies: discord.js, dotenv, luaparse |
 | `discord-bot/.env.example` | Copy to `.env` and add `DISCORD_BOT_TOKEN` |
@@ -35,60 +35,52 @@ node bot.js
 
 ---
 
-## ENGINE VERSION: v13.6 — FILE CORRUPTION FIX
+## ENGINE VERSION: v14.0 — CRITICAL MULTI-RETURN REGISTER FIX
 
-### What Was Fixed in v13.6 (THIS SESSION)
+### What Was Fixed in v14.0 (THIS SESSION)
 
-**CRITICAL: Duplicate PRESETS block → SyntaxError on load (caused ALL Roblox errors)**
-- `obfuscator.js` had a second copy of the entire `PRESETS` block (lines 3092–3135) after `module.exports`.
-- Node.js threw `SyntaxError: Unexpected token ':'` every time the module was loaded.
-- This meant `obfuscate()` was never called — `finalEncoding` wrapped garbage → `loadstring` returned nil → `else error("",0) end` at Line 195 in Roblox. Line 1 is Roblox's outer crash report.
-- **Fix:** Removed duplicate block. Engine now loads cleanly, all 6 presets 10/10 valid.
-- `thebutton.txt` regenerated with `heavy` preset (VM active, syntax-valid).
-- Synced to `artifacts/api-server/src/lib/obfuscator.js`.
+**CRITICAL: compileCall() multi-return register misalignment → nested call results at wrong register**
 
-**OUTPUT NOTE:** The obfuscated output is always written to `thebutton.txt` (workspace root).
+**Root Cause:**
+In `compileCall()`, when a call expression is used as the last argument of another call (multi-return context, `nret=0`), the compiler allocated a new `fnReg` register AFTER the caller's `dest` register. The CALL opcode puts results at `fnReg`, but the outer call expected them at `dest`. Since `fnReg !== dest`, the outer call read uninitialized/stale register values instead of the actual return values.
 
----
+**Symptom in Roblox:**
+`invalid argument #1 to 'httpget' (Instance expected, got string)` — The specific pattern `loadstring(game:HttpGet(url))()` was affected. The `loadstring` call received `nil` (uninitialized R4) instead of the HTTP response (which was at R5). This caused cascading failures: loadstring returned nil, then calling nil errored.
 
-## ENGINE VERSION: v13.5 — CRITICAL RUNTIME FIXES
+**How It Was Found:**
+Traced the bytecode compilation of `loadstring(game:HttpGet(repo .. "Library.lua"))()` through the register allocator. Found that `compileCall(httpGetCall, dest=R4, nret=0)` allocated `fnReg=R5`, so CALL put results at R5 while the outer loadstring CALL (with b=0) expected them starting at R4.
 
-### What Was Fixed in v13.5 (THIS SESSION)
+**Fix (1 line):**
+Added `if (nret === 0) proto.nextReg = dest;` before `const fnReg = proto.allocTemp();` in `compileCall()`. This ensures that for multi-return calls, `fnReg === dest`, matching the approach already used in `compileCallMultiRet()`.
 
-1. **CALL c=1 not resetting `top_` (Stack Overflow — Line 264)**
-   - After CALL with c=1 (discard results), `top_` was stale, causing RETURN/CALL/SETLIST b=0 to iterate garbage
-   - Fix: `top_ = a` after c=1, `top_ = a + c - 2` after c>1
+**Affected patterns (all fixed):**
+- `loadstring(game:HttpGet(url))()` — nested method call as arg
+- `tostring(game:GetService("Players"):FindFirstChild("x"))` — chained method calls
+- `print(tostring(game:HttpGet("url")))` — deep nesting
+- Any pattern where a call expression is the last argument of another call
 
-2. **RETURN b=0 with stale top_ (Line 264)**
-   - Added bounds guard: `if top_ < a then top_ = a-1 end`
-   - Fixed return value indexing to be 1-based from register a
-
-3. **VM dispatch loop nil-index (crash on bc[idx] = nil)**
-   - Added `if idx_ > #bc then break end` + `if not ins_ then break end` guards in all VM shapes
-
-4. **VARARG nil-guard (Line 8 crash)**
-   - Added `local _np = proto.np or 0`, `local _van = van_ or 0`
-   - Clears registers beyond vararg range to prevent stale data
-
-5. **CALL fn type check**
-   - Descriptive error when non-function is called instead of cryptic nil-index
-
-### New Feature: Debug Mode
-- `PRESETS.debug` — VM only, no obfuscation, prints opcode trace to Roblox console (F9)
-- Use `debug` level in `/obfuscate` bot command to diagnose runtime issues
-- `_VMDBG=true` global enables opcode tracing in DispatchTable VM
-
-### HTTP API (api-server)
-- `POST /api/obfuscate` body: `{ code: string, level: string }` → `{ obfuscated, stats }`
-- `GET /api/presets` → `{ presets: string[] }`
+**Tested Results (v14.0):**
+- All 6 presets (debug/light/medium/heavy/max/ultra) produce valid Lua — tested with 8 complex nested-call patterns
+- `thebutton.txt` regenerated with `heavy` preset (342 KB, VM active)
+- Synced to `artifacts/api-server/src/lib/obfuscator.js`
 
 ---
 
-## ENGINE ARCHITECTURE — obfuscator.js (v13.5)
+## ENGINE VERSION: v13.9 — DISPATCH TABLE FIX
+
+### What Was Fixed in v13.9 (Previous Session)
+
+**CRITICAL: Dispatch Table Never Initialized — `attempt to index nil with number` at Runtime**
+- `dt_` variable was randomly named but never declared as `local dt_ = {}` before handler assignments.
+- Fix: Added `local ${dt_}={}` in `buildVMCore()` before handler assignments.
+
+---
+
+## ENGINE ARCHITECTURE — obfuscator.js (v14.0)
 
 ### Protection Layers (9+ total)
 
-#### LAYER A — VM Bytecode Compiler (v13.5)
+#### LAYER A — VM Bytecode Compiler (v14.0)
 4 VM shapes randomly selected per run:
 - Dispatch Table (original)
 - Linked-List (instructions as linked table nodes)
@@ -108,6 +100,7 @@ Key properties:
 - **VM Nesting** (Russian doll VMs for max/ultra levels)
 - **Bounds-checked VM loop** (no nil-index on past-end PC)
 - **Stack integrity** (top_ reset after every CALL, VARARG nil-guarded)
+- **Correct multi-return register placement** (v14.0 fix)
 
 #### LAYER B — Token Passes
 | Pass | Technique | Min level |
@@ -148,7 +141,12 @@ PRESETS.ultra  — heavy + tripleNesting (triple VM)
 ---
 
 ## SYNC RULE
-The engine lives in ONE place only: `discord-bot/obfuscator.js`. The bot loads it directly via `require('./obfuscator')`. Do not mirror it anywhere else.
+The engine lives in ONE place only: `discord-bot/obfuscator.js`. The bot loads it directly via `require('./obfuscator')`. A mirror copy exists at `artifacts/api-server/src/lib/obfuscator.js`.
+
+After editing the engine, always sync:
+```bash
+cp discord-bot/obfuscator.js artifacts/api-server/src/lib/obfuscator.js
+```
 
 ---
 
@@ -174,51 +172,45 @@ The engine lives in ONE place only: `discord-bot/obfuscator.js`. The bot loads i
 
 ## Key Commands
 
-- `pnpm --filter @workspace/api-server run dev` — run API server locally
 - `cd discord-bot && node bot.js` — run Discord bot
+- `pnpm --filter @workspace/api-server run dev` — run API server locally
 - `cp discord-bot/obfuscator.js artifacts/api-server/src/lib/obfuscator.js` — sync engine
 
-See REPORT.md for full technical details and history.
-ts/api-server/src/lib/obfuscator.js` — mirror copy
+---
 
-After editing the engine, always copy to both locations:
-```bash
-cp discord-bot/obfuscator.js artifacts/api-server/src/lib/obfuscator.js
-```
+## INTERNAL NOTES FOR AGENTS
 
-### Last checkpoint (v13.4):
-- Fixed `unpack_` temporal dead zone: `const unpack_ = randName()` was used before its declaration inside `buildVMCore()`. This crashed the VM compiler for EVERY script → `vmUsed` always false → `breakGlobals` ran → `_ENV["loadstring"]` nil crash in Roblox. Fixed by moving declaration above the vmShape selection.
-- Fixed `loadstring`/`load` in BREAKABLE: removed from the set — these are executor-injected at getgenv() level, NOT available through `_ENV`. Would cause `attempt to index nil with 'loadstring'` in all executor contexts when VM falls back.
-- Fixed all 3 injection passes (injectJunk, injectOpaquePredicates, injectDeadCodePaths): added brace depth tracking via `netBracesOnLine()` helper so no statements are injected inside `{ }` table constructors. Also exclude `return`/`break`/`goto` lines.
-- Fixed flattenControlFlow: changed `else\nif` to `elseif` — flat if-elseif chain.
-- Primary test: the_button.lua (474-line Roblox executor script) — 20/20 valid, 100% VM active for heavy/max, loadstring appears raw.
-- Synced to artifacts/api-server/src/lib/obfuscator.js
+### Critical implementation details in obfuscator.js
 
-### Jump offset remapping (critical for correctness)
-All functions that modify bytecode arrays MUST maintain an `oldToNew` index mapping
-and remap JMP/FORPREP/FORLOOP/TFORLOOP `b` fields after insertion. The formula is:
-```
-oldTarget = oldIdx + 1 + ins.b
-newTarget = oldToNew[oldTarget]
-newB = newTarget - newIdx - 1
-```
-
-- **`PRESETS`**: exported object with light/medium/heavy/max/ultra option sets
+- **Compiler class** (line ~100): `compile(ast)` → returns root `Proto`
+- **Proto class**: holds `code[]`, `kst[]`, `upvals[]`, `subProtos[]`, `gotoList[]`, `labelMap{}`
+- **`makeOpcodeMap()`**: creates a random permutation of 35 opcode names → integers
+- **`buildVMCore(rootProto, ops)`**: generates Lua VM code from compiled proto
+- **`encryptConstants(kst)`**: returns `{ encK[], k1[], k2[] }` with dual rotating keys
+- **`wrapAntiHook(code)`**: wraps code in anti-debug shell with bit32 fingerprint
+- **`injectJunk(code)`**: inserts random junk lines between existing lines
+- **`obfuscate(code, opts)`**: main entry point, returns `{ code, stats }`
+- **`PRESETS`**: exported object with debug/light/medium/heavy/max/ultra option sets
 - **`module.exports = { obfuscate, PRESETS }`**: CommonJS export
 
+### compileCall multi-return fix (v14.0)
+When `nret === 0` (multi-return context), `proto.nextReg` is set to `dest` before allocating `fnReg`, ensuring `fnReg === dest`. This matches the approach in `compileCallMultiRet()`. Without this, nested calls as arguments would have results at the wrong register offset.
+
 ### Jump offset remapping (critical for correctness)
 All functions that modify bytecode arrays MUST maintain an `oldToNew` index mapping
-and remap JMP/FORPREP/FORLOOP/TFORLOOP `b` fields after insertion. The formula is:
-```
-oldTarget = oldIdx + 1 + ins.b
-newTarget = oldToNew[oldTarget]
-newB = newTarget - newIdx - 1
-```
- `_DT[op]`, use `_DT[op ^ runtime_key]`
-   where `runtime_key` is computed from a hash of the environment.
+and remap JMP/FORPREP/FORLOOP/TFORLOOP `b` fields after insertion.
 
-7. **Anti-decompile: fake jump table** — insert a large fake dispatch table with
-   dead branches that never execute but confuse decompiler heuristics.
+### Goto backpatching
+- `proto.gotoList` = array of `{ instrIdx, label }` for forward gotos
+- `proto.labelMap` = `{ labelName: instrIdx }` for defined labels
+- After compiling a function body, `proto.resolveGotos()` patches jump offsets
+
+### Upvalue chain (deep)
+- `resolveUpval(name, proto)` recursively walks parent protos
+- Returns `{ is: 1, ix: regIdx }` if in parent's registers (instack)
+- Returns `{ is: 0, ix: parentUVidx }` if upval-of-upval (2+ levels)
+- CLOSURE opcode passes `parent_upcells` to child VM functions
+
 
 ### LOWER PRIORITY
 8. **`/obfuscate` rate limiting** — per-user cooldown to prevent abuse.
