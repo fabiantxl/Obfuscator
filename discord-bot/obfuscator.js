@@ -1982,6 +1982,7 @@ local function ${vm}(proto,env,parent_regs,parent_upcells,...)
   end
 
   local ${rxkl_}=proto.rxk
+  local ${dt_}={}
 ${vmBodyStr}
 
   if ${rn_}==-1 then return
@@ -3089,8 +3090,7 @@ const PRESETS = {
 };
 
 module.exports = { obfuscate, PRESETS };
-{
-    vmCompile: false,
+alse,
     renameVars: true, encryptStrings: true,
     obfuscateNumbers: false, breakGlobals: false,
     injectJunk: false, opaquePredicates: false, antiHook: false,

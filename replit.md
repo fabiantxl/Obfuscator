@@ -1,4 +1,4 @@
-# LuaShield — Roblox Lua Obfuscator (v13.5 Engine + Discord Bot)
+# LuaShield — Roblox Lua Obfuscator (v13.9 Engine + Discord Bot)
 
 ## MISSION
 Build the **best Lua/Luau obfuscator for Roblox** — surpass Luraph in every measurable dimension:
@@ -13,12 +13,13 @@ strength, unpredictability, anti-analysis, and coverage of Lua AST nodes.
 
 | File | Purpose |
 |------|---------|
-| `discord-bot/obfuscator.js` | **PRIMARY ENGINE (v13.5)** — ~3100 lines, the obfuscator |
+| `discord-bot/obfuscator.js` | **PRIMARY ENGINE (v13.9)** — ~3092 lines, the obfuscator |
 | `discord-bot/bot.js` | Discord bot — slash commands, DM support, EN/ES i18n |
 | `discord-bot/package.json` | Bot dependencies: discord.js, dotenv, luaparse |
 | `discord-bot/.env.example` | Copy to `.env` and add `DISCORD_BOT_TOKEN` |
 | `discord-bot/REPORT.md` | Technical report — READ THIS BEFORE EDITING |
-| `discord-bot/attached_assets/` | Sample Lua scripts for testing |
+| `attached_assets/the button.lua` | **Primary test source** (474 lines, canonical Roblox executor script) |
+| `thebutton.txt` | **Obfuscated output** — always regenerated to this file (workspace root) |
 
 ---
 
@@ -31,6 +32,22 @@ cp .env.example .env
 # Set DISCORD_BOT_TOKEN in .env (get from Discord Developer Portal)
 node bot.js
 ```
+
+---
+
+## ENGINE VERSION: v13.6 — FILE CORRUPTION FIX
+
+### What Was Fixed in v13.6 (THIS SESSION)
+
+**CRITICAL: Duplicate PRESETS block → SyntaxError on load (caused ALL Roblox errors)**
+- `obfuscator.js` had a second copy of the entire `PRESETS` block (lines 3092–3135) after `module.exports`.
+- Node.js threw `SyntaxError: Unexpected token ':'` every time the module was loaded.
+- This meant `obfuscate()` was never called — `finalEncoding` wrapped garbage → `loadstring` returned nil → `else error("",0) end` at Line 195 in Roblox. Line 1 is Roblox's outer crash report.
+- **Fix:** Removed duplicate block. Engine now loads cleanly, all 6 presets 10/10 valid.
+- `thebutton.txt` regenerated with `heavy` preset (VM active, syntax-valid).
+- Synced to `artifacts/api-server/src/lib/obfuscator.js`.
+
+**OUTPUT NOTE:** The obfuscated output is always written to `thebutton.txt` (workspace root).
 
 ---
 

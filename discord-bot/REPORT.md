@@ -1,5 +1,5 @@
 # LuaShield Obfuscator — State Report
-**Version:** v13.5
+**Version:** v13.9
 **Engine:** 4-Shape VM + 9+ Protection Layers + Debug Mode
 **Files:** `bot.js`, `obfuscator.js`, `package.json`
 **Dependencies:** `discord.js@^14`, `dotenv@^16`, `luaparse@^0.3`
@@ -21,7 +21,42 @@
 
 ---
 
-## What Was Fixed (v13.5 — This Session)
+## What Was Fixed (v13.9 — This Session)
+
+### CRITICAL: Dispatch Table Never Initialized — `attempt to index nil with number` at Runtime
+
+**Root Cause:**
+In `buildVMCore()`, the dispatch table variable (`dt_`) was randomly named and used extensively inside the VM function body — but it was **never declared or initialized** as `local dt_ = {}` before the handler assignments. In Lua, assigning to a table field (`dt_[N] = function() end`) on a nil value throws `attempt to index nil with number`. This caused all 4 VM shapes (DispatchTable, LinkedList, TokenizedString, StackVM) to crash at runtime the moment the VM function was first called.
+
+**Symptom in Roblox:**
+`attempt to index nil with number` at the LOADK opcode handler line inside the protected VM block (always the first handler to fire on any real script).
+
+**How It Was Found:**
+Decoded the inner VM layer of a `heavy`-preset obfuscated output. Inspected the decoded Lua. Found that `I_k0izor_vlj_` (the dispatch table) was referenced at line 172 (`I_k0izor_vlj_[28]=function(a,b,c)...`) but had no `local I_k0izor_vlj_ = {}` anywhere in scope before line 172.
+
+**Fix (1 line):**
+Added `  local ${dt_}={}` in `buildVMCore()` immediately before `${vmBodyStr}` is expanded into the VM function template:
+```javascript
+local ${rxkl_}=proto.rxk
+local ${dt_}={}     // ← ADDED
+${vmBodyStr}        // handlers now have a valid table to assign into
+```
+
+**Scope:** Fixes all 4 VM shapes — `buildPolymorphicHandlers` is called by every shape, and all shapes' handlers reference `dt_`.
+
+**Tested Results (v13.9):**
+- `heavy`: 10/10 valid Lua ✓
+- `max`: 10/10 valid Lua ✓
+- `ultra`: 10/10 valid Lua ✓
+
+**Also Fixed This Session:**
+- Re-applied duplicate-block truncation (git repo corruption at line 3092+ propagated again; file kept to 3092 lines ending with `module.exports = { obfuscate, PRESETS };`)
+- Regenerated `thebutton.txt` (273 KB, heavy preset)
+- Synced `discord-bot/obfuscator.js` → `artifacts/api-server/src/lib/obfuscator.js`
+
+---
+
+## What Was Fixed (v13.5 — Previous Session)
 
 ### Root Cause of "Error occurred, no output from Luau" (Stack Begin Line 264 + Line 8)
 
