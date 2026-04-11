@@ -1147,29 +1147,32 @@ function generatePolymorphicMove() {
   return variants[randInt(0, variants.length - 1)];
 }
 
-function buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_, top_, van_) {
+function buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_, top_, van_, debugMode) {
   const up_ = unpack_ || 'table.unpack';
+  const dbgGuard = debugMode
+    ? (label, code) => `local _ok_,_er_=pcall(function() ${code} end) if not _ok_ then if _VMDBG then print("[VM-ERR] "..tostring("${label}")..": "..tostring(_er_)) end error(_er_,0) end`
+    : (label, code) => code;
   return `
-  ${dt_}[${O.LOADK}]=function(a,b,c) regs[a]=kst[b] end
+  ${dt_}[${O.LOADK}]=function(a,b,c) if not kst then error("C-FAIL:kst",0) end regs[a]=kst[b] end
   ${dt_}[${O.LOADNIL}]=function(a,b,c) for i=a,b do regs[i]=nil end end
   ${dt_}[${O.LOADBOOL}]=function(a,b,c) regs[a]=b~=0 if c~=0 then ${pc_}[1]=${pc_}[1]+1 end end
   ${dt_}[${O.MOVE}]=function(a,b,c) ${generatePolymorphicMove()} end
-  ${dt_}[${O.GETGLOBAL}]=function(a,b,c) regs[a]=env[kst[b]] end
-  ${dt_}[${O.SETGLOBAL}]=function(a,b,c) env[kst[b]]=regs[a] end
-  ${dt_}[${O.GETTABLE}]=function(a,b,c) regs[a]=regs[b][${rk_}(c)] end
-  ${dt_}[${O.SETTABLE}]=function(a,b,c) regs[a][${rk_}(b)]=${rk_}(c) end
+  ${dt_}[${O.GETGLOBAL}]=function(a,b,c) if not kst then error("C-FAIL:kst-gg",0) end regs[a]=env[kst[b]] end
+  ${dt_}[${O.SETGLOBAL}]=function(a,b,c) if not kst then error("C-FAIL:kst-sg",0) end env[kst[b]]=regs[a] end
+  ${dt_}[${O.GETTABLE}]=function(a,b,c) local _t=regs[b] if _t==nil then error("VM:GETTABLE nil tbl reg["..b.."]",0) end regs[a]=_t[${rk_}(c)] end
+  ${dt_}[${O.SETTABLE}]=function(a,b,c) local _t=regs[a] if _t==nil then error("VM:SETTABLE nil tbl reg["..a.."]",0) end _t[${rk_}(b)]=${rk_}(c) end
   ${dt_}[${O.NEWTABLE}]=function(a,b,c) regs[a]={} end
-  ${dt_}[${O.SELF}]=function(a,b,c) regs[a+1]=regs[b] regs[a]=regs[b][${rk_}(c)] end
+  ${dt_}[${O.SELF}]=function(a,b,c) local _t=regs[b] if _t==nil then error("VM:SELF nil tbl reg["..b.."]",0) end regs[a+1]=_t regs[a]=_t[${rk_}(c)] end
   ${dt_}[${O.ADD}]=function(a,b,c) ${generatePolymorphicAdd(rk_)} end
   ${dt_}[${O.SUB}]=function(a,b,c) ${generatePolymorphicSub(rk_)} end
   ${dt_}[${O.MUL}]=function(a,b,c) ${generatePolymorphicMul(rk_)} end
   ${dt_}[${O.DIV}]=function(a,b,c) ${generatePolymorphicDiv(rk_)} end
   ${dt_}[${O.MOD}]=function(a,b,c) regs[a]=${rk_}(b)%${rk_}(c) end
   ${dt_}[${O.POW}]=function(a,b,c) regs[a]=${rk_}(b)^${rk_}(c) end
-  ${dt_}[${O.CONCAT}]=function(a,b,c) local p={} for i=b,c do p[#p+1]=tostring(regs[i]) end regs[a]=table.concat(p) end
+  ${dt_}[${O.CONCAT}]=function(a,b,c) local p={} for i=b,c do p[#p+1]=tostring(regs[i] or "") end regs[a]=table.concat(p) end
   ${dt_}[${O.NOT}]=function(a,b,c) ${generatePolymorphicNot()} end
   ${dt_}[${O.UNM}]=function(a,b,c) regs[a]=-regs[b] end
-  ${dt_}[${O.LEN}]=function(a,b,c) regs[a]=#regs[b] end
+  ${dt_}[${O.LEN}]=function(a,b,c) local _t=regs[b] if _t==nil then error("VM:LEN nil reg["..b.."]",0) end regs[a]=#_t end
   ${dt_}[${O.EQ}]=function(a,b,c) if(${rk_}(b)==${rk_}(c))~=(a~=0) then ${pc_}[1]=${pc_}[1]+1 end end
   ${dt_}[${O.LT}]=function(a,b,c) if(${rk_}(b)<${rk_}(c))~=(a~=0) then ${pc_}[1]=${pc_}[1]+1 end end
   ${dt_}[${O.LE}]=function(a,b,c) if(${rk_}(b)<=${rk_}(c))~=(a~=0) then ${pc_}[1]=${pc_}[1]+1 end end
@@ -1188,6 +1191,7 @@ function buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_, top_,
       local rs={fn(${up_}(args))}
       for i=1,#rs do regs[a+i-1]=rs[i] end
       ${top_}=a+#rs-1
+      if ${top_}<a then ${top_}=a end
     elseif c==1 then
       fn(${up_}(args))
       ${top_}=a
@@ -1211,19 +1215,26 @@ function buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_, top_,
     end
   end
   ${dt_}[${O.FORPREP}]=function(a,b,c)
-    regs[a]=regs[a]-regs[a+2]
+    local _s=regs[a] local _st=regs[a+2]
+    if _s==nil then error("VM:FORPREP nil init reg["..a.."]",0) end
+    if _st==nil then error("VM:FORPREP nil step reg["..(a+2).."]",0) end
+    regs[a]=_s-_st
     ${pc_}[1]=${pc_}[1]+b
   end
   ${dt_}[${O.FORLOOP}]=function(a,b,c)
-    regs[a]=regs[a]+regs[a+2]
-    local idx,lim,step=regs[a],regs[a+1],regs[a+2]
+    local _st=regs[a+2]
+    if _st==nil then error("VM:FORLOOP nil step reg["..(a+2).."]",0) end
+    regs[a]=regs[a]+_st
+    local idx,lim,step=regs[a],regs[a+1],_st
     if(step>0 and idx<=lim)or(step<0 and idx>=lim) then
       regs[a+3]=idx
       ${pc_}[1]=${pc_}[1]+b
     end
   end
   ${dt_}[${O.TFORLOOP}]=function(a,b,c)
-    local rs={regs[a](regs[a+1],regs[a+2])}
+    local _fn=regs[a]
+    if _fn==nil then error("VM:TFOR nil iter reg["..a.."]",0) end
+    local rs={_fn(regs[a+1],regs[a+2])}
     local ctrl=rs[1]
     if ctrl~=nil then
       regs[a+2]=ctrl
@@ -1232,15 +1243,19 @@ function buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_, top_,
     end
   end
   ${dt_}[${O.CLOSURE}]=function(a,b,c)
+    if not subp then error("VM:CLOSURE nil subp",0) end
     local sp=subp[b+1]
+    if not sp then error("VM:CLOSURE nil subp["..(b+1).."]",0) end
     local child_upc={}
-    if sp.uv then
+    if sp.uv and #sp.uv>0 then
       for i,uv in ipairs(sp.uv) do
         if uv.is==1 then
           if not _regcells[uv.ix] then _regcells[uv.ix]={val=regs[uv.ix]} end
           child_upc[i-1]=_regcells[uv.ix]
         elseif uv.is==0 then
-          child_upc[i-1]=upcells[uv.ix]
+          local cell=upcells[uv.ix]
+          if not cell then cell={val=nil} end
+          child_upc[i-1]=cell
         end
       end
     end
@@ -1249,19 +1264,22 @@ function buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_, top_,
     end
   end
   ${dt_}[${O.SETLIST}]=function(a,b,c)
+    local _t=regs[a]
+    if not _t then regs[a]={} _t=regs[a] end
     if b==0 then
-      for i=a+1,${top_} do regs[a][i-a]=regs[i] end
+      for i=a+1,${top_} do _t[i-a]=regs[i] end
     else
-      for i=1,b do regs[a][i]=regs[a+i] end
+      for i=1,b do _t[i]=regs[a+i] end
     end
   end
   ${dt_}[${O.GETUPVAL}]=function(a,b,c)
-    local cell=upcells[b]
+    local cell=upcells and upcells[b]
     regs[a]=cell and cell.val or nil
   end
   ${dt_}[${O.SETUPVAL}]=function(a,b,c)
+    if not upcells then return end
     local cell=upcells[b]
-    if cell then cell.val=regs[a] end
+    if cell then cell.val=regs[a] else upcells[b]={val=regs[a]} end
   end
   ${dt_}[${O.VARARG}]=function(a,b,c)
     local _np=proto.np or 0
@@ -1269,8 +1287,9 @@ function buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_, top_,
     local nva=math.max(0,_van-_np)
     if c==0 then
       for i=1,nva do regs[a+i-1]=va[_np+i] end
-      for i=nva+1,8 do regs[a+i-1]=nil end
+      for i=nva+1,nva+8 do regs[a+i-1]=nil end
       ${top_}=a+nva-1
+      if ${top_}<a then ${top_}=a end
     else
       local nout=c-1
       for i=1,nout do regs[a+i-1]=(i<=nva and va[_np+i] or nil) end
@@ -1590,7 +1609,7 @@ function encodeAsPayload(vmCode) {
 // Shape 3: Switch-Case Emulation (nested if-elseif with scrambled order)
 
 function buildDispatchTableVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt, unpack_, top_, van_, debugMode) {
-  const handlers = buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_, top_, van_);
+  const handlers = buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_, top_, van_, debugMode);
   const dbgLine = debugMode ? `    if _VMDBG then print("[VM-DBG] pc="..${idx_}.." op="..${op_}.." a="..(${ins_}[2] or 0).." b="..(${ins_}[3] or 0).." c="..(${ins_}[4] or 0)) end` : '';
   return `
   ${handlers}
@@ -1612,11 +1631,11 @@ function buildDispatchTableVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_,
   end`;
 }
 
-function buildLinkedListVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt, unpack_, top_, van_) {
+function buildLinkedListVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt, unpack_, top_, van_, debugMode) {
   const node_ = randName();
   const cur_ = randName();
   const exec_ = randName();
-  const handlers = buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_, top_, van_);
+  const handlers = buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_, top_, van_, debugMode);
   return `
   ${handlers}
   ${fakeDt}
@@ -1642,12 +1661,12 @@ function buildLinkedListVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op
   end`;
 }
 
-function buildStringVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt, unpack_, top_, van_) {
+function buildStringVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt, unpack_, top_, van_, debugMode) {
   const buf_ = randName();
   const len_ = randName();
   const pos_ = randName();
   const rd_ = randName();
-  const handlers = buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_, top_, van_);
+  const handlers = buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_, top_, van_, debugMode);
   return `
   ${handlers}
   ${fakeDt}
@@ -1687,12 +1706,12 @@ function buildStringVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, v
   end`;
 }
 
-function buildStackVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt, unpack_, top_, van_) {
+function buildStackVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt, unpack_, top_, van_, debugMode) {
   const stk_ = randName();
   const sp_ = randName();
   const push_ = randName();
   const pop_ = randName();
-  const handlers = buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_, top_, van_);
+  const handlers = buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_, top_, van_, debugMode);
   return `
   ${handlers}
   ${fakeDt}
@@ -1898,11 +1917,11 @@ function buildVMCore(rootProto, ops, debugMode) {
   if (vmShape === 0) {
     vmBody = buildDispatchTableVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt, unpack_, top_, van_, debugMode);
   } else if (vmShape === 1) {
-    vmBody = buildLinkedListVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt, unpack_, top_, van_);
+    vmBody = buildLinkedListVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt, unpack_, top_, van_, debugMode);
   } else if (vmShape === 2) {
-    vmBody = buildStringVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt, unpack_, top_, van_);
+    vmBody = buildStringVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt, unpack_, top_, van_, debugMode);
   } else {
-    vmBody = buildStackVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt, unpack_, top_, van_);
+    vmBody = buildStackVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm, fakeDt, unpack_, top_, van_, debugMode);
   }
 
   const shapeNames = ['DispatchTable', 'LinkedList', 'TokenizedString', 'StackVM'];
@@ -1936,11 +1955,18 @@ function buildVMCore(rootProto, ops, debugMode) {
     .replace(/\bselect\b/g, R.select_)
     .replace(/\bmath\.abs\b/g, R.m_abs);
 
+  const dbgBootstrap = debugMode ? `
+if _VMDBG then print("[VM-INIT] LuaShield VM Debug Mode Active") end
+` : '';
+
   const vmCode = `
 ${gi.bootstrap}
+${dbgBootstrap}
 local function ${vm}(proto,env,parent_regs,parent_upcells,...)
+  if not proto then error("VM:nil proto",0) end
   local bc=proto.bc
-  local subp=proto.p
+  if not bc then error("VM:nil bc",0) end
+  local subp=proto.p or {}
   local ${pc_}={1}
   local regs={}
   local va={...}
@@ -1954,14 +1980,19 @@ local function ${vm}(proto,env,parent_regs,parent_upcells,...)
   local k3=proto.k3
   local k4=proto.k4
   local k5=proto.k5
+  if not k1 or not k2 or not k3 or not k4 or not k5 then error("VM:nil keys",0) end
   local kst={}
-  for i,v in ${R.ipairs_}(proto.ek) do
+  local _ek=proto.ek
+  if not _ek then error("VM:nil ek",0) end
+  for i,v in ${R.ipairs_}(_ek) do
     if v.t==1 then
       local r={}
-      for j,b in ${R.ipairs_}(v.d) do
-        r[j]=${R.s_char}(${R.b_bxor}(${R.b_bxor}(${R.b_bxor}(${R.b_bxor}(${R.b_bxor}(b,k1[(j-1)%#k1+1]),k2[(j-1)%#k2+1]),k3[(j-1)%#k3+1]),k4[(j-1)%#k4+1]),k5[(j-1)%#k5+1]))
+      if not v.d then kst[i-1]="" else
+        for j,b in ${R.ipairs_}(v.d) do
+          r[j]=${R.s_char}(${R.b_bxor}(${R.b_bxor}(${R.b_bxor}(${R.b_bxor}(${R.b_bxor}(b,k1[(j-1)%#k1+1]),k2[(j-1)%#k2+1]),k3[(j-1)%#k3+1]),k4[(j-1)%#k4+1]),k5[(j-1)%#k5+1]))
+        end
+        kst[i-1]=${R.t_concat}(r)
       end
-      kst[i-1]=${R.t_concat}(r)
     elseif v.t==2 then
       kst[i-1]=v.d
     elseif v.t==3 then
@@ -1982,6 +2013,7 @@ local function ${vm}(proto,env,parent_regs,parent_upcells,...)
   end
 
   local ${rxkl_}=proto.rxk
+  if not ${rxkl_} then error("VM:nil rxk",0) end
   local ${dt_}={}
 ${vmBodyStr}
 
@@ -3049,48 +3081,6 @@ const PRESETS = {
   },
   light: {
     vmCompile: false,
-    renameVars: true, encryptStrings: true,
-    obfuscateNumbers: false, breakGlobals: false,
-    injectJunk: false, opaquePredicates: false, antiHook: false,
-    controlFlowFlatten: false, stringArrayRotate: false, envFingerprint: false,
-    vmNesting: false, deadCodePaths: false,
-  },
-  medium: {
-    vmCompile: false,
-    renameVars: true, encryptStrings: true,
-    obfuscateNumbers: true, breakGlobals: false,
-    injectJunk: true, opaquePredicates: false, antiHook: true,
-    controlFlowFlatten: false, stringArrayRotate: true, envFingerprint: false,
-    vmNesting: false, deadCodePaths: false,
-  },
-  heavy: {
-    vmCompile: true,
-    renameVars: true, encryptStrings: true,
-    obfuscateNumbers: true, breakGlobals: true,
-    injectJunk: true, opaquePredicates: true, antiHook: true,
-    controlFlowFlatten: true, stringArrayRotate: true, envFingerprint: true,
-    vmNesting: false, deadCodePaths: true, finalEncoding: true,
-  },
-  max: {
-    vmCompile: true,
-    renameVars: true, encryptStrings: true,
-    obfuscateNumbers: true, breakGlobals: true,
-    injectJunk: true, opaquePredicates: true, antiHook: true,
-    controlFlowFlatten: true, stringArrayRotate: true, envFingerprint: true,
-    vmNesting: true, tripleNesting: false, deadCodePaths: true, finalEncoding: true,
-  },
-  ultra: {
-    vmCompile: true,
-    renameVars: true, encryptStrings: true,
-    obfuscateNumbers: true, breakGlobals: true,
-    injectJunk: true, opaquePredicates: true, antiHook: true,
-    controlFlowFlatten: true, stringArrayRotate: true, envFingerprint: true,
-    vmNesting: true, tripleNesting: true, deadCodePaths: true, finalEncoding: true,
-  },
-};
-
-module.exports = { obfuscate, PRESETS };
-alse,
     renameVars: true, encryptStrings: true,
     obfuscateNumbers: false, breakGlobals: false,
     injectJunk: false, opaquePredicates: false, antiHook: false,
