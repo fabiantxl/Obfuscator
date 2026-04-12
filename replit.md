@@ -1,57 +1,62 @@
-# LuaShield — Roblox Lua Obfuscator (v14.0 Engine + Discord Bot)
+# LuaShield — Lua/Luau Obfuscator for Roblox
 
-## MISSION
-Build the **best Lua/Luau obfuscator for Roblox** — surpass Luraph in every measurable dimension:
-strength, unpredictability, anti-analysis, and coverage of Lua AST nodes.
+## Overview
 
-> **RULE: NO WEB INTERFACE.** The user has explicitly said: focus ONLY on the obfuscation engine
-> and the Discord bot. Do not create websites, React apps, or any UI beyond the bot.
+LuaShield is a high-strength Lua/Luau obfuscator targeting Roblox and executor environments. It consists of an obfuscation engine (`discord-bot/obfuscator.js`) and a Discord bot (`discord-bot/bot.js`). No web interface.
 
----
+## Stack
 
-## KEY FILES
+- **Monorepo tool**: pnpm workspaces
+- **Node.js version**: 24
+- **Package manager**: pnpm
+- **Language**: CommonJS/plain JavaScript (intentionally NOT TypeScript)
+- **Parser**: luaparse (Lua 5.1/Luau AST)
+- **Discord**: discord.js v14
 
-| File | Purpose |
-|------|---------|
-| `discord-bot/obfuscator.js` | **PRIMARY ENGINE (v14.0)** — ~3125 lines, the obfuscator |
-| `discord-bot/bot.js` | Discord bot — slash commands, DM support, EN/ES i18n |
-| `discord-bot/package.json` | Bot dependencies: discord.js, dotenv, luaparse |
-| `discord-bot/.env.example` | Copy to `.env` and add `DISCORD_BOT_TOKEN` |
-| `discord-bot/REPORT.md` | Technical report — READ THIS BEFORE EDITING |
-| `attached_assets/the button.lua` | **Primary test source** (474 lines, canonical Roblox executor script) |
-| `thebutton.txt` | **Obfuscated output** — always regenerated to this file (workspace root) |
+## Architecture
 
----
+### Engine (`discord-bot/obfuscator.js`)
+- Custom Lua 5.1 bytecode compiler (AST → bytecode)
+- VM code generator (polymorphic dispatch table, opaque predicates, encrypted constants)
+- Pipeline: vmCompile → renameVars → encryptStrings → injectJunk → opaquePredicates → deadCodePaths → envFingerprint → antiHook → finalEncoding
+- Presets: debug, light, medium, heavy, max, ultra
+- VM shapes: DispatchTable, SwitchCase, IfChain, TokenizedString
 
-## HOW TO RUN THE BOT
+### Discord Bot (`discord-bot/bot.js`)
+- Slash commands for obfuscation
+- File upload support (`.lua`, `.luau`, `.txt`)
+- Preset selection and output delivery
 
-```bash
-cd discord-bot
-npm install
-cp .env.example .env
-# Set DISCORD_BOT_TOKEN in .env (get from Discord Developer Portal)
-node bot.js
+## Key Files
+
+- `discord-bot/obfuscator.js` — Main obfuscation engine (3100+ lines)
+- `discord-bot/bot.js` — Discord bot entry point
+- `discord-bot/package.json` — Bot dependencies
+- `attached_assets/the button.lua` — Test source (473 lines)
+- `thebutton.txt` — Test output (heavy preset)
+
+## Sync Rule
+
+After editing `discord-bot/obfuscator.js`, always run:
+```
+cp discord-bot/obfuscator.js artifacts/api-server/src/lib/obfuscator.js
 ```
 
----
+## Important Runtime Rules
 
-## ENGINE VERSION: v14.0 — CRITICAL MULTI-RETURN REGISTER FIX
+- `loadstring` and `load` must NEVER be in the BREAKABLE globals set (executor-injected via getgenv())
+- `game`, `workspace`, `script` are in ROBLOX_G and must not be broken/renamed
+- Comparison opcodes (EQ/LT/LE/TEST) must never have dead code or NOPs inserted after them (skip-next semantics)
+- LOADBOOL with c!=0 has the same skip-next behavior — protected from NOP/dead code injection
+- `compileCallMultiRet` handles SELF (method calls with `:`) via explicit SELF opcode emission
 
-### What Was Fixed in v14.0 (THIS SESSION)
+## Bug Fixes Applied (v14.x)
 
-**CRITICAL: compileCall() multi-return register misalignment → nested call results at wrong register**
-
-**Root Cause:**
-In `compileCall()`, when a call expression is used as the last argument of another call (multi-return context, `nret=0`), the compiler allocated a new `fnReg` register AFTER the caller's `dest` register. The CALL opcode puts results at `fnReg`, but the outer call expected them at `dest`. Since `fnReg !== dest`, the outer call read uninitialized/stale register values instead of the actual return values.
-
-**Symptom in Roblox:**
-`invalid argument #1 to 'httpget' (Instance expected, got string)` — The specific pattern `loadstring(game:HttpGet(url))()` was affected. The `loadstring` call received `nil` (uninitialized R4) instead of the HTTP response (which was at R5). This caused cascading failures: loadstring returned nil, then calling nil errored.
-
-**How It Was Found:**
-Traced the bytecode compilation of `loadstring(game:HttpGet(repo .. "Library.lua"))()` through the register allocator. Found that `compileCall(httpGetCall, dest=R4, nret=0)` allocated `fnReg=R5`, so CALL put results at R5 while the outer loadstring CALL (with b=0) expected them starting at R4.
-
-**Fix (1 line):**
-Added `if (nret === 0) proto.nextReg = dest;` before `const fnReg = proto.allocTemp();` in `compileCall()`. This ensures that for multi-return calls, `fnReg === dest`, matching the approach already used in `compileCallMultiRet()`.
+1. **Dead bytecode after comparisons** — `injectDeadBytecode` excludes EQ/LT/LE/TEST and LOADBOOL(c!=0) from dead code insertion
+2. **NOP padding after comparisons** — `insertNopPadding` checks `prevIsComp` and `prevIsSkipBool` before inserting NOPs
+3. **Multi-return nested call register alignment** — `if (nret === 0) proto.nextReg = dest` fix
+4. **SELF opcode in compileCallMultiRet** — Method calls (`:`) now emit SELF correctly for multi-return contexts
+ proto.nextReg = dest;` before `const fnReg = proto.allocTemp();` in `compileCall()`. This ensures that for multi-return calls, `fnReg === dest`, matching the approach already used in `compileCallMultiRet()`.
 
 **Affected patterns (all fixed):**
 - `loadstring(game:HttpGet(url))()` — nested method call as arg
