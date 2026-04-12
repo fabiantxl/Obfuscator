@@ -344,7 +344,7 @@ class Compiler {
       lastArg.type === 'CallExpression' || lastArg.type === 'StringCallExpression' ||
       lastArg.type === 'TableCallExpression');
 
-    const isSelf = node.base && node.base.type === 'MemberExpression' && node.base.indexType === ':';
+    const isSelf = node.base && node.base.type === 'MemberExpression' && node.base.indexer === ':';
 
     if (isSelf) {
       const objReg = proto.allocTemp();
@@ -945,7 +945,7 @@ class Compiler {
       lastArg.type === 'CallExpression' || lastArg.type === 'StringCallExpression' ||
       lastArg.type === 'TableCallExpression');
 
-    if (node.base.type === 'MemberExpression' && node.base.indexType === ':') {
+    if (node.base.type === 'MemberExpression' && node.base.indexer === ':') {
       const objReg = proto.allocTemp();
       this.compileExprTo(node.base.base, objReg);
       const ki = proto.addK(node.base.identifier.name);
@@ -3154,3 +3154,4 @@ const PRESETS = {
 };
 
 module.exports = { obfuscate, PRESETS };
+
