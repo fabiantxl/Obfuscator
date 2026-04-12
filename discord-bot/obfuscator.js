@@ -1065,7 +1065,7 @@ function encryptConstants(kArr) {
     if (fakeType === 0) {
       const fakeStr = randHex(randInt(4, 12));
       const enc = Array.from(fakeStr).map((c, j) =>
-        c.charCodeAt(0) ^ k1[j % k1len] ^ k2[j % k2len] ^ k3[j % k3len] ^ k4[j % k4len] ^ k5[j % k5len]
+        (c.charCodeAt(0) & 0xFF) ^ k1[j % k1len] ^ k2[j % k2len] ^ k3[j % k3len] ^ k4[j % k4len] ^ k5[j % k5len]
       );
       fakeConstants.push(`{t=1,d={${enc.join(',')}}}`);
     } else if (fakeType === 1) {
@@ -1078,7 +1078,7 @@ function encryptConstants(kArr) {
   const parts = kArr.map((v) => {
     if (typeof v === 'string') {
       const enc = Array.from(v).map((c, j) =>
-        c.charCodeAt(0) ^ k1[j % k1len] ^ k2[j % k2len] ^ k3[j % k3len] ^ k4[j % k4len] ^ k5[j % k5len]
+        (c.charCodeAt(0) & 0xFF) ^ k1[j % k1len] ^ k2[j % k2len] ^ k3[j % k3len] ^ k4[j % k4len] ^ k5[j % k5len]
       );
       return `{t=1,d={${enc.join(',')}}}`;
     }
@@ -1592,14 +1592,14 @@ function rotateStringArray(toks) {
   const arrName = randName();
   const rotName = randName();
   const k1l = randInt(5, 10);
-  const k1 = Array.from({ length: k1l }, () => randInt(1, 254));
+  const k1 = Array.from({ length: k1l }, () => randInt(1, 127));
 
   const encoded = rotated.map(s => {
-    const enc = Array.from(s.content).map((c, j) => c.charCodeAt(0) ^ k1[j % k1l]);
+    const enc = Array.from(s.content).map((c, j) => ((c.charCodeAt(0) & 0xFF) ^ k1[j % k1l]) & 0xFF);
     return `{${enc.join(',')}}`;
   });
 
-  const decoderPrefix = `local ${arrName}=(function() local _k={${k1.join(',')}} local _d={${encoded.join(',')}} local _r={} for _i=1,#_d do local _s={} for _j=1,#_d[_i] do _s[_j]=string.char(bit32.bxor(_d[_i][_j],_k[(_j-1)%#_k+1])) end _r[_i]=table.concat(_s) end local ${rotName}=${rotation} for _=1,${rotName} do local _v=table.remove(_r,1) _r[#_r+1]=_v end return _r end)()\n`;
+  const decoderPrefix = `local ${arrName}=(function() local _k={${k1.join(',')}} local _d={${encoded.join(',')}} local _r={} for _i=1,#_d do local _s={} for _j=1,#_d[_i] do _s[_j]=string.char(bit32.band(bit32.bxor(_d[_i][_j],_k[(_j-1)%#_k+1]),255)) end _r[_i]=table.concat(_s) end local ${rotName}=${rotation} for _=1,${rotName} do local _v=table.remove(_r,1) _r[#_r+1]=_v end return _r end)()\n`;
 
   const newToks = [...toks];
   for (let i = 0; i < strings.length; i++) {
@@ -1883,7 +1883,7 @@ local ${keyVar}={${key.join(',')}}
 local ${dataVar}={${chunks.join(',\n')}}
 local ${bufVar}={}
 for ${idxVar}=1,#${dataVar} do
-  ${bufVar}[${idxVar}]=${refs.s_char}(${refs.b_bxor}(${dataVar}[${idxVar}],${keyVar}[(${idxVar}-1)%#${keyVar}+1]))
+  ${bufVar}[${idxVar}]=${refs.s_char}(${refs.b_band}(${refs.b_bxor}(${dataVar}[${idxVar}],${keyVar}[(${idxVar}-1)%#${keyVar}+1]),255))
 end
 local ${outVar}=${refs.t_concat}(${bufVar})
 `,
@@ -2021,7 +2021,7 @@ local function ${vm}(proto,env,parent_regs,parent_upcells,...)
       local r={}
       if not v.d then kst[i-1]="" else
         for j,b in ${R.ipairs_}(v.d) do
-          r[j]=${R.s_char}(${R.b_bxor}(${R.b_bxor}(${R.b_bxor}(${R.b_bxor}(${R.b_bxor}(b,k1[(j-1)%#k1+1]),k2[(j-1)%#k2+1]),k3[(j-1)%#k3+1]),k4[(j-1)%#k4+1]),k5[(j-1)%#k5+1]))
+          r[j]=${R.s_char}(${R.b_band}(${R.b_bxor}(${R.b_bxor}(${R.b_bxor}(${R.b_bxor}(${R.b_bxor}(b,k1[(j-1)%#k1+1]),k2[(j-1)%#k2+1]),k3[(j-1)%#k3+1]),k4[(j-1)%#k4+1]),k5[(j-1)%#k5+1]),255))
         end
         kst[i-1]=${R.t_concat}(r)
       end
@@ -2253,53 +2253,54 @@ function encryptStrings(toks) {
     if (!content.length) return { ...t, v: '""' };
     if (content.length > 500) return t;
 
-    const bytes = Array.from(content).map(c => c.charCodeAt(0));
+    const bytes = Array.from(content).map(c => c.charCodeAt(0) & 0xFF);
+    if (bytes.some(b => b > 127) && content.length > 200) return t;
     const pat = randInt(0, 8);
 
     // Pattern 0: dual rotating XOR keys, table.concat (original style)
     if (pat === 0) {
       const k1l = randInt(5, 12), k2l = randInt(4, 9);
-      const k1 = Array.from({ length: k1l }, () => randInt(1, 254));
-      const k2 = Array.from({ length: k2l }, () => randInt(1, 254));
-      const enc = bytes.map((b, i) => b ^ k1[i % k1l] ^ k2[i % k2l]);
+      const k1 = Array.from({ length: k1l }, () => randInt(1, 127));
+      const k2 = Array.from({ length: k2l }, () => randInt(1, 127));
+      const enc = bytes.map((b, i) => (b ^ k1[i % k1l] ^ k2[i % k2l]) & 0xFF);
       const [a, b, c, d, e] = [randName(), randName(), randName(), randName(), randName()];
-      return { t: TK.OT, v: `(function(${a},${b},${e}) local ${c}={} for ${d}=1,#${b} do ${c}[${d}]=string.char(bit32.bxor(bit32.bxor(${b}[${d}],${a}[(${d}-1)%#${a}+1]),${e}[(${d}-1)%#${e}+1])) end return table.concat(${c}) end)({${k1.join(',')}},{${enc.join(',')}},{${k2.join(',')}})` };
+      return { t: TK.OT, v: `(function(${a},${b},${e}) local ${c}={} for ${d}=1,#${b} do ${c}[${d}]=string.char(bit32.band(bit32.bxor(bit32.bxor(${b}[${d}],${a}[(${d}-1)%#${a}+1]),${e}[(${d}-1)%#${e}+1]),255)) end return table.concat(${c}) end)({${k1.join(',')}},{${enc.join(',')}},{${k2.join(',')}})` };
     }
 
     // Pattern 1: single key, string concat with local len cached
     if (pat === 1) {
       const kl = randInt(6, 14);
-      const key = Array.from({ length: kl }, () => randInt(1, 254));
-      const enc = bytes.map((b, i) => b ^ key[i % kl]);
+      const key = Array.from({ length: kl }, () => randInt(1, 127));
+      const enc = bytes.map((b, i) => (b ^ key[i % kl]) & 0xFF);
       const [a, b, c, d, kv] = [randName(), randName(), randName(), randName(), randName()];
-      return { t: TK.OT, v: `(function(${kv},${b}) local ${a}="" local ${c}=#${kv} for ${d}=1,#${b} do ${a}=${a}..string.char(bit32.bxor(${b}[${d}],${kv}[(${d}-1)%${c}+1])) end return ${a} end)({${key.join(',')}},{${enc.join(',')}})` };
+      return { t: TK.OT, v: `(function(${kv},${b}) local ${a}="" local ${c}=#${kv} for ${d}=1,#${b} do ${a}=${a}..string.char(bit32.band(bit32.bxor(${b}[${d}],${kv}[(${d}-1)%${c}+1]),255)) end return ${a} end)({${key.join(',')}},{${enc.join(',')}})` };
     }
 
     // Pattern 2: triple rotating XOR keys, table.concat
     if (pat === 2) {
       const k1l = randInt(4, 8), k2l = randInt(3, 7), k3l = randInt(5, 11);
-      const k1 = Array.from({ length: k1l }, () => randInt(1, 254));
-      const k2 = Array.from({ length: k2l }, () => randInt(1, 254));
-      const k3 = Array.from({ length: k3l }, () => randInt(1, 254));
-      const enc = bytes.map((b, i) => b ^ k1[i % k1l] ^ k2[i % k2l] ^ k3[i % k3l]);
-      const [a, b, c, d, e, f, g] = [randName(), randName(), randName(), randName(), randName(), randName(), randName()];
-      return { t: TK.OT, v: `(function(${a},${b},${e},${f}) local ${c}={} for ${d}=1,#${b} do ${c}[${d}]=string.char(bit32.bxor(bit32.bxor(bit32.bxor(${b}[${d}],${a}[(${d}-1)%#${a}+1]),${e}[(${d}-1)%#${e}+1]),${f}[(${d}-1)%#${f}+1])) end return table.concat(${c}) end)({${k1.join(',')}},{${enc.join(',')}},{${k2.join(',')}},{${k3.join(',')}})` };
+      const k1 = Array.from({ length: k1l }, () => randInt(1, 127));
+      const k2 = Array.from({ length: k2l }, () => randInt(1, 127));
+      const k3 = Array.from({ length: k3l }, () => randInt(1, 127));
+      const enc = bytes.map((b, i) => (b ^ k1[i % k1l] ^ k2[i % k2l] ^ k3[i % k3l]) & 0xFF);
+      const [a, b, c, d, e, f] = [randName(), randName(), randName(), randName(), randName(), randName()];
+      return { t: TK.OT, v: `(function(${a},${b},${e},${f}) local ${c}={} for ${d}=1,#${b} do ${c}[${d}]=string.char(bit32.band(bit32.bxor(bit32.bxor(bit32.bxor(${b}[${d}],${a}[(${d}-1)%#${a}+1]),${e}[(${d}-1)%#${e}+1]),${f}[(${d}-1)%#${f}+1]),255)) end return table.concat(${c}) end)({${k1.join(',')}},{${enc.join(',')}},{${k2.join(',')}},{${k3.join(',')}})` };
     }
 
     // Pattern 3: XOR with additive index tweak, string.sub loop style
     if (pat === 3) {
       const kl = randInt(5, 12);
-      const key = Array.from({ length: kl }, () => randInt(2, 253));
+      const key = Array.from({ length: kl }, () => randInt(2, 127));
       const enc = bytes.map((b, i) => (b ^ key[i % kl] ^ (i & 0xFF)) & 0xFF);
       const [a, b, c, d, e] = [randName(), randName(), randName(), randName(), randName()];
-      return { t: TK.OT, v: `(function(${a},${e}) local ${b}={} local ${c}=#${a} for ${d}=1,#${e} do ${b}[${d}]=string.char(bit32.bxor(bit32.bxor(${e}[${d}],${a}[(${d}-1)%${c}+1]),(${d}-1)%256)) end return table.concat(${b}) end)({${key.join(',')}},{${enc.join(',')}})` };
+      return { t: TK.OT, v: `(function(${a},${e}) local ${b}={} local ${c}=#${a} for ${d}=1,#${e} do ${b}[${d}]=string.char(bit32.band(bit32.bxor(bit32.bxor(${e}[${d}],${a}[(${d}-1)%${c}+1]),(${d}-1)%256),255)) end return table.concat(${b}) end)({${key.join(',')}},{${enc.join(',')}})` };
     }
 
     // Pattern 4: two-step decode — decode halves independently then merge
     if (pat === 4) {
       const kl = randInt(6, 13);
-      const key = Array.from({ length: kl }, () => randInt(1, 254));
-      const enc = bytes.map((b, i) => b ^ key[i % kl]);
+      const key = Array.from({ length: kl }, () => randInt(1, 127));
+      const enc = bytes.map((b, i) => (b ^ key[i % kl]) & 0xFF);
       const [a, b, c, d, e, f] = [randName(), randName(), randName(), randName(), randName(), randName()];
       return { t: TK.OT, v: `(function(${f},${b}) local ${a}={} local ${c}=#${f} for ${d}=1,#${b} do local ${e}=${d}-1 ${a}[${d}]=string.char(bit32.band(bit32.bxor(${b}[${d}],${f}[${e}%${c}+1]),255)) end return table.concat(${a}) end)({${key.join(',')}},{${enc.join(',')}})` };
     }
@@ -2307,53 +2308,53 @@ function encryptStrings(toks) {
     // Pattern 5: nibble-swap + XOR (split byte into high/low nibbles, encode separately)
     if (pat === 5) {
       const kl = randInt(5, 10);
-      const key = Array.from({ length: kl }, () => randInt(1, 254));
+      const key = Array.from({ length: kl }, () => randInt(1, 127));
       const enc = bytes.map((b, i) => {
         const swapped = ((b & 0x0F) << 4) | ((b & 0xF0) >> 4);
-        return swapped ^ key[i % kl];
+        return (swapped ^ key[i % kl]) & 0xFF;
       });
       const [a, b, c, d, e] = [randName(), randName(), randName(), randName(), randName()];
-      return { t: TK.OT, v: `(function(${a},${b}) local ${c}={} for ${d}=1,#${b} do local ${e}=bit32.bxor(${b}[${d}],${a}[(${d}-1)%#${a}+1]) ${c}[${d}]=string.char(bit32.bor(bit32.lshift(bit32.band(${e},0x0F),4),bit32.rshift(bit32.band(${e},0xF0),4))) end return table.concat(${c}) end)({${key.join(',')}},{${enc.join(',')}})` };
+      return { t: TK.OT, v: `(function(${a},${b}) local ${c}={} for ${d}=1,#${b} do local ${e}=bit32.band(bit32.bxor(${b}[${d}],${a}[(${d}-1)%#${a}+1]),0xFF) ${c}[${d}]=string.char(bit32.bor(bit32.lshift(bit32.band(${e},0x0F),4),bit32.rshift(bit32.band(${e},0xF0),4))) end return table.concat(${c}) end)({${key.join(',')}},{${enc.join(',')}})` };
     }
 
-    // Pattern 6: reverse-iterate decode with accumulator XOR
+    // Pattern 6: accumulator XOR with explicit band(,0xFF) guard
     if (pat === 6) {
       const kl = randInt(4, 9);
-      const key = Array.from({ length: kl }, () => randInt(1, 254));
-      const seed = randInt(1, 254);
+      const key = Array.from({ length: kl }, () => randInt(1, 127));
+      const seed = randInt(1, 127);
       const enc = [];
       let acc = seed;
       for (let i = 0; i < bytes.length; i++) {
-        const e = bytes[i] ^ key[i % kl] ^ acc;
+        const e = (bytes[i] ^ key[i % kl] ^ acc) & 0xFF;
         enc.push(e);
         acc = (acc + bytes[i]) & 0xFF;
       }
       const [a, b, c, d, e, f] = [randName(), randName(), randName(), randName(), randName(), randName()];
-      return { t: TK.OT, v: `(function(${a},${b},${f}) local ${c}={} local ${e}=${f} for ${d}=1,#${b} do local _v=bit32.bxor(bit32.bxor(${b}[${d}],${a}[(${d}-1)%#${a}+1]),${e}) ${c}[${d}]=string.char(_v) ${e}=bit32.band(${e}+_v,0xFF) end return table.concat(${c}) end)({${key.join(',')}},{${enc.join(',')}},${seed})` };
+      return { t: TK.OT, v: `(function(${a},${b},${f}) local ${c}={} local ${e}=${f} for ${d}=1,#${b} do local _v=bit32.band(bit32.bxor(bit32.bxor(${b}[${d}],${a}[(${d}-1)%#${a}+1]),${e}),255) ${c}[${d}]=string.char(_v) ${e}=bit32.band(${e}+_v,0xFF) end return table.concat(${c}) end)({${key.join(',')}},{${enc.join(',')}},${seed})` };
     }
 
     // Pattern 7: bit rotation + XOR
     if (pat === 7) {
       const kl = randInt(5, 11);
-      const key = Array.from({ length: kl }, () => randInt(1, 254));
+      const key = Array.from({ length: kl }, () => randInt(1, 127));
       const rotAmt = randInt(1, 7);
       const enc = bytes.map((b, i) => {
         const rotated = ((b << rotAmt) | (b >> (8 - rotAmt))) & 0xFF;
-        return rotated ^ key[i % kl];
+        return (rotated ^ key[i % kl]) & 0xFF;
       });
       const [a, bv, c, d] = [randName(), randName(), randName(), randName()];
-      return { t: TK.OT, v: `(function(${a},${bv}) local ${c}={} for ${d}=1,#${bv} do local _x=bit32.bxor(${bv}[${d}],${a}[(${d}-1)%#${a}+1]) ${c}[${d}]=string.char(bit32.bor(bit32.rshift(bit32.band(_x,0xFF),${rotAmt}),bit32.band(bit32.lshift(_x,${8-rotAmt}),0xFF))) end return table.concat(${c}) end)({${key.join(',')}},{${enc.join(',')}})` };
+      return { t: TK.OT, v: `(function(${a},${bv}) local ${c}={} for ${d}=1,#${bv} do local _x=bit32.band(bit32.bxor(${bv}[${d}],${a}[(${d}-1)%#${a}+1]),0xFF) ${c}[${d}]=string.char(bit32.bor(bit32.rshift(bit32.band(_x,0xFF),${rotAmt}),bit32.band(bit32.lshift(_x,${8-rotAmt}),0xFF))) end return table.concat(${c}) end)({${key.join(',')}},{${enc.join(',')}})` };
     }
 
     // Pattern 8: delta encoding + XOR (each byte encoded relative to previous)
     {
       const kl = randInt(5, 12);
-      const key = Array.from({ length: kl }, () => randInt(1, 254));
+      const key = Array.from({ length: kl }, () => randInt(1, 127));
       const enc = [];
       let prev = 0;
       for (let i = 0; i < bytes.length; i++) {
         const delta = (bytes[i] - prev + 256) & 0xFF;
-        enc.push(delta ^ key[i % kl]);
+        enc.push((delta ^ key[i % kl]) & 0xFF);
         prev = bytes[i];
       }
       const [a, b, c, d, e] = [randName(), randName(), randName(), randName(), randName()];
@@ -2548,6 +2549,26 @@ const JUNK = [
   () => { const a = randName(); return `do local ${a}=not rawequal(rawget({},1),rawget({},1)) end`; },
   () => { const a = randName(), b = randName(); return `do local ${a}=select("#") local ${b}=type(${a})=="number" end`; },
   () => { const a = randName(); return `do local ${a}=string.format("%d",math.max(${randInt(0,9)},${randInt(0,9)})) end`; },
+  () => { const a = randName(), b = randName(), c = randName(); return `do local ${a}=(function(${b}) local ${c}=${b}*${b} return ${c} end)(0) end`; },
+  () => { const a = randName(), b = randName(); return `do local ${a}={} local ${b}=next(${a}) end`; },
+  () => { const a = randName(), n = randInt(1,255); return `do local ${a}=bit32.band(0xFFFFFFFF,${n}) end`; },
+  () => { const a = randName(), b = randName(); return `do local function ${a}() end local ${b}=pcall(${a}) end`; },
+  () => { const a = randName(); return `do local ${a}=math.huge~=-math.huge end`; },
+  () => { const a = randName(), b = randName(), k = randInt(1,127); return `do local ${a}=bit32.lshift(${k},1) local ${b}=bit32.rshift(${a},1) end`; },
+  () => { const a = randName(), b = randName(); return `do local ${a}="" for ${b}=1,${randInt(0,0)} do ${a}=${b} end end`; },
+  () => { const a = randName(), b = randInt(10,99); return `do local ${a}=tostring(${b}):len() end`; },
+  () => { const a = randName(), b = randName(), c = randName(); return `do local ${a},${b},${c}=1,2,3 local _=${a}+${b}+${c} end`; },
+  () => { const a = randName(); return `do local ${a}=string.char(string.byte("a")) end`; },
+  () => { const a = randName(), b = randName(); return `do local ${a}=type(function()end) local ${b}=${a}=="function" end`; },
+  () => { const a = randName(), b = randName(); return `do local ${a}=math.huge local ${b}=${a}==${a} end`; },
+  () => { const a = randName(), k1=randInt(1,127), k2=randInt(1,127); return `do local ${a}=bit32.bxor(bit32.band(${k1},0xFF),bit32.band(${k2},0xFF)) end`; },
+  () => { const a = randName(), b = randName(); return `do local ${a}=table.concat({"x","y","z"},"") local ${b}=#${a} end`; },
+  () => { const a = randName(); return `do local ${a}=(function(...) return select("#",...) end)() end`; },
+  () => { const a = randName(), b = randName(); return `do local ${a}={} rawset(${a},"k",nil) local ${b}=rawget(${a},"k") end`; },
+  () => { const a = randName(), n = randInt(1,7); return `do local ${a}=bit32.bnot(bit32.bnot(${n}))==${n} end`; },
+  () => { const a = randName(), b = randName(); return `do local ${a}=math.random local ${b}=type(${a}) end`; },
+  () => { const a = randName(), b = randName(), c = randName(); return `do local ${a}=0 repeat ${a}=${a}+1 local ${b}=${a} local ${c}=${b} until ${a}>=${randInt(1,2)} end`; },
+  () => { const a = randName(); return `do local ${a}=string.find("luashield","lua") end`; },
 ];
 
 // Count net brace depth contributed by a source line (outside strings/comments)
@@ -2634,6 +2655,17 @@ function injectOpaquePredicates(code) {
     () => { const a = randInt(1,9), b = randInt(1,9); return `if ${a}*${b}~=${a*b} then error("",0) end`; },
     () => `if type(nil)~="nil" then error("",0) end`,
     () => { const a = randInt(2,8); return `if ${a}%1~=0 then error("",0) end`; },
+    () => { const a = randInt(1,127), b = randInt(1,127); return `if bit32.bxor(${a^b},${b})~=${a} then error("",0) end`; },
+    () => { const a = randInt(1,50); return `if bit32.bnot(bit32.bnot(${a}))~=${a} then error("",0) end`; },
+    () => `if rawequal(type(nil),"nil")==false then error("",0) end`,
+    () => { const a = randInt(2,9); return `if math.pow and math.pow(${a},0)~=1 then error("",0) end`; },
+    () => { const n = randInt(1,15); return `if bit32.lshift(1,${n})~=${1<<n} then error("",0) end`; },
+    () => { const a = randInt(1,127), b = randInt(1,127); return `if bit32.band(${a},${b})~=${a&b} then error("",0) end`; },
+    () => `if string.byte("A")~=65 then error("",0) end`,
+    () => { const a = randInt(1,9), b = randInt(1,9); return `if math.max(${a},${b})~=${Math.max(a,b)} then error("",0) end`; },
+    () => { const a = randInt(1,50); return `if bit32.rshift(${a<<1},1)~=${a} then error("",0) end`; },
+    () => `if type(rawget)~="function" then error("",0) end`,
+    () => { const a = randInt(1,127); return `if bit32.bor(${a},0)~=${a} then error("",0) end`; },
   ];
   const lines = code.split('\n');
   // Build list of safe "insert-after" indices (statement level, not inside table constructors,
@@ -2846,7 +2878,7 @@ function wrapFinalEncoding(code) {
     `local ${dd}={${chunks.join(',\n')}}`,
     `local ${db}={}`,
     `for ${di}=1,#${dd} do`,
-    `  ${db}[${di}]=string.char(bit32.bxor(${dd}[${di}],${dk}[(${di}-1)%#${dk}+1]))`,
+    `  ${db}[${di}]=string.char(bit32.band(bit32.bxor(${dd}[${di}],${dk}[(${di}-1)%#${dk}+1]),255))`,
     `end`,
     `local ${dr}=table.concat(${db})`,
     `local _l=(loadstring or load)`,
@@ -2924,7 +2956,7 @@ function wrapAdvancedEncoding(code) {
     `  for ${jVar}=1,#_d do`,
     `    ${idxVar}=${idxVar}+1`,
     `    local ${byteVar}=string.byte(_d,${jVar})`,
-    `    ${bufVar}[${idxVar}]=string.char(bit32.bxor(bit32.bxor(${byteVar},${k1Var}[(${idxVar}-1)%#${k1Var}+1]),${k2Var}[(${idxVar}-1)%#${k2Var}+1]))`,
+    `    ${bufVar}[${idxVar}]=string.char(bit32.band(bit32.bxor(bit32.bxor(${byteVar},${k1Var}[(${idxVar}-1)%#${k1Var}+1]),${k2Var}[(${idxVar}-1)%#${k2Var}+1]),255))`,
     `  end`,
     `end`,
     `local ${resVar}=table.concat(${bufVar})`,
@@ -3081,8 +3113,30 @@ function obfuscate(code, opts = {}) {
   }
 
   if (options.finalEncoding) {
-    result = wrapAdvancedEncoding(result);
-    applied.push('Advanced Final Encoding v14 (multi-key XOR + shuffled segments + runtime reassembly)');
+    if (result.length > 150000) {
+      applied.push('Advanced Final Encoding v14 — skipped (script too large, would crash Roblox executor)');
+    } else {
+      result = wrapAdvancedEncoding(result);
+      applied.push('Advanced Final Encoding v14 (multi-key XOR + shuffled segments + runtime reassembly)');
+    }
+  }
+
+  if (options.godMode) {
+    const ultraOpts = {
+      vmCompile: true, renameVars: true, encryptStrings: true,
+      obfuscateNumbers: true, breakGlobals: true, injectJunk: true,
+      opaquePredicates: true, antiHook: true, controlFlowFlatten: true,
+      stringArrayRotate: true, envFingerprint: true, vmNesting: true,
+      tripleNesting: true, deadCodePaths: true, finalEncoding: false,
+      godMode: false,
+    };
+    try {
+      const inner = obfuscate(result, ultraOpts);
+      result = inner.code;
+      applied.push('GOD MODE — second-pass full ultra obfuscation applied to output');
+    } catch (e) {
+      applied.push('GOD MODE — second-pass failed (' + e.message.slice(0, 60) + '), using single-pass result');
+    }
   }
 
   return {
@@ -3150,6 +3204,15 @@ const PRESETS = {
     injectJunk: true, opaquePredicates: true, antiHook: true,
     controlFlowFlatten: true, stringArrayRotate: true, envFingerprint: true,
     vmNesting: true, tripleNesting: true, deadCodePaths: true, finalEncoding: true,
+  },
+  god: {
+    vmCompile: true,
+    renameVars: true, encryptStrings: true,
+    obfuscateNumbers: true, breakGlobals: true,
+    injectJunk: true, opaquePredicates: true, antiHook: true,
+    controlFlowFlatten: true, stringArrayRotate: true, envFingerprint: true,
+    vmNesting: true, tripleNesting: true, deadCodePaths: true, finalEncoding: true,
+    godMode: true,
   },
 };
 
