@@ -344,21 +344,45 @@ class Compiler {
       lastArg.type === 'CallExpression' || lastArg.type === 'StringCallExpression' ||
       lastArg.type === 'TableCallExpression');
 
-    this.compileExprTo(node.base, fnReg);
-    for (let i = 0; i < args.length; i++) {
-      const r = proto.allocTemp();
-      if (i === args.length - 1 && lastIsMulti) {
-        if (lastArg.type === 'VarargLiteral') {
-          this.emit('VARARG', r, 0, 0);
+    const isSelf = node.base && node.base.type === 'MemberExpression' && node.base.indexType === ':';
+
+    if (isSelf) {
+      const objReg = proto.allocTemp();
+      this.compileExprTo(node.base.base, objReg);
+      const ki = proto.addK(node.base.identifier.name);
+      this.emit('SELF', fnReg, objReg, KR(ki));
+      for (let i = 0; i < args.length; i++) {
+        const r = proto.allocTemp();
+        if (i === args.length - 1 && lastIsMulti) {
+          if (lastArg.type === 'VarargLiteral') {
+            this.emit('VARARG', r, 0, 0);
+          } else {
+            this.compileCall(lastArg, r, 0);
+          }
         } else {
-          this.compileCall(lastArg, r, 0);
+          this.compileExprTo(args[i], r);
         }
-      } else {
-        this.compileExprTo(args[i], r);
       }
+      const nargs = args.length + 1;
+      const bVal = lastIsMulti ? 0 : nargs + 1;
+      this.emit('CALL', fnReg, bVal, nRet + 1);
+    } else {
+      this.compileExprTo(node.base, fnReg);
+      for (let i = 0; i < args.length; i++) {
+        const r = proto.allocTemp();
+        if (i === args.length - 1 && lastIsMulti) {
+          if (lastArg.type === 'VarargLiteral') {
+            this.emit('VARARG', r, 0, 0);
+          } else {
+            this.compileCall(lastArg, r, 0);
+          }
+        } else {
+          this.compileExprTo(args[i], r);
+        }
+      }
+      const bVal = lastIsMulti ? 0 : args.length + 1;
+      this.emit('CALL', fnReg, bVal, nRet + 1);
     }
-    const bVal = lastIsMulti ? 0 : args.length + 1;
-    this.emit('CALL', fnReg, bVal, nRet + 1);
     proto.nextReg = Math.max(savedNext, destBase + nRet);
   }
 
@@ -1302,6 +1326,8 @@ function buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_, top_,
 function injectDeadBytecode(proto, ops) {
   const deadOps = [ops['LOADK'], ops['LOADNIL'], ops['MOVE'], ops['ADD'], ops['SUB']];
   const jumpOps = new Set([ops['JMP'], ops['FORPREP'], ops['FORLOOP'], ops['TFORLOOP']]);
+  const compOps = new Set([ops['EQ'], ops['LT'], ops['LE'], ops['TEST']]);
+  const lboolOp = ops['LOADBOOL'];
   const oldBc = proto.bc;
   const newBc = [];
   const oldToNew = new Array(oldBc.length);
@@ -1309,7 +1335,8 @@ function injectDeadBytecode(proto, ops) {
   for (let i = 0; i < oldBc.length; i++) {
     oldToNew[i] = newBc.length;
     newBc.push(oldBc[i]);
-    if (Math.random() < 0.15) {
+    const skipNext = compOps.has(oldBc[i].op) || (oldBc[i].op === lboolOp && oldBc[i].c !== 0);
+    if (Math.random() < 0.15 && !skipNext) {
       const nDead = randInt(1, 3);
       newBc.push({ op: ops['JMP'], a: 0, b: nDead, c: 0 });
       for (let d = 0; d < nDead; d++) {
@@ -1339,12 +1366,16 @@ function injectDeadBytecode(proto, ops) {
 function insertNopPadding(proto, ops) {
   const nopOp = ops['NOP'];
   const jumpOps = new Set([ops['JMP'], ops['FORPREP'], ops['FORLOOP'], ops['TFORLOOP']]);
+  const compOps = new Set([ops['EQ'], ops['LT'], ops['LE'], ops['TEST']]);
+  const lboolOp = ops['LOADBOOL'];
   const oldBc = proto.bc;
   const newBc = [];
   const oldToNew = new Array(oldBc.length);
 
   for (let i = 0; i < oldBc.length; i++) {
-    if (Math.random() < 0.10) {
+    const prevIsComp = i > 0 && compOps.has(oldBc[i - 1].op);
+    const prevIsSkipBool = i > 0 && oldBc[i - 1].op === lboolOp && oldBc[i - 1].c !== 0;
+    if (Math.random() < 0.10 && !prevIsComp && !prevIsSkipBool) {
       const nNops = randInt(1, 2);
       for (let n = 0; n < nNops; n++) {
         newBc.push({ op: nopOp, a: randInt(0, 50), b: randInt(0, 50), c: randInt(0, 50) });
