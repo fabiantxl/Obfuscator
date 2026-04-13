@@ -1596,7 +1596,7 @@ function rotateStringArray(toks) {
 
   const encoded = rotated.map(s => {
     const enc = Array.from(s.content).map((c, j) => c.charCodeAt(0) ^ k1[j % k1l]);
-    return `{${enc.join(',')}}`;
+    return `(function(self) local function safeChar(val) if type(val)~="number" or val<0 or val>255 then error("Invalid value passed to string.char: "..tostring(val),0) end return string.char(val) end local t={${enc.join(',')}} for i=1,#t do t[i]=safeChar(t[i]) end return t end)()`;
   });
 
   const decoderPrefix = `local ${arrName}=(function() local _k={${k1.join(',')}} local _d={${encoded.join(',')}} local _r={} for _i=1,#_d do local _s={} for _j=1,#_d[_i] do _s[_j]=string.char(bit32.bxor(_d[_i][_j],_k[(_j-1)%#_k+1])) end _r[_i]=table.concat(_s) end local ${rotName}=${rotation} for _=1,${rotName} do local _v=table.remove(_r,1) _r[#_r+1]=_v end return _r end)()\n`;
