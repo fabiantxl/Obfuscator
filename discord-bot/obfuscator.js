@@ -2809,6 +2809,7 @@ function wrapAntiHook(code) {
     `${ht_}["${randHex(4)}"]=true`,
     `local ${ht2_}=${ht_}["${randHex(4)}"]`,
     `local ${honeypotVar}=setmetatable({_k=${honeypotEnc}},{__index=function(self,k) if k=="_d" then error("",0) end return rawget(self,k) end,__newindex=function(self,k,v) if k=="_d" then error("",0) end rawset(self,k,v) end})`,
+    `local _ENV=(type(_ENV)=="table" and _ENV) or (getfenv and type(getfenv(0))=="table" and getfenv(0)) or _G or {}`,
     `local function ${en}()`,
     code,
     `end`,
