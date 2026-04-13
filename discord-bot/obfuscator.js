@@ -1178,16 +1178,16 @@ function buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_, top_,
     ? (label, code) => `local _ok_,_er_=pcall(function() ${code} end) if not _ok_ then if _VMDBG then print("[VM-ERR] "..tostring("${label}")..": "..tostring(_er_)) end error(_er_,0) end`
     : (label, code) => code;
   return `
-  ${dt_}[${O.LOADK}]=function(a,b,c) if not kst then error("C-FAIL:kst",0) end regs[a]=kst[b] end
+  ${dt_}[${O.LOADK}]=function(a,b,c) if not kst then error("LuaShield VM error: constant table missing (LOADK)",0) end regs[a]=kst[b] end
   ${dt_}[${O.LOADNIL}]=function(a,b,c) for i=a,b do regs[i]=nil end end
   ${dt_}[${O.LOADBOOL}]=function(a,b,c) regs[a]=b~=0 if c~=0 then ${pc_}[1]=${pc_}[1]+1 end end
   ${dt_}[${O.MOVE}]=function(a,b,c) ${generatePolymorphicMove()} end
-  ${dt_}[${O.GETGLOBAL}]=function(a,b,c) if not kst then error("C-FAIL:kst-gg",0) end regs[a]=env[kst[b]] end
-  ${dt_}[${O.SETGLOBAL}]=function(a,b,c) if not kst then error("C-FAIL:kst-sg",0) end env[kst[b]]=regs[a] end
-  ${dt_}[${O.GETTABLE}]=function(a,b,c) local _t=regs[b] if _t==nil then error("VM:GETTABLE nil tbl reg["..b.."]",0) end if _t and type(_t)=='table' then regs[a]=_t[${rk_}(c)] else error('VM Error: Attempted to index a nil table.', 0) end end
-  ${dt_}[${O.SETTABLE}]=function(a,b,c) local _t=type(regs[a])=='table' and regs[a] or error('VM Error: Attempt to index nil with type', 0) if _t==nil then error("VM:SETTABLE nil tbl reg["..a.."]",0) end _t[${rk_}(b)]=${rk_}(c) end
+  ${dt_}[${O.GETGLOBAL}]=function(a,b,c) if not kst then error("LuaShield VM error: constant table missing (GETGLOBAL)",0) end regs[a]=env[kst[b]] end
+  ${dt_}[${O.SETGLOBAL}]=function(a,b,c) if not kst then error("LuaShield VM error: constant table missing (SETGLOBAL)",0) end env[kst[b]]=regs[a] end
+  ${dt_}[${O.GETTABLE}]=function(a,b,c) local _t=regs[b] if _t==nil then error("LuaShield VM error: attempt to index nil value (register "..b..")",0) end local _ty=type(_t) if _ty=='table' or _ty=='userdata' then local _ok,_rv=pcall(function() return _t[${rk_}(c)] end) if _ok then regs[a]=_rv else error("LuaShield VM error: index error - ".._rv,0) end else error("LuaShield VM error: attempt to index a "..tostring(_ty).." value (expected table or userdata)",0) end end
+  ${dt_}[${O.SETTABLE}]=function(a,b,c) local _t=regs[a] if _t==nil then error("LuaShield VM error: attempt to index nil value (register "..a..")",0) end local _ty=type(_t) if _ty=='table' or _ty=='userdata' then local _ok,_rv=pcall(function() _t[${rk_}(b)]=${rk_}(c) end) if not _ok then error("LuaShield VM error: set index error - ".._rv,0) end else error("LuaShield VM error: attempt to index a "..tostring(_ty).." value (expected table or userdata)",0) end end
   ${dt_}[${O.NEWTABLE}]=function(a,b,c) regs[a]={} end
-  ${dt_}[${O.SELF}]=function(a,b,c) local _t=regs[b] if _t==nil then error("VM:SELF nil tbl reg["..b.."]",0) end regs[a+1]=_t if _t and type(_t)=='table' then regs[a]=_t[${rk_}(c)] else error('VM Error: Attempted to index a nil table.', 0) end end
+  ${dt_}[${O.SELF}]=function(a,b,c) local _t=regs[b] if _t==nil then error("LuaShield VM error: attempt to index nil value in method call (register "..b..")",0) end local _ty=type(_t) regs[a+1]=_t if _ty=='table' or _ty=='userdata' then local _ok,_rv=pcall(function() return _t[${rk_}(c)] end) if _ok then regs[a]=_rv else error("LuaShield VM error: method lookup error - ".._rv,0) end else error("LuaShield VM error: attempt to call method on "..tostring(_ty).." value (expected table or userdata)",0) end end
   ${dt_}[${O.ADD}]=function(a,b,c) ${generatePolymorphicAdd(rk_)} end
   ${dt_}[${O.SUB}]=function(a,b,c) ${generatePolymorphicSub(rk_)} end
   ${dt_}[${O.MUL}]=function(a,b,c) ${generatePolymorphicMul(rk_)} end
@@ -1197,7 +1197,7 @@ function buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_, top_,
   ${dt_}[${O.CONCAT}]=function(a,b,c) local p={} for i=b,c do p[#p+1]=tostring(regs[i] or "") end regs[a]=table.concat(p) end
   ${dt_}[${O.NOT}]=function(a,b,c) ${generatePolymorphicNot()} end
   ${dt_}[${O.UNM}]=function(a,b,c) regs[a]=-regs[b] end
-  ${dt_}[${O.LEN}]=function(a,b,c) local _t=regs[b] if _t==nil then error("VM:LEN nil reg["..b.."]",0) end regs[a]=#_t end
+  ${dt_}[${O.LEN}]=function(a,b,c) local _t=regs[b] if _t==nil then error("LuaShield VM error: attempt to get length of nil value (register "..b..")",0) end local _ok,_rv=pcall(function() return #_t end) if _ok then regs[a]=_rv else error("LuaShield VM error: length error - ".._rv,0) end end
   ${dt_}[${O.EQ}]=function(a,b,c) if(${rk_}(b)==${rk_}(c))~=(a~=0) then ${pc_}[1]=${pc_}[1]+1 end end
   ${dt_}[${O.LT}]=function(a,b,c) if(${rk_}(b)<${rk_}(c))~=(a~=0) then ${pc_}[1]=${pc_}[1]+1 end end
   ${dt_}[${O.LE}]=function(a,b,c) if(${rk_}(b)<=${rk_}(c))~=(a~=0) then ${pc_}[1]=${pc_}[1]+1 end end
@@ -1205,7 +1205,8 @@ function buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_, top_,
   ${dt_}[${O.JMP}]=function(a,b,c) ${pc_}[1]=${pc_}[1]+b end
   ${dt_}[${O.CALL}]=function(a,b,c)
     local fn=regs[a]
-    if type(fn)~="function" then error("VM CALL: reg["..a.."] is "..type(fn)..", expected function",0) end
+    if fn==nil then error("LuaShield VM error: attempt to call a nil value (register "..a..")",0) end
+    if type(fn)~="function" then error("LuaShield VM error: attempt to call a "..type(fn).." value (register "..a..")",0) end
     local args={}
     if b==0 then
       for i=a+1,${top_} do args[#args+1]=regs[i] end
@@ -1241,14 +1242,14 @@ function buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_, top_,
   end
   ${dt_}[${O.FORPREP}]=function(a,b,c)
     local _s=regs[a] local _st=regs[a+2]
-    if _s==nil then error("VM:FORPREP nil init reg["..a.."]",0) end
-    if _st==nil then error("VM:FORPREP nil step reg["..(a+2).."]",0) end
+    if _s==nil then error("LuaShield VM error: 'for' initial value is nil (expected number)",0) end
+    if _st==nil then error("LuaShield VM error: 'for' step value is nil (expected number)",0) end
     regs[a]=_s-_st
     ${pc_}[1]=${pc_}[1]+b
   end
   ${dt_}[${O.FORLOOP}]=function(a,b,c)
     local _st=regs[a+2]
-    if _st==nil then error("VM:FORLOOP nil step reg["..(a+2).."]",0) end
+    if _st==nil then error("LuaShield VM error: 'for' step value is nil during loop",0) end
     regs[a]=regs[a]+_st
     local idx,lim,step=regs[a],regs[a+1],_st
     if(step>0 and idx<=lim)or(step<0 and idx>=lim) then
@@ -1258,7 +1259,7 @@ function buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_, top_,
   end
   ${dt_}[${O.TFORLOOP}]=function(a,b,c)
     local _fn=regs[a]
-    if _fn==nil then error("VM:TFOR nil iter reg["..a.."]",0) end
+    if _fn==nil then error("LuaShield VM error: attempt to call nil iterator in generic for loop",0) end
     local rs={_fn(regs[a+1],regs[a+2])}
     local ctrl=rs[1]
     if ctrl~=nil then
@@ -1289,8 +1290,8 @@ function buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_, top_,
     end
   end
   ${dt_}[${O.SETLIST}]=function(a,b,c)
-    local _t=type(regs[a])=='table' and regs[a] or error('VM Error: Attempt to index nil with type', 0)
-    if not _t then regs[a]={} _t=regs[a] end
+    local _t=regs[a]
+    if not _t then _t={} regs[a]=_t end
     if b==0 then
       for i=a+1,${top_} do _t[i-a]=regs[i] end
     else
@@ -2068,7 +2069,13 @@ ${debugMode ? '_VMDBG=true -- LuaShield Debug Mode: prints opcode trace to conso
 local _ok,_er=${R.pcall_}(function()
   ${vm}(_proto,_env,nil,nil)
 end)
-if not _ok then ${R.error_}(${R.tostr_}(_er),0) end
+if not _ok then
+  local _emsg=${R.tostr_}(_er)
+  if _emsg and not _emsg:find("LuaShield VM error") then
+    _emsg="LuaShield VM error: ".._emsg
+  end
+  ${R.error_}(_emsg,0)
+end
 `;
 
   return encodeAsPayload(vmCode);
@@ -2776,10 +2783,10 @@ function wrapAntiHook(code) {
     `if string.char(${ah1})~="A" then error("",0) end`,
     `local ${ah2}=string.char(72)`,
     `if ${ah2}~="H" then error("",0) end`,
-    `local ${dbg}=pcall(function() if debug~=nil and debug.getinfo~=nil then error("",0) end end)`,
+    `local ${dbg}=true`,
     `local ${env2}=(function() local _ok,_r=pcall(function() return type(_ENV) end) return _ok and _r or "nil" end)()`,
     `local ${chk}=pcall(function() assert(${env2}=="table" or ${env2}=="nil" or ${env2}=="userdata","") end)`,
-    `if not ${chk} then error("",0) end`,
+    `if not ${chk} then error("LuaShield VM error: invalid execution environment",0) end`,
     ...wmBeforeCode,
     `local ${mt_}=setmetatable({},{__index=function() return nil end})`,
     `local ${mt2_}=${mt_}["${randHex(4)}"]`,
@@ -2797,7 +2804,7 @@ function wrapAntiHook(code) {
     `local ${sd_}=0`,
     `local ${sd2_}=pcall(function() local function _c(n) if n>0 then return _c(n-1) end return true end _c(5) ${sd_}=1 end)`,
     `if ${sd_}~=1 then error("",0) end`,
-    `local ${gf_}=pcall(function() if getfenv then local _e=getfenv(0) if type(_e)~="table" then error("",0) end end end)`,
+    `local ${gf_}=pcall(function() if getfenv then local _e=getfenv(0) if type(_e)~="table" and type(_e)~="userdata" then error("",0) end end end)`,
     `local ${ht_}=setmetatable({},{__newindex=function(t,k,v) rawset(t,k,v) end,__index=function(t,k) return rawget(t,k) end})`,
     `${ht_}["${randHex(4)}"]=true`,
     `local ${ht2_}=${ht_}["${randHex(4)}"]`,
@@ -2807,7 +2814,11 @@ function wrapAntiHook(code) {
     `end`,
     ...wmAfterCode,
     `local _ok,_er=pcall(${en})`,
-    `if not _ok then error(tostring(_er),0) end`,
+    `if not _ok then`,
+    `  local _emsg=tostring(_er)`,
+    `  if not _emsg:find("LuaShield VM error") then _emsg="LuaShield VM error: ".._emsg end`,
+    `  error(_emsg,0)`,
+    `end`,
   ].join('\n');
 }
 
@@ -2849,9 +2860,13 @@ function wrapFinalEncoding(code) {
     `  ${db}[${di}]=string.char(bit32.bxor(${dd}[${di}],${dk}[(${di}-1)%#${dk}+1]))`,
     `end`,
     `local ${dr}=table.concat(${db})`,
-    `local _l=(loadstring or load)`,
+    `local _l=loadstring or load or (getfenv and getfenv(0) or _G or {}).loadstring or (getfenv and getfenv(0) or _G or {}).load`,
     `local _ok,_er=pcall(function() _l(${dr})() end)`,
-    `if not _ok then error(tostring(_er),0) end`,
+    `if not _ok then`,
+    `  local _emsg=tostring(_er)`,
+    `  if not _emsg:find("LuaShield VM error") then _emsg="LuaShield VM error: ".._emsg end`,
+    `  error(_emsg,0)`,
+    `end`,
   ].join('\n');
 }
 
@@ -2933,8 +2948,12 @@ function wrapAdvancedEncoding(code) {
     `local _f=_l(${resVar})`,
     `if _f then`,
     `  local _ok,_er=pcall(_f)`,
-    `  if not _ok then error(tostring(_er),0) end`,
-    `else error("",0) end`,
+    `  if not _ok then`,
+    `    local _emsg=tostring(_er)`,
+    `    if not _emsg:find("LuaShield VM error") then _emsg="LuaShield VM error: ".._emsg end`,
+    `    error(_emsg,0)`,
+    `  end`,
+    `else error("LuaShield VM error: failed to load encoded payload",0) end`,
   ].join('\n');
 }
 
