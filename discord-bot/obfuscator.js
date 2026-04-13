@@ -85,7 +85,6 @@ function randHex(n = 8) {
   for (let i = 0; i < n; i++) h += randInt(0, 255).toString(16).padStart(2, '0');
   return h;
 }
-local _ENV = (type(_ENV) == "table" and _ENV) or (getfenv and getfenv(0)) or _G or {}
 
 function shuffle(a) {
   const r = [...a];
@@ -238,8 +237,6 @@ class Compiler {
     this.emit('RETURN', 0, 1);
     return this.root;
   }
-
-const dynamicPatched = metadata['version-readable'];.
 
   newProto(parent, np, va) {
     const p = new Proto(parent, np, va);
@@ -811,7 +808,7 @@ const dynamicPatched = metadata['version-readable'];.
         break;
       }
       case 'VarargLiteral': {
-        this.emit('VARARG', dest, 0, 1);
+        this.emit('VARARG', dest, 0, 2);
         break;
       }
       default:
@@ -1197,7 +1194,7 @@ function buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_, top_,
   ${dt_}[${O.DIV}]=function(a,b,c) ${generatePolymorphicDiv(rk_)} end
   ${dt_}[${O.MOD}]=function(a,b,c) regs[a]=${rk_}(b)%${rk_}(c) end
   ${dt_}[${O.POW}]=function(a,b,c) regs[a]=${rk_}(b)^${rk_}(c) end
-  ${dt_}[${O.CONCAT}]=function(a,b,c) local p={} for i=b,c do p[#p+1]=tostring(regs[i] or "") end regs[a]=table.concat(p) end
+  ${dt_}[${O.CONCAT}]=function(a,b,c) local p={} for i=b,c do local _v=regs[i] p[#p+1]=(_v~=nil and tostring(_v) or "") end regs[a]=table.concat(p) end
   ${dt_}[${O.NOT}]=function(a,b,c) ${generatePolymorphicNot()} end
   ${dt_}[${O.UNM}]=function(a,b,c) regs[a]=-regs[b] end
   ${dt_}[${O.LEN}]=function(a,b,c) local _t=regs[b] if _t==nil then error("LuaShield VM error: attempt to get length of nil value (register "..b..")",0) end local _ok,_rv=pcall(function() return #_t end) if _ok then regs[a]=_rv else error("LuaShield VM error: length error - ".._rv,0) end end
@@ -1600,10 +1597,10 @@ function rotateStringArray(toks) {
 
   const encoded = rotated.map(s => {
     const enc = Array.from(s.content).map((c, j) => c.charCodeAt(0) ^ k1[j % k1l]);
-    return `(function(self) local function safeChar(val) if type(val)~="number" or val<0 or val>255 then error("Invalid value passed to string.char: "..tostring(val),0) end return string.char(val) end local t={${enc.join(',')}} for i=1,#t do t[i]=safeChar(t[i]) end return t end)()`;
+    return `{${enc.join(',')}}`;
   });
 
-  const decoderPrefix = `local ${arrName}=(function() local _k={${k1.join(',')}} local _d={${encoded.join(',')}} local _r={} for _i=1,#_d do local _s={} for _j=1,#_d[_i] do _s[_j]=string.char(bit32.bxor(_d[_i][_j],_k[(_j-1)%#_k+1])) end _r[_i]=table.concat(_s) end local ${rotName}=${rotation} for _=1,${rotName} do local _v=table.remove(_r,1) _r[#_r+1]=_v end return _r end)()\n`;
+  const decoderPrefix = `local ${arrName}=(function() local _k={${k1.join(',')}} local _d={${encoded.join(',')}} local _r={} for _i=1,#_d do local _s={} for _j=1,#_d[_i] do local _v=_d[_i][_j] local _kv=_k[(_j-1)%#_k+1] if type(_v)~="number" or type(_kv)~="number" then error("LuaShield: invalid string array data",0) end _s[_j]=string.char(bit32.bxor(_v,_kv)) end _r[_i]=table.concat(_s) end local ${rotName}=${rotation} for _=1,${rotName} do local _v=table.remove(_r,1) _r[#_r+1]=_v end return _r end)()\n`;
 
   const newToks = [...toks];
   for (let i = 0; i < strings.length; i++) {
@@ -1814,7 +1811,7 @@ local ${s_sub}=${strRef}[string.char(${charCodes('sub')})]
 local ${s_len}=${strRef}[string.char(${charCodes('len')})]
 local ${s_rep}=${strRef}[string.char(${charCodes('rep')})]
 local ${s_fmt}=${strRef}[string.char(${charCodes('format')})]
-local ${s_concat}=${strRef}[string.char(${charCodes('byte')})]
+local ${s_concat}=${strRef}[string.char(${charCodes('concat')})]
 local ${t_concat}=${tblRef}[string.char(${charCodes('concat')})]
 local ${t_insert}=${tblRef}[string.char(${charCodes('insert')})]
 local ${t_remove}=${tblRef}[string.char(${charCodes('remove')})]
@@ -1989,7 +1986,16 @@ function buildVMCore(rootProto, ops, debugMode) {
     .replace(/\bipairs\b/g, R.ipairs_)
     .replace(/\bpairs\b/g, R.pairs_)
     .replace(/\bselect\b/g, R.select_)
-    .replace(/\bmath\.abs\b/g, R.m_abs);
+    .replace(/\bmath\.abs\b/g, R.m_abs)
+    .replace(/\btype\b(?=\s*\()/g, R.type_)
+    .replace(/\berror\b(?=\s*\()/g, R.error_)
+    .replace(/\bpcall\b(?=\s*\()/g, R.pcall_)
+    .replace(/\brawget\b(?=\s*\()/g, R.rawget_)
+    .replace(/\brawset\b(?=\s*\()/g, R.rawset_)
+    .replace(/\bsetmetatable\b(?=\s*\()/g, R.setmt_)
+    .replace(/\bgetmetatable\b(?=\s*\()/g, R.getmt_)
+    .replace(/\btable\.insert\b/g, R.t_insert)
+    .replace(/\btable\.remove\b/g, R.t_remove);
 
   const dbgBootstrap = debugMode ? `
 if _VMDBG then print("[VM-INIT] LuaShield VM Debug Mode Active") end
@@ -2228,10 +2234,27 @@ function renameLocals(toks) {
         }
       }
     }
+    // Collect for-loop control variables: `for i=...` or `for k,v in ...`
+    if (t.t === TK.KW && t.v === 'for') {
+      let j = i + 1;
+      while (j < toks.length) {
+        if (toks[j].t === TK.WS) { j++; continue; }
+        if (toks[j].t === TK.ID) { locals.add(toks[j].v); j++; continue; }
+        if (toks[j].t === TK.OT && toks[j].v === ',') { j++; continue; }
+        break; // hit '=' or 'in' — stop collecting
+      }
+    }
     if (t.t === TK.KW && t.v === 'function') {
       let j = i + 1;
       while (j < toks.length && toks[j].t === TK.WS) j++;
-      if (j < toks.length && toks[j].t !== TK.OT) while (j < toks.length && toks[j].t !== TK.OT) j++;
+      // Skip function name (including method syntax like foo:bar or foo.bar)
+      while (j < toks.length && toks[j].t !== TK.OT) j++;
+      // If we stopped at : or . (method/field), skip to the next identifier then to (
+      while (j < toks.length && toks[j].t === TK.OT && (toks[j].v === ':' || toks[j].v === '.')) {
+        j++; // skip : or .
+        while (j < toks.length && toks[j].t === TK.WS) j++;
+        while (j < toks.length && toks[j].t !== TK.OT) j++; // skip method name
+      }
       if (j < toks.length && toks[j].t === TK.OT && toks[j].v === '(') {
         let k = j + 1;
         while (k < toks.length) {
@@ -2263,7 +2286,7 @@ function encryptStrings(toks) {
     if (!content.length) return { ...t, v: '""' };
     if (content.length > 500) return t;
 
-    const bytes = Array.from(content).map(c => c.charCodeAt(0));
+    const bytes = [...Buffer.from(content, 'utf8')];
     const pat = randInt(0, 8);
 
     // Pattern 0: dual rotating XOR keys, table.concat (original style)
@@ -2561,6 +2584,13 @@ const JUNK = [
   () => { const a = randName(); return `do local ${a}=not rawequal(rawget({},1),rawget({},1)) end`; },
   () => { const a = randName(), b = randName(); return `do local ${a}=select("#") local ${b}=type(${a})=="number" end`; },
   () => { const a = randName(); return `do local ${a}=string.format("%d",math.max(${randInt(0,9)},${randInt(0,9)})) end`; },
+  // Roblox-specific junk patterns
+  () => { const a = randName(), b = randName(); return `do local ${a}=Vector3 and Vector3.new(0,0,0) or nil local ${b}=${a}~=nil end`; },
+  () => { const a = randName(); return `do local ${a}=typeof and typeof(workspace) or type(workspace) end`; },
+  () => { const a = randName(), b = randName(); return `do local ${a}=CFrame and CFrame.new() or nil local ${b}=${a}==nil and 0 or 1 end`; },
+  () => { const a = randName(); return `do local ${a}=Enum and Enum.KeyCode or nil end`; },
+  () => { const a = randName(), b = randName(); return `do local ${a}=math.clamp and math.clamp(${randInt(0,5)},0,10) or ${randInt(0,5)} local ${b}=${a} end`; },
+  () => { const a = randName(); return `do local ${a}=math.round and math.round(${randInt(1,9)}.5) or math.floor(${randInt(1,9)}.5+0.5) end`; },
 ];
 
 // Count net brace depth contributed by a source line (outside strings/comments)
@@ -2647,6 +2677,15 @@ function injectOpaquePredicates(code) {
     () => { const a = randInt(1,9), b = randInt(1,9); return `if ${a}*${b}~=${a*b} then error("",0) end`; },
     () => `if type(nil)~="nil" then error("",0) end`,
     () => { const a = randInt(2,8); return `if ${a}%1~=0 then error("",0) end`; },
+    // Advanced cryptographic invariants
+    () => { const n=randInt(1,0xFFFF); return `if bit32.band(bit32.bnot(bit32.bnot(${n})),0xFFFFFFFF)~=${n>>>0} then error("",0) end`; },
+    () => { const a=randInt(1,127),b=randInt(1,127); return `if bit32.bxor(bit32.bor(${a},${b}),bit32.band(${a},${b}))~=bit32.bxor(${a},${b}) then error("",0) end`; },
+    () => { const n=randInt(1,255),sh=randInt(1,7); return `if bit32.rshift(bit32.lshift(${n},${sh}),${sh})~=bit32.band(${n},bit32.rshift(0xFFFFFFFF,${sh})) then error("",0) end`; },
+    () => { const a=randInt(1,127),b=randInt(1,127); return `if bit32.bor(bit32.band(${a},${b}),bit32.bxor(${a},${b}))~=bit32.bor(${a},${b}) then error("",0) end`; },
+    () => { const n=randInt(2,99); return `if math.floor(${n}/1)~=${n} then error("",0) end`; },
+    () => { const a=randInt(1,9); return `if (${a}+${a}+${a})~=${a*3} then error("",0) end`; },
+    () => { const n=randInt(1,0xFF); return `if bit32.band(${n},bit32.bnot(${n}))~=0 then error("",0) end`; },
+    () => { const a=randInt(0,0xFF),b=randInt(0,0xFF); return `if bit32.bor(${a},${b})+bit32.band(${a},${b})~=${a}+${b} then error("",0) end`; },
   ];
   const lines = code.split('\n');
   // Build list of safe "insert-after" indices (statement level, not inside table constructors,
@@ -3167,7 +3206,7 @@ const PRESETS = {
     obfuscateNumbers: true, breakGlobals: true,
     injectJunk: true, opaquePredicates: true, antiHook: true,
     controlFlowFlatten: true, stringArrayRotate: true, envFingerprint: true,
-    vmNesting: true, tripleNesting: true, deadCodePaths: true, finalEncoding: true,
+    vmNesting: true, tripleNesting: false, deadCodePaths: true, finalEncoding: true,
   },
   ultra: {
     vmCompile: true,
