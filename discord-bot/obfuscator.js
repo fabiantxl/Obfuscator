@@ -1184,10 +1184,10 @@ function buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_, top_,
   ${dt_}[${O.MOVE}]=function(a,b,c) ${generatePolymorphicMove()} end
   ${dt_}[${O.GETGLOBAL}]=function(a,b,c) if not kst then error("C-FAIL:kst-gg",0) end regs[a]=env[kst[b]] end
   ${dt_}[${O.SETGLOBAL}]=function(a,b,c) if not kst then error("C-FAIL:kst-sg",0) end env[kst[b]]=regs[a] end
-  ${dt_}[${O.GETTABLE}]=function(a,b,c) local _t=regs[b] if _t==nil then error("VM:GETTABLE nil tbl reg["..b.."]",0) end regs[a]=_t[${rk_}(c)] end
-  ${dt_}[${O.SETTABLE}]=function(a,b,c) local _t=regs[a] if _t==nil then error("VM:SETTABLE nil tbl reg["..a.."]",0) end _t[${rk_}(b)]=${rk_}(c) end
+  ${dt_}[${O.GETTABLE}]=function(a,b,c) local _t=regs[b] if _t==nil then error("VM:GETTABLE nil tbl reg["..b.."]",0) end if _t and type(_t)=='table' then regs[a]=_t[${rk_}(c)] else error('VM Error: Attempted to index a nil table.', 0) end end
+  ${dt_}[${O.SETTABLE}]=function(a,b,c) local _t=type(regs[a])=='table' and regs[a] or error('VM Error: Attempt to index nil with type', 0) if _t==nil then error("VM:SETTABLE nil tbl reg["..a.."]",0) end _t[${rk_}(b)]=${rk_}(c) end
   ${dt_}[${O.NEWTABLE}]=function(a,b,c) regs[a]={} end
-  ${dt_}[${O.SELF}]=function(a,b,c) local _t=regs[b] if _t==nil then error("VM:SELF nil tbl reg["..b.."]",0) end regs[a+1]=_t regs[a]=_t[${rk_}(c)] end
+  ${dt_}[${O.SELF}]=function(a,b,c) local _t=regs[b] if _t==nil then error("VM:SELF nil tbl reg["..b.."]",0) end regs[a+1]=_t if _t and type(_t)=='table' then regs[a]=_t[${rk_}(c)] else error('VM Error: Attempted to index a nil table.', 0) end end
   ${dt_}[${O.ADD}]=function(a,b,c) ${generatePolymorphicAdd(rk_)} end
   ${dt_}[${O.SUB}]=function(a,b,c) ${generatePolymorphicSub(rk_)} end
   ${dt_}[${O.MUL}]=function(a,b,c) ${generatePolymorphicMul(rk_)} end
@@ -1289,7 +1289,7 @@ function buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_, top_,
     end
   end
   ${dt_}[${O.SETLIST}]=function(a,b,c)
-    local _t=regs[a]
+    local _t=type(regs[a])=='table' and regs[a] or error('VM Error: Attempt to index nil with type', 0)
     if not _t then regs[a]={} _t=regs[a] end
     if b==0 then
       for i=a+1,${top_} do _t[i-a]=regs[i] end
