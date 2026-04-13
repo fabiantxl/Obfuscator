@@ -1065,7 +1065,7 @@ function encryptConstants(kArr) {
     if (fakeType === 0) {
       const fakeStr = randHex(randInt(4, 12));
       const enc = Array.from(fakeStr).map((c, j) =>
-        c.charCodeAt(0) ^ k1[j % k1len] ^ k2[j % k2len] ^ k3[j % k3len] ^ k4[j % k4len] ^ k5[j % k5len]
+        (c.charCodeAt(0) ^ k1[j % k1len] ^ k2[j % k2len] ^ k3[j % k3len] ^ k4[j % k4len] ^ k5[j % k5len]) % 256
       );
       fakeConstants.push(`{t=1,d={${enc.join(',')}}}`);
     } else if (fakeType === 1) {
@@ -1078,7 +1078,7 @@ function encryptConstants(kArr) {
   const parts = kArr.map((v) => {
     if (typeof v === 'string') {
       const enc = Array.from(v).map((c, j) =>
-        c.charCodeAt(0) ^ k1[j % k1len] ^ k2[j % k2len] ^ k3[j % k3len] ^ k4[j % k4len] ^ k5[j % k5len]
+        (c.charCodeAt(0) ^ k1[j % k1len] ^ k2[j % k2len] ^ k3[j % k3len] ^ k4[j % k4len] ^ k5[j % k5len]) % 256
       );
       return `{t=1,d={${enc.join(',')}}}`;
     }
@@ -1184,7 +1184,7 @@ function buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_, top_,
   ${dt_}[${O.MOVE}]=function(a,b,c) ${generatePolymorphicMove()} end
   ${dt_}[${O.GETGLOBAL}]=function(a,b,c) if not kst then error("LuaShield VM error: constant table missing (GETGLOBAL)",0) end regs[a]=env[kst[b]] end
   ${dt_}[${O.SETGLOBAL}]=function(a,b,c) if not kst then error("LuaShield VM error: constant table missing (SETGLOBAL)",0) end env[kst[b]]=regs[a] end
-  ${dt_}[${O.GETTABLE}]=function(a,b,c) local _t=regs[b] if _t==nil then error("LuaShield VM error: attempt to index nil value (register "..b..")",0) end local _ty=type(_t) if _ty=='table' or _ty=='userdata' then local _ok,_rv=pcall(function() return _t[${rk_}(c)] end) if _ok then regs[a]=_rv else error("LuaShield VM error: index error - ".._rv,0) end else error("LuaShield VM error: attempt to index a "..tostring(_ty).." value (expected table or userdata)",0) end end
+  ${dt_}[${O.GETTABLE}]=function(a,b,c) local _t=regs[b] if _t==nil then error("LuaShield VM error: attempt to index nil value (register "..b..")",0) end local _ty=type(_t) if _ty=='table' or _ty=='userdata' then local _ok,_rv=pcall(function() return _t[${rk_}(c)] end) if _ok then regs[a]=_rv else if _ty=='userdata' and type(${rk_}(c))=='string' then local _ok2,_rv2=pcall(function() return _t[${rk_}(c)] end) if _ok2 then regs[a]=_rv2 return end end error("LuaShield VM error: index error - "..tostring(_rv),0) end else error("LuaShield VM error: attempt to index a "..tostring(_ty).." value (expected table or userdata)",0) end end
   ${dt_}[${O.SETTABLE}]=function(a,b,c) local _t=regs[a] if _t==nil then error("LuaShield VM error: attempt to index nil value (register "..a..")",0) end local _ty=type(_t) if _ty=='table' or _ty=='userdata' then local _ok,_rv=pcall(function() _t[${rk_}(b)]=${rk_}(c) end) if not _ok then error("LuaShield VM error: set index error - ".._rv,0) end else error("LuaShield VM error: attempt to index a "..tostring(_ty).." value (expected table or userdata)",0) end end
   ${dt_}[${O.NEWTABLE}]=function(a,b,c) regs[a]={} end
   ${dt_}[${O.SELF}]=function(a,b,c) local _t=regs[b] if _t==nil then error("LuaShield VM error: attempt to index nil value in method call (register "..b..")",0) end local _ty=type(_t) regs[a+1]=_t if _ty=='table' or _ty=='userdata' then local _ok,_rv=pcall(function() return _t[${rk_}(c)] end) if _ok then regs[a]=_rv else error("LuaShield VM error: method lookup error - ".._rv,0) end else error("LuaShield VM error: attempt to call method on "..tostring(_ty).." value (expected table or userdata)",0) end end
@@ -2022,7 +2022,7 @@ local function ${vm}(proto,env,parent_regs,parent_upcells,...)
       local r={}
       if not v.d then kst[i-1]="" else
         for j,b in ${R.ipairs_}(v.d) do
-          r[j]=${R.s_char}(${R.b_bxor}(${R.b_bxor}(${R.b_bxor}(${R.b_bxor}(${R.b_bxor}(b,k1[(j-1)%#k1+1]),k2[(j-1)%#k2+1]),k3[(j-1)%#k3+1]),k4[(j-1)%#k4+1]),k5[(j-1)%#k5+1]))
+          r[j]=${R.s_char}(${R.b_band}(${R.b_bxor}(${R.b_bxor}(${R.b_bxor}(${R.b_bxor}(${R.b_bxor}(b,k1[(j-1)%#k1+1]),k2[(j-1)%#k2+1]),k3[(j-1)%#k3+1]),k4[(j-1)%#k4+1]),k5[(j-1)%#k5+1]),0xFF))
         end
         kst[i-1]=${R.t_concat}(r)
       end
@@ -2384,15 +2384,15 @@ function obfuscateNumbers(toks) {
     if (s === 4)  { const k = randInt(1, 999); return { ...t, v: `(${n + k}-${k})` }; }
     if (s === 5)  { const a = randInt(1, 99), b = randInt(1, 99); return { ...t, v: `(${n + a * b}-${a}*${b})` }; }
     if (s === 6 && safe) { const m = randInt(1, 0xFFFF); return { ...t, v: `(bit32.bxor(bit32.bor(${n},${m}),bit32.band(bit32.bxor(${n},${m}),${m})))` }; }
-    if (s === 7)  { const k = randInt(2, 9); return { ...t, v: `(math.floor(${n * k}/${k}))` }; }
+    if (s === 7 && safe)  { const k = randInt(2, 9); return { ...t, v: `(bit32.bxor(bit32.bxor(${(n ^ k) >>> 0},${k}),0))` }; }
     if (s === 8)  { const a = randInt(1, 50); return { ...t, v: `(${n + a * a}-${a}*${a})` }; }
     if (s === 9 && safe && n > 0) { return { ...t, v: `(bit32.lshift(bit32.rshift(${n},1),1)+bit32.band(${n},1))` }; }
     if (s === 10) { const a = randInt(1000, 9999), b = randInt(1, 999); return { ...t, v: `(${n + a}-${b}-(${a - b}))` }; }
-    if (s === 11) { const r = randInt(1, 7); return { ...t, v: `(math.floor(${n * (1 << r)}/${1 << r}))` }; }
+    if (s === 11 && safe) { const k1=randInt(1,127), k2=randInt(1,127); return { ...t, v: `(bit32.bxor(bit32.bxor(${(n ^ k1 ^ k2) >>> 0},${k2}),${k1}))` }; }
     if (s === 12 && safe) { const k1 = randInt(1, 127), k2 = randInt(1, 127); return { ...t, v: `(bit32.bxor(bit32.bxor(${n ^ k1},${k1 ^ k2}),${k2}))` }; }
     if (s === 13) { const a = randInt(1, 999); return { ...t, v: `(${n + a * 2}-${a}-${a})` }; }
     if (s === 14 && safe && n > 0) { return { ...t, v: `(bit32.bor(${n & 0xFFFF},bit32.lshift(bit32.rshift(${n},16),16)))` }; }
-    if (s === 15) { const k = randInt(3, 11); return { ...t, v: `(math.fmod(${n + k * 1000},${k * 1000 + 1}) + ${n - (n + k * 1000) % (k * 1000 + 1)})` }; }
+    if (s === 15) { const a=randInt(1,999), b=randInt(1,999); return { ...t, v: `(${n+a+b}-${a}-${b})` }; }
     if (s === 16 && safe) { const k1=randInt(1,127),k2=randInt(1,127),k3=randInt(1,127); return { ...t, v: `(bit32.bxor(bit32.bxor(bit32.bxor(${(n^k1^k2^k3)>>>0},${k3}),${k2}),${k1}))` }; }
     if (s === 17) { const a = randInt(1, 99), b = n + a; return { ...t, v: `(${b}-${a})` }; }
     if (s === 18) { const a = randInt(1, 9), b = randInt(1, 9); return { ...t, v: `(${n + a + b}-${a}-${b})` }; }
@@ -2400,23 +2400,26 @@ function obfuscateNumbers(toks) {
     if (s === 20 && safe && n > 0) { const sh=randInt(1,4); return { ...t, v: `(bit32.bor(bit32.band(${n},bit32.bnot(bit32.lshift(1,${sh})-1)),bit32.band(${n},bit32.lshift(1,${sh})-1)))` }; }
     if (s === 21) { const a=randInt(1,9), b=randInt(1,9), c=a*b; return { ...t, v: `(${n+c}-${a}*${b})` }; }
     if (s === 22 && safe) { return { ...t, v: `(bit32.band(bit32.bor(${n},0),0xFFFFFFFF))` }; }
-    if (s === 23) { const a=randInt(2,5); return { ...t, v: `(math.floor((${n*a}+${a-1})/${a}))` }; }
+    if (s === 23) { const a=randInt(1,999), b=randInt(1,999); return { ...t, v: `(${n+a+b}-${a}-${b})` }; }
     if (s === 24 && safe) { const k=randInt(1,255); return { ...t, v: `(bit32.bxor(bit32.bnot(bit32.bxor(bit32.bnot(${n}),${k})),${k}))` }; }
     if (s === 25) { const a=randInt(1,99), b=randInt(1,99); return { ...t, v: `(${n}+${a}*${b}-${a}*${b})` }; }
     if (s === 26 && safe && n > 0) { return { ...t, v: `(bit32.lshift(bit32.rshift(${n},0),0))` }; }
-    if (s === 27) { const k=randInt(2,7); return { ...t, v: `(${n*k}/${k})` }; }
+    if (s === 27 && safe) { const k=randInt(1,127); return { ...t, v: `(bit32.bxor(bit32.bxor(${(n^k)>>>0},${k}),0))` }; }
     if (s === 28) { const a=randInt(10,999), b=randInt(10,999); return { ...t, v: `(${n+a+b}-${a}-${b})` }; }
     if (s === 29 && safe) { const k1=randInt(1,127),k2=randInt(1,127); return { ...t, v: `(bit32.band(bit32.bor(bit32.bxor(${n^k1},${k1}),0),bit32.bxor(bit32.bxor(0xFFFFFFFF,${k2}),${k2})))` }; }
     if (s === 30) { const a=randInt(1,50), b=randInt(1,50); return { ...t, v: `(${n+a}-${b}+(${b-a}))` }; }
     if (s === 31 && safe && n > 0) { const sh=randInt(1,3); return { ...t, v: `(bit32.bor(bit32.lshift(bit32.rshift(${n},${sh}),${sh}),bit32.band(${n},${(1<<sh)-1})))` }; }
-    if (s === 32) { const a=randInt(2,9); return { ...t, v: `(math.floor(${n+0.0}+0.5-${a}*(1/${a}-1)))`}; }
+    if (s === 32 && safe) { const k1=randInt(1,127),k2=randInt(1,127),k3=randInt(1,127); return { ...t, v: `(bit32.bxor(bit32.bxor(bit32.bxor(${(n^k1^k2^k3)>>>0},${k3}),${k2}),${k1}))` }; }
     if (s === 33 && safe) { const k=randInt(1,0xFF); return { ...t, v: `(bit32.bnot(bit32.bnot(${n})))` }; }
-    if (s === 34) { const p=randInt(1,3), pow=Math.pow(10,p); return { ...t, v: `(math.floor(${n*pow}/${pow}))` }; }
+    if (s === 34) { const a=randInt(1,9999); return { ...t, v: `(${n+a}-${a})` }; }
     if (s === 35 && safe) { const k1=randInt(1,127), k2=randInt(1,127), k3=randInt(1,127), k4=randInt(1,127), k5=randInt(1,127); const enc=(n^k1^k2^k3^k4^k5)>>>0; return { ...t, v: `(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(bit32.bxor(${enc},${k5}),${k4}),${k3}),${k2}),${k1}))` }; }
     if (s === 36) { const a=randInt(100,999); return { ...t, v: `(${n+a+1}-${a}-1)` }; }
     if (s === 37 && safe) { const m=randInt(1,0xFFFF); return { ...t, v: `(bit32.bxor(bit32.band(bit32.bxor(${n},${m}),0xFFFFFFFF),${m}))` }; }
-    if (s === 38) { const a=randInt(3,9); return { ...t, v: `(${n*a*a}/${a}/${a})` }; }
+    if (s === 38 && safe) { const k1=randInt(1,127),k2=randInt(1,127); return { ...t, v: `(bit32.bxor(bit32.bxor(bit32.bxor(${(n^k1^k2)>>>0},${k2}),${k1}),0))` }; }
     if (s === 39 && safe && n > 0) { return { ...t, v: `(bit32.bor(0,bit32.band(${n},0x7FFFFFFF)))` }; }
+    if (s === 40 && safe) { return { ...t, v: `(bit32.bor(bit32.lshift(${n},0),0))` }; }
+    if (s === 41 && safe) { return { ...t, v: `(bit32.band(${n},0xFFFFFFFF))` }; }
+    if (s === 42) { return { ...t, v: `((function(_x) return _x end)(${n}))` }; }
     const k = randInt(1, 4999); return { ...t, v: `(${n + k}-${k})` };
   });
 }
@@ -2460,7 +2463,7 @@ const JUNK = [
   () => { const a = randName(); return `do local ${a}=rawequal(nil,nil) end`; },
   () => { const a = randName(), n = randInt(1, 255); return `do local ${a}=bit32.bnot(${n}) end`; },
   () => { const a = randName(), b = randName(); return `do local ${a}=table.concat({}) local ${b}=#${a} end`; },
-  () => { const a = randName(); return `do local ${a}=math.fmod(${randInt(1,99)},${randInt(100,999)}) end`; },
+  () => { const a = randName(), b=randInt(1,99), c=randInt(100,999); return `do local ${a}=(${b+c}-${c}) end`; },
   () => { const a = randName(); return `do local ${a}={} ${a}[1]=nil end`; },
   () => { const a = randName(), b = randInt(0, 1); return `do local ${a}=bit32.rshift(${randInt(1,255)},${b}) end`; },
   () => { const a = randName(); return `if select("#")>=0 then local ${a}=0 end`; },
