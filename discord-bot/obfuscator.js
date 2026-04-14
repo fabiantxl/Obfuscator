@@ -1194,7 +1194,7 @@ function buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_, top_,
   ${dt_}[${O.DIV}]=function(a,b,c) ${generatePolymorphicDiv(rk_)} end
   ${dt_}[${O.MOD}]=function(a,b,c) regs[a]=${rk_}(b)%${rk_}(c) end
   ${dt_}[${O.POW}]=function(a,b,c) regs[a]=${rk_}(b)^${rk_}(c) end
-  ${dt_}[${O.CONCAT}]=function(a,b,c) local p={} for i=b,c do local _v=regs[i] p[#p+1]=(_v~=nil and tostring(_v) or "") end regs[a]=table.concat(p) end
+  ${dt_}[${O.CONCAT}]=function(a,b,c) local p={} for i=b,c do local _v=regs[i] if _v==nil then error("LuaShield VM error: concat operand is nil (register "..i..")",0) end p[#p+1]=tostring(_v) end regs[a]=table.concat(p) end
   ${dt_}[${O.NOT}]=function(a,b,c) ${generatePolymorphicNot()} end
   ${dt_}[${O.UNM}]=function(a,b,c) regs[a]=-regs[b] end
   ${dt_}[${O.LEN}]=function(a,b,c) local _t=regs[b] if _t==nil then error("LuaShield VM error: attempt to get length of nil value (register "..b..")",0) end local _ok,_rv=pcall(function() return #_t end) if _ok then regs[a]=_rv else error("LuaShield VM error: length error - ".._rv,0) end end
@@ -1669,6 +1669,7 @@ function buildLinkedListVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op
   const cur_ = randName();
   const exec_ = randName();
   const handlers = buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_, top_, van_, debugMode);
+  const dbgLine = debugMode ? `    if _VMDBG then print("[VM-DBG] pc="..${exec_}.." op="..${op_}.." a="..(${ins_}[2] or 0).." b="..(${ins_}[3] or 0).." c="..(${ins_}[4] or 0)) end` : '';
   return `
   ${handlers}
   ${fakeDt}
@@ -1685,6 +1686,7 @@ function buildLinkedListVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op
     for _ri,_cl in pairs(_regcells) do regs[_ri]=_cl.val end
     local ${ins_}=${cur_}.d
     local ${op_}=bit32.bxor(${ins_}[1],${rxkl_}[((${exec_}-1)%#${rxkl_})+1])
+    ${dbgLine}
     local ${h_}=${dt_}[${op_}]
     if ${h_} then ${h_}(${ins_}[2],${ins_}[3],${ins_}[4]) end
     for _ri,_cl in pairs(_regcells) do _cl.val=regs[_ri] end
@@ -1700,6 +1702,7 @@ function buildStringVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, v
   const pos_ = randName();
   const rd_ = randName();
   const handlers = buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_, top_, van_, debugMode);
+  const dbgLine = debugMode ? `    if _VMDBG then print("[VM-DBG] pc="..${idx_}.." op="..${op_}.." a="..a.." b="..b.." c="..c) end` : '';
   return `
   ${handlers}
   ${fakeDt}
@@ -1720,8 +1723,6 @@ function buildStringVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, v
     local sB=math.floor(b2 or 0)+math.floor(b5 or 0)*256
     local sC=math.floor(b3 or 0)+math.floor(b6 or 0)*256
     local sD=math.floor(b4 or 0)+math.floor(b7 or 0)*256
-    if sB>32767 then sB=sB-65536 end
-    if sC>32767 then sC=sC-65536 end
     return b1 or 0,sB,sC,sD
   end
 
@@ -1732,6 +1733,8 @@ function buildStringVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, v
     ${pc_}[1]=${idx_}+1
     local ${op_},a,b,c=${rd_}(${idx_})
     ${op_}=bit32.bxor(${op_},${rxkl_}[((${idx_}-1)%#${rxkl_})+1])
+    if (${op_}==${O.JMP} or ${op_}==${O.FORPREP} or ${op_}==${O.FORLOOP} or ${op_}==${O.TFORLOOP}) and b>32767 then b=b-65536 end
+    ${dbgLine}
     local ${h_}=${dt_}[${op_}]
     if ${h_} then ${h_}(a,b,c) end
     for _ri,_cl in pairs(_regcells) do _cl.val=regs[_ri] end
@@ -1745,6 +1748,7 @@ function buildStackVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm
   const push_ = randName();
   const pop_ = randName();
   const handlers = buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_, top_, van_, debugMode);
+  const dbgLine = debugMode ? `    if _VMDBG then print("[VM-DBG] pc="..${idx_}.." op="..${op_}.." a="..(${ins_}[2] or 0).." b="..(${ins_}[3] or 0).." c="..(${ins_}[4] or 0)) end` : '';
   return `
   ${handlers}
   ${fakeDt}
@@ -1766,6 +1770,7 @@ function buildStackVM(O, rk_, pc_, rv_, rn_, dt_, ins_, h_, rxkl_, idx_, op_, vm
     local ${ins_}=bc[${idx_}]
     ${pc_}[1]=${idx_}+1
     local ${op_}=bit32.bxor(${ins_}[1],${rxkl_}[((${idx_}-1)%#${rxkl_})+1])
+    ${dbgLine}
     local ${h_}=${dt_}[${op_}]
     if ${h_} then ${h_}(${ins_}[2],${ins_}[3],${ins_}[4]) end
     for _ri,_cl in pairs(_regcells) do _cl.val=regs[_ri] end
