@@ -163,6 +163,25 @@ const CONST_BASE = 2000;
 function KR(ci) { return CONST_BASE + ci; }
 function isKR(x) { return x >= CONST_BASE; }
 
+function luaStringValue(node) {
+  if (node.value != null) return node.value;
+  if (typeof node.raw !== 'string') return '';
+  try {
+    const parsed = luaparse.parse(`return ${node.raw}`, {
+      comments: false,
+      scope: false,
+      locations: false,
+      ranges: false,
+      luaVersion: '5.2',
+      encodingMode: 'pseudo-latin1',
+    });
+    const arg = parsed.body && parsed.body[0] && parsed.body[0].arguments && parsed.body[0].arguments[0];
+    return arg && arg.value != null ? arg.value : '';
+  } catch {
+    return node.raw.slice(1, -1);
+  }
+}
+
 // ─── Proto ─────────────────────────────────────────────────────
 
 class Proto {
@@ -760,7 +779,7 @@ class Compiler {
         break;
       }
       case 'StringLiteral': {
-        const ki = proto.addK(node.value);
+        const ki = proto.addK(luaStringValue(node));
         this.emit('LOADK', dest, ki);
         break;
       }
@@ -817,7 +836,8 @@ class Compiler {
   }
 
   compileRK(node) {
-    if (node.type === 'NumericLiteral' || node.type === 'StringLiteral') return KR(this.cur.addK(node.value));
+    if (node.type === 'NumericLiteral') return KR(this.cur.addK(node.value));
+    if (node.type === 'StringLiteral') return KR(this.cur.addK(luaStringValue(node)));
     if (node.type === 'BooleanLiteral') return KR(this.cur.addK(node.value));
     if (node.type === 'NilLiteral') return KR(this.cur.addK(null));
     const r = this.cur.allocTemp();
@@ -879,11 +899,26 @@ class Compiler {
     }
 
     if (op === '..') {
-      const lReg = proto.allocTemp();
-      const rReg = proto.allocTemp();
-      this.compileExprTo(node.left, lReg);
-      this.compileExprTo(node.right, rReg);
-      this.emit('CONCAT', dest, lReg, rReg);
+      // Flatten the full .. chain into consecutive registers and emit a single CONCAT.
+      // Lua 5.1 CONCAT a, b, c means: regs[a] = regs[b] .. regs[b+1] .. ... .. regs[c]
+      // a..b..c is left-associative in the AST but handled as one CONCAT range.
+      const operands = [];
+      const gatherConcat = (n) => {
+        if (n.type === 'BinaryExpression' && n.operator === '..') {
+          gatherConcat(n.left);
+          gatherConcat(n.right);
+        } else {
+          operands.push(n);
+        }
+      };
+      gatherConcat(node);
+      const firstReg = proto.nextReg;
+      for (const operand of operands) {
+        const r = proto.allocTemp();
+        this.compileExprTo(operand, r);
+      }
+      const lastReg = proto.nextReg - 1;
+      this.emit('CONCAT', dest, firstReg, lastReg);
       proto.freeRegsTo(base);
       return;
     }
@@ -1324,8 +1359,140 @@ function buildPolymorphicHandlers(O, rk_, pc_, rv_, rn_, dt_, vm, unpack_, top_,
   ${dt_}[${O.NOP}]=function(a,b,c) end`;
 }
 
+// ─── Bytecode Block Reordering ──────────────────────────────────
+// Identifies basic blocks in the bytecode, shuffles their order, and
+// inserts unconditional JMPs where needed to preserve the logical flow.
+// This matches the control flow technique described in the VM education:
+// blocks A, B, C can be reordered as C, A, B with JMPs maintaining real flow.
+function reorderBlocks(proto, ops) {
+  const jumpOps = new Set([ops['JMP'], ops['FORPREP'], ops['FORLOOP'], ops['TFORLOOP']]);
+  const compOps = new Set([ops['EQ'], ops['LT'], ops['LE'], ops['TEST']]);
+  const lboolOp = ops['LOADBOOL'];
+  const returnOp = ops['RETURN'];
+  const bc = proto.bc;
+  if (bc.length < 8) {
+    for (const sp of proto.subp) reorderBlocks(sp, ops);
+    return;
+  }
+
+  // Step 1: find leader indices (start of each basic block)
+  const isLeader = new Uint8Array(bc.length);
+  isLeader[0] = 1;
+  for (let i = 0; i < bc.length; i++) {
+    const ins = bc[i];
+    if (jumpOps.has(ins.op)) {
+      if (ins.b !== 0) {
+        const t = i + 1 + ins.b;
+        if (t >= 0 && t < bc.length) isLeader[t] = 1;
+      }
+      if (i + 1 < bc.length) isLeader[i + 1] = 1;
+    }
+    if (compOps.has(ins.op)) {
+      if (i + 1 < bc.length) isLeader[i + 1] = 1;
+      if (i + 2 < bc.length) isLeader[i + 2] = 1;
+    }
+    if (ins.op === lboolOp && ins.c !== 0) {
+      if (i + 1 < bc.length) isLeader[i + 1] = 1;
+      if (i + 2 < bc.length) isLeader[i + 2] = 1;
+    }
+  }
+
+  // Step 2: build blocks
+  const blocks = [];
+  let bStart = 0;
+  for (let i = 1; i <= bc.length; i++) {
+    if (i === bc.length || isLeader[i]) {
+      blocks.push({ startOld: bStart, instrs: bc.slice(bStart, i), fallthroughOld: i < bc.length ? i : -1 });
+      bStart = i;
+    }
+  }
+  if (blocks.length <= 2) {
+    for (const sp of proto.subp) reorderBlocks(sp, ops);
+    return;
+  }
+
+  const blockByOldStart = new Map();
+  for (let bi = 0; bi < blocks.length; bi++) blockByOldStart.set(blocks[bi].startOld, bi);
+
+  // Step 3: shuffle interior blocks (keep block 0 as entry point)
+  const interiorPerm = shuffle(Array.from({ length: blocks.length - 1 }, (_, i) => i + 1));
+  const newOrder = [0, ...interiorPerm];
+
+  // Step 4: determine which blocks need a trailing unconditional JMP
+  // A block needs one if: its last instruction is not a JMP or RETURN,
+  // and its natural fallthrough is not the next block in new order
+  const needTrailingJmp = new Array(blocks.length).fill(false);
+  for (let ni = 0; ni < newOrder.length; ni++) {
+    const bi = newOrder[ni];
+    const block = blocks[bi];
+    const lastIns = block.instrs[block.instrs.length - 1];
+    const endsJmp = lastIns.op === ops['JMP'];
+    const endsRet = lastIns.op === returnOp;
+    if (!endsJmp && !endsRet && block.fallthroughOld !== -1) {
+      const ftBi = blockByOldStart.get(block.fallthroughOld);
+      const nextNiBi = ni + 1 < newOrder.length ? newOrder[ni + 1] : -1;
+      if (ftBi !== undefined && ftBi !== nextNiBi) {
+        needTrailingJmp[bi] = ftBi;
+      }
+    }
+  }
+
+  // Step 5: assign new start positions
+  const newStart = new Array(blocks.length);
+  let pos = 0;
+  for (const bi of newOrder) {
+    newStart[bi] = pos;
+    pos += blocks[bi].instrs.length;
+    if (needTrailingJmp[bi] !== false) pos += 1;
+  }
+
+  // Step 6: build new bytecode, patching all jump targets
+  const newBc = new Array(pos);
+  for (const bi of newOrder) {
+    const block = blocks[bi];
+    const base = newStart[bi];
+    for (let j = 0; j < block.instrs.length; j++) {
+      const ins = block.instrs[j];
+      const newIdx = base + j;
+      if (jumpOps.has(ins.op) && ins.b !== 0) {
+        const oldAbsTarget = block.startOld + j + 1 + ins.b;
+        const targetBi = blockByOldStart.get(oldAbsTarget);
+        if (targetBi !== undefined) {
+          newBc[newIdx] = { ...ins, b: newStart[targetBi] - newIdx - 1 };
+        } else {
+          newBc[newIdx] = ins;
+        }
+      } else {
+        newBc[newIdx] = ins;
+      }
+    }
+    if (needTrailingJmp[bi] !== false) {
+      const ftBi = needTrailingJmp[bi];
+      const jmpIdx = base + block.instrs.length;
+      newBc[jmpIdx] = { op: ops['JMP'], a: 0, b: newStart[ftBi] - jmpIdx - 1, c: 0 };
+    }
+  }
+
+  proto.bc = newBc;
+  for (const sp of proto.subp) reorderBlocks(sp, ops);
+}
+
 function injectDeadBytecode(proto, ops) {
-  const deadOps = [ops['LOADK'], ops['LOADNIL'], ops['MOVE'], ops['ADD'], ops['SUB']];
+  // Gather real registers used in this proto so dead instructions look authentic.
+  const realRegs = new Set();
+  for (const ins of proto.bc) {
+    if (ins.a < CONST_BASE) realRegs.add(ins.a);
+    if (ins.b < CONST_BASE && ins.b >= 0) realRegs.add(ins.b);
+    if (ins.c < CONST_BASE && ins.c >= 0) realRegs.add(ins.c);
+  }
+  const regPool = realRegs.size > 2 ? Array.from(realRegs) : [0, 1, 2, 3, 4];
+  const pickReg = () => regPool[randInt(0, regPool.length - 1)];
+
+  const deadOps = [
+    ops['LOADK'], ops['LOADNIL'], ops['MOVE'],
+    ops['ADD'], ops['SUB'], ops['MUL'],
+    ops['NOT'], ops['UNM'], ops['LEN'],
+  ];
   const jumpOps = new Set([ops['JMP'], ops['FORPREP'], ops['FORLOOP'], ops['TFORLOOP']]);
   const compOps = new Set([ops['EQ'], ops['LT'], ops['LE'], ops['TEST']]);
   const lboolOp = ops['LOADBOOL'];
@@ -1341,7 +1508,7 @@ function injectDeadBytecode(proto, ops) {
       const nDead = randInt(1, 3);
       newBc.push({ op: ops['JMP'], a: 0, b: nDead, c: 0 });
       for (let d = 0; d < nDead; d++) {
-        newBc.push({ op: deadOps[randInt(0, deadOps.length - 1)], a: randInt(50, 80), b: randInt(0, 20), c: randInt(0, 10) });
+        newBc.push({ op: deadOps[randInt(0, deadOps.length - 1)], a: pickReg(), b: pickReg(), c: pickReg() });
       }
     }
   }
@@ -1403,13 +1570,23 @@ function insertNopPadding(proto, ops) {
   }
 }
 
-function serializeProto(proto) {
+// fieldPerm: array [p0,p1,p2,p3] where p_i is the 1-indexed Lua table position
+// where field i will be stored. Default [1,2,3,4] = no permutation.
+// Fields: 0=op(xor'd), 1=a, 2=b, 3=c
+function serializeProto(proto, fieldPerm) {
+  if (!fieldPerm) fieldPerm = [1, 2, 3, 4];
   const rxkLen = randInt(6, 14);
   const rxk = Array.from({ length: rxkLen }, () => randInt(1, 127));
 
   const instrItems = proto.bc.map(({ op, a, b, c }, i) => {
     const k = rxk[i % rxkLen];
-    return `{${op ^ k},${a},${b},${c}}`;
+    // Place each field at its permuted position
+    const slots = new Array(4);
+    slots[fieldPerm[0] - 1] = op ^ k;
+    slots[fieldPerm[1] - 1] = a;
+    slots[fieldPerm[2] - 1] = b;
+    slots[fieldPerm[3] - 1] = c;
+    return `{${slots.join(',')}}`;
   });
   const CHUNK = 30;
   const instrLines = [];
@@ -1419,9 +1596,74 @@ function serializeProto(proto) {
   const instr = instrLines.join(',\n');
 
   const { encK, k1, k2, k3, k4, k5 } = encryptConstants(proto.k);
-  const subProtos = proto.subp.map(p => serializeProto(p)).join(',\n');
+  const subProtos = proto.subp.map(p => serializeProto(p, fieldPerm)).join(',\n');
   const upvalsStr = proto.upvals.map(u => `{is=${u.instack ? 1 : 0},ix=${u.idx}}`).join(',');
   return `{bc={\n${instr}\n},ek=${encK},\nk1=${k1},k2=${k2},k3=${k3},k4=${k4},k5=${k5},\nrxk={${rxk.join(',')}},\np={${subProtos}},np=${proto.np},va=${proto.va ? 1 : 0},uv={${upvalsStr}}}`;
+}
+
+// ─── Constant Pool Interleaving ─────────────────────────────────
+// Injects fake/decoy constants at random positions between real constants.
+// If someone dumps the constant pool (by patching LOADK/GETGLOBAL handlers)
+// they see a mix of real and fake values — real ones are at remapped indices.
+// All bytecode KR references (LOADK b-field, and RK b/c fields in comparisons
+// and arithmetic) are updated to match the new interleaved positions.
+
+function interleaveConstantPool(proto) {
+  const realKs = proto.k;
+  if (realKs.length === 0) {
+    for (const sp of proto.subp) interleaveConstantPool(sp);
+    return;
+  }
+
+  // Generate fake constants that look plausible: random numbers, short strings,
+  // booleans — things a reverse engineer might waste time chasing.
+  const fakeCandidates = [
+    () => randInt(1, 9999),
+    () => randInt(0, 255) / 100,
+    () => randHex(4 + randInt(0, 4)),
+    () => Math.random() < 0.5,
+    () => null,
+    () => randName().slice(0, randInt(3, 8)),
+  ];
+
+  const mapping = new Array(realKs.length);
+  const newPool = [];
+
+  for (let i = 0; i < realKs.length; i++) {
+    // Insert 0–2 fakes before this real constant (bias towards fewer fakes to
+    // keep output size reasonable)
+    const nFakes = Math.random() < 0.5 ? 0 : Math.random() < 0.7 ? 1 : 2;
+    for (let f = 0; f < nFakes; f++) {
+      newPool.push(fakeCandidates[randInt(0, fakeCandidates.length - 1)]());
+    }
+    mapping[i] = newPool.length;
+    newPool.push(realKs[i]);
+  }
+  // Optionally append fakes at the end too
+  const tailFakes = randInt(0, 3);
+  for (let f = 0; f < tailFakes; f++) {
+    newPool.push(fakeCandidates[randInt(0, fakeCandidates.length - 1)]());
+  }
+
+  proto.k = newPool;
+  proto.kmap = new Map(); // no longer needed post-compilation
+
+  // Remap all constant-register (KR) references in the bytecode.
+  // KR values are encoded as CONST_BASE + original_index.
+  // Opcodes that use KR in b or c fields: LOADK (b), EQ/LT/LE (b,c),
+  // ADD/SUB/MUL/DIV/MOD/POW (b,c), GETGLOBAL (b), SETGLOBAL (b).
+  for (const ins of proto.bc) {
+    if (ins.b >= CONST_BASE) {
+      const oldIdx = ins.b - CONST_BASE;
+      if (oldIdx < mapping.length) ins.b = CONST_BASE + mapping[oldIdx];
+    }
+    if (ins.c >= CONST_BASE) {
+      const oldIdx = ins.c - CONST_BASE;
+      if (oldIdx < mapping.length) ins.c = CONST_BASE + mapping[oldIdx];
+    }
+  }
+
+  for (const sp of proto.subp) interleaveConstantPool(sp);
 }
 
 // ─── Self-Hash Verification (v9) ────────────────────────────────
@@ -1899,10 +2141,20 @@ local ${outVar}=${refs.t_concat}(${bufVar})
 
 // ─── VM Core Builder ───────────────────────────────────────────
 
-function buildVMCore(rootProto, ops, debugMode) {
+function buildVMCore(rootProto, ops, debugMode, useLZ77) {
+  reorderBlocks(rootProto, ops);
+  interleaveConstantPool(rootProto);
   insertNopPadding(rootProto, ops);
   injectDeadBytecode(rootProto, ops);
-  const protoStr = serializeProto(rootProto);
+  // Instruction Field Permutation: shuffle the four instruction fields {op,a,b,c}
+  // into a random slot order unique per compilation. fieldPerm[i] = 1-indexed Lua
+  // table slot where field i is stored. Applied in both serialization and the VM decoder.
+  const fieldPerm = [1, 2, 3, 4];
+  for (let i = 3; i > 0; i--) {
+    const j = randInt(0, i);
+    [fieldPerm[i], fieldPerm[j]] = [fieldPerm[j], fieldPerm[i]];
+  }
+  const protoStr = serializeProto(rootProto, fieldPerm);
   const O = ops;
   const CB = CONST_BASE;
 
@@ -1963,6 +2215,7 @@ function buildVMCore(rootProto, ops, debugMode) {
   }
 
   const shapeNames = ['DispatchTable', 'LinkedList', 'TokenizedString', 'StackVM'];
+  buildVMCore.lastShapeName = shapeNames[vmShape];
 
   const bcCount = rootProto.bc.length;
   const subCount = rootProto.subp.length;
@@ -1970,6 +2223,16 @@ function buildVMCore(rootProto, ops, debugMode) {
   const integrityB = (bcCount ^ subCount ^ 0xA5) & 0xFF;
   const hashVar = randName();
   const hashChk = randName();
+
+  // Register Base Shuffling: all handler code uses regs[rb_+x] instead of regs[x].
+  // rb_ is a random Lua variable holding a compile-time random offset (500-9999).
+  // An attacker who dumps regs[0..n] sees nothing — real registers live at regs[rb_+0..n].
+  const rb_ = randName();
+  const regBase = randInt(500, 9999);
+  // Encrypted Upvalue Cells: all upvalue/regcell value slots use a random integer key
+  // instead of the string key "val". Any exploit scanning cell.val or cell[1] gets nil.
+  const uvk_ = randName();
+  const uvKey = randInt(100, 9999);
 
   const vmBodyStr = vmBody
     .replace(/\bstring\.char\b/g, R.s_char)
@@ -2000,7 +2263,20 @@ function buildVMCore(rootProto, ops, debugMode) {
     .replace(/\bsetmetatable\b(?=\s*\()/g, R.setmt_)
     .replace(/\bgetmetatable\b(?=\s*\()/g, R.getmt_)
     .replace(/\btable\.insert\b/g, R.t_insert)
-    .replace(/\btable\.remove\b/g, R.t_remove);
+    .replace(/\btable\.remove\b/g, R.t_remove)
+    // Register base offset: regs[x] → regs[rb_+x] across all handlers
+    .replace(/\bregs\[/g, `regs[${rb_}+`)
+    // Instruction Field Permutation: remap ins_[1..4] to the permuted slot indices.
+    // fieldPerm[0] = slot where op is stored, [1]=a, [2]=b, [3]=c.
+    // We replace from highest index to lowest to avoid double-replace collisions.
+    .replace(new RegExp(`\\b${ins_}\\[4\\]`, 'g'), `${ins_}[${fieldPerm[3]}]`)
+    .replace(new RegExp(`\\b${ins_}\\[3\\]`, 'g'), `${ins_}[${fieldPerm[2]}]`)
+    .replace(new RegExp(`\\b${ins_}\\[2\\]`, 'g'), `${ins_}[${fieldPerm[1]}]`)
+    .replace(new RegExp(`\\b${ins_}\\[1\\]`, 'g'), `${ins_}[${fieldPerm[0]}]`)
+    // Encrypted Upvalue Cells: replace the "val" string key in all cell tables with
+    // a per-compilation random integer key. Exploits scanning cell.val get nil.
+    .replace(/\{val=/g, `{[${uvk_}]=`)
+    .replace(/\.val\b/g, `[${uvk_}]`);
 
   const dbgBootstrap = debugMode ? `
 if _VMDBG then print("[VM-INIT] LuaShield VM Debug Mode Active") end
@@ -2015,6 +2291,8 @@ local function ${vm}(proto,env,parent_regs,parent_upcells,...)
   if not bc then error("VM:nil bc",0) end
   local subp=proto.p or {}
   local ${pc_}={1}
+  local ${rb_}=${regBase}
+  local ${uvk_}=${uvKey}
   local regs={}
   local va={...}
   local ${van_}=${R.select_}("#",...)
@@ -2049,14 +2327,14 @@ local function ${vm}(proto,env,parent_regs,parent_upcells,...)
     end
   end
 
-  for i=1,proto.np do regs[i-1]=va[i] end
+  for i=1,proto.np do regs[${rb_}+i-1]=va[i] end
 
   local upcells=parent_upcells or {}
 
   local _regcells={}
 
   local function ${rk_}(x)
-    if x>=${CB} then return kst[x-${CB}] else return regs[x] end
+    if x>=${CB} then return kst[x-${CB}] else return regs[${rb_}+x] end
   end
 
   local ${rxkl_}=proto.rxk
@@ -2068,7 +2346,14 @@ ${vmBodyStr}
   else return ${unpack_}(${rv_},1,${rn_}) end
 end
 
-local _proto=${protoStr}
+${(() => {
+  if (!useLZ77) return `local _proto=${protoStr}`;
+  // LZ77-compressed proto: compress the Lua table string, decode at runtime via loadstring
+  const compressed = compressBytecodeString(protoStr);
+  const protoSrcVar = randName();
+  const decoderCode = generateLZ77Decoder(compressed, protoSrcVar);
+  return `${decoderCode}local _proto=(loadstring or load)("return "..(${protoSrcVar}))()`;
+})()}
 
 do
   local ${hashVar}=#_proto.bc*7+(#_proto.p)*31+0x3F
@@ -3047,11 +3332,12 @@ function obfuscate(code, opts = {}) {
         locations: false,
         ranges: false,
         luaVersion: '5.2',
+        encodingMode: 'pseudo-latin1',
       });
       const compiler = new Compiler(ops);
       const rootProto = compiler.compile(ast);
-      workCode = buildVMCore(rootProto, ops, options.debugMode);
-      vmShapeName = ['DispatchTable', 'LinkedList', 'TokenizedString', 'StackVM'][randInt(0, 3)];
+      workCode = buildVMCore(rootProto, ops, options.debugMode, options.useLZ77);
+      vmShapeName = buildVMCore.lastShapeName || 'Unknown';
       applied.push(`VM Bytecode Compiler v12 (${vmShapeName} shape, polymorphic handlers, shuffled opcodes, coroutine execution)`);
       applied.push('Penta-Key XOR Constant Encryption (five independent rotating keys)');
       applied.push('Constant Pool Interleaving (fake constants mixed with real)');
@@ -3071,12 +3357,12 @@ function obfuscate(code, opts = {}) {
           try {
             const opsN = makeOpcodeMap();
             const astN = luaparse.parse(workCode, {
-              comments: false, scope: false, locations: false, ranges: false, luaVersion: '5.2',
+              comments: false, scope: false, locations: false, ranges: false, luaVersion: '5.2', encodingMode: 'pseudo-latin1',
             });
             const compilerN = new Compiler(opsN);
             const rootProtoN = compilerN.compile(astN);
-            workCode = buildVMCore(rootProtoN, opsN);
-            const vmShapeN = ['DispatchTable', 'LinkedList', 'TokenizedString', 'StackVM'][randInt(0, 3)];
+            workCode = buildVMCore(rootProtoN, opsN, false, options.useLZ77);
+            const vmShapeN = buildVMCore.lastShapeName || 'Unknown';
             applied.push(`VM Nesting — Layer ${layer + 2} (${vmShapeN} shape, independent opcode map, Russian-doll protection)`);
           } catch (e) {
             applied.push(`VM Nesting Layer ${layer + 2} fallback (${e.message.slice(0, 60)})`);
@@ -3203,7 +3489,7 @@ const PRESETS = {
     obfuscateNumbers: true, breakGlobals: true,
     injectJunk: true, opaquePredicates: true, antiHook: true,
     controlFlowFlatten: true, stringArrayRotate: true, envFingerprint: true,
-    vmNesting: false, deadCodePaths: true, finalEncoding: true,
+    vmNesting: false, deadCodePaths: true, finalEncoding: true, useLZ77: true,
   },
   max: {
     vmCompile: true,
@@ -3211,7 +3497,7 @@ const PRESETS = {
     obfuscateNumbers: true, breakGlobals: true,
     injectJunk: true, opaquePredicates: true, antiHook: true,
     controlFlowFlatten: true, stringArrayRotate: true, envFingerprint: true,
-    vmNesting: true, tripleNesting: false, deadCodePaths: true, finalEncoding: true,
+    vmNesting: true, tripleNesting: false, deadCodePaths: true, finalEncoding: true, useLZ77: true,
   },
   ultra: {
     vmCompile: true,
@@ -3219,7 +3505,7 @@ const PRESETS = {
     obfuscateNumbers: true, breakGlobals: true,
     injectJunk: true, opaquePredicates: true, antiHook: true,
     controlFlowFlatten: true, stringArrayRotate: true, envFingerprint: true,
-    vmNesting: true, tripleNesting: true, deadCodePaths: true, finalEncoding: true,
+    vmNesting: true, tripleNesting: true, deadCodePaths: true, finalEncoding: true, useLZ77: true,
   },
 };
 
